@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #121215;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --accent-glow: rgba(99, 102, 241, 0.15);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom glow and grid patterns */
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: center top;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(129, 140, 248, 0.22) 1.25px, transparent 1.25px);
+  background-size: 28px 28px;
+  background-position: center top;
+}
+
+.radial-mask-center {
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 40%, transparent 95%);
+}
+
+.radial-mask-hero {
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 10%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 10%, black 40%, transparent 100%);
+}
+
+/* Glassmorphism cards */
+.glass-panel {
+  background: rgba(18, 18, 22, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Ambient Halo Background Animations */
+@keyframes haloPulse {
+  0%, 100% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.08) translate3d(0, -10px, 0);
+    opacity: 0.85;
+  }
+}
+
+.animate-halo-pulse {
+  animation: haloPulse 8s ease-in-out infinite;
+}
+
+@keyframes auroraDriftOne {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(40px, -30px, 0) rotate(4deg);
+  }
+}
+
+.animate-aurora-drift-1 {
+  animation: auroraDriftOne 14s ease-in-out infinite;
+}
+
+@keyframes auroraDriftTwo {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-35px, 25px, 0) rotate(-4deg);
+  }
+}
+
+.animate-aurora-drift-2 {
+  animation: auroraDriftTwo 16s ease-in-out infinite;
+}
+
+@keyframes beamTravel {
+  0% {
+    top: -150px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-beam-travel {
+  animation: beamTravel 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-beam-travel-delayed {
+  animation: beamTravel 9s cubic-bezier(0.4, 0, 0.2, 1) 3.5s infinite;
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-16px) translateX(8px);
+    opacity: 0.8;
+  }
+}
+
+.animate-particle-float {
+  animation: particleFloat 6s ease-in-out infinite;
+}
+
+/* Luxury Grain & Blueprint utilities */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+.bg-circuit-grid {
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+}
