@@ -118,7 +118,13 @@ export function Pricing() {
               }`}
             >
               <span>Annual Billing</span>
-              <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-400">
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                  annual
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-cyan-500/20 text-cyan-300"
+                }`}
+              >
                 Save 20%
               </span>
             </button>
