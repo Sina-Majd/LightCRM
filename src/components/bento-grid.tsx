@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import {
   MousePointerClick,
   Smartphone,
+  Tablet,
+  Laptop,
+  RefreshCw,
+  PhoneCall,
+  Plus,
+  PenLine,
   Download,
   CheckCircle2,
   Package,
@@ -24,10 +30,22 @@ export function BentoGrid() {
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [invoicePaid, setInvoicePaid] = useState(false);
   const [exportedFormat, setExportedFormat] = useState<string | null>(null);
+  const [activeDevice, setActiveDevice] = useState<"phone" | "tablet" | "laptop">("phone");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
 
   const handleExport = (format: string) => {
     setExportedFormat(format);
     setTimeout(() => setExportedFormat(null), 2500);
+  };
+
+  const handleTriggerSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 3000);
+    }, 600);
   };
 
   return (
@@ -239,34 +257,200 @@ export function BentoGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-purple-500/30 transition-colors shadow-lg isolate"
+            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-purple-500/30 transition-colors shadow-lg isolate flex flex-col justify-between"
           >
             <div className="absolute top-0 right-0 w-60 h-60 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
 
-            <div className="relative z-10">
-              <Badge variant="outline" className="mb-2 font-mono text-[11px] text-purple-300 border-purple-500/30">
-                WORKS ANYWHERE
-              </Badge>
-              <h3 className="text-xl font-bold text-white tracking-tight">
-                Phone, Tablet & Laptop Access
-              </h3>
-              <p className="mt-2 text-xs sm:text-sm text-zinc-400">
-                Run your business from your desk or on the go. View customer info, log new orders, and check paid invoices from anywhere.
-              </p>
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div>
+                <Badge variant="outline" className="mb-2 font-mono text-[11px] text-purple-300 border-purple-500/30">
+                  WORKS ANYWHERE
+                </Badge>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  Phone, Tablet & Laptop Access
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-zinc-400">
+                  Run your business from your desk or on the go. View customer info, log new orders, and check paid invoices from anywhere.
+                </p>
 
-              <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 border border-purple-500/25 text-purple-400">
-                    <Smartphone className="h-4 w-4" />
+                {/* Device Selector Tabs */}
+                <div className="mt-5 grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#09090e] border border-white/[0.08]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDevice("phone")}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      activeDevice === "phone"
+                        ? "bg-purple-600/25 text-purple-200 border border-purple-500/40 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
+                    }`}
+                  >
+                    <Smartphone className="h-3.5 w-3.5" />
+                    <span>Phone</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDevice("tablet")}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      activeDevice === "tablet"
+                        ? "bg-purple-600/25 text-purple-200 border border-purple-500/40 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
+                    }`}
+                  >
+                    <Tablet className="h-3.5 w-3.5" />
+                    <span>Tablet</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDevice("laptop")}
+                    className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                      activeDevice === "laptop"
+                        ? "bg-purple-600/25 text-purple-200 border border-purple-500/40 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
+                    }`}
+                  >
+                    <Laptop className="h-3.5 w-3.5" />
+                    <span>Laptop</span>
+                  </button>
+                </div>
+
+                {/* Interactive Dynamic Mockup Display */}
+                <div className="mt-3.5 rounded-xl border border-white/[0.08] bg-[#0c0c12] p-3.5 text-xs shadow-inner min-h-[140px] flex flex-col justify-between">
+                  {activeDevice === "phone" && (
+                    <motion.div
+                      key="phone"
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pb-1.5 border-b border-white/[0.06]">
+                        <span className="font-mono">Mobile PWA App</span>
+                        <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Online
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-[#14141d] p-2.5 border border-white/[0.04] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src="/astrid-avatar.jpg"
+                            alt="Astrid"
+                            className="h-6 w-6 rounded-full object-cover border border-white/10"
+                          />
+                          <div>
+                            <div className="text-[11px] font-semibold text-white">Astrid Lindholm</div>
+                            <div className="text-[10px] text-emerald-400">Order #2048 Paid • $4,800</div>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-mono text-zinc-400 border-white/10">
+                          Just now
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <div className="flex-1 rounded-md bg-white/[0.03] border border-white/[0.06] py-1.5 px-2 flex items-center justify-center gap-1.5 text-[10px] text-zinc-300 font-medium">
+                          <PhoneCall className="h-3 w-3 text-cyan-400 shrink-0" />
+                          <span>1-Tap Log Call</span>
+                        </div>
+                        <div className="flex-1 rounded-md bg-purple-500/10 border border-purple-500/20 py-1.5 px-2 flex items-center justify-center gap-1.5 text-[10px] text-purple-300 font-medium">
+                          <Plus className="h-3 w-3 text-purple-300 shrink-0" />
+                          <span>New Order</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeDevice === "tablet" && (
+                    <motion.div
+                      key="tablet"
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pb-1.5 border-b border-white/[0.06]">
+                        <span className="font-mono">POS & Field Signature Mode</span>
+                        <span className="text-purple-300 font-mono text-[10px]">Stylus Ready</span>
+                      </div>
+                      <div className="rounded-lg bg-[#14141d] p-2.5 border border-white/[0.04]">
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-zinc-300 font-medium">On-Site Client Approval</span>
+                          <span className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[10px]">
+                            <Check className="h-3 w-3" />
+                            <span>Signed</span>
+                          </span>
+                        </div>
+                        <div className="h-6 rounded bg-black/40 border border-dashed border-white/10 flex items-center justify-center gap-1.5 text-[10px] text-zinc-400 font-mono">
+                          <PenLine className="h-3 w-3 text-purple-400 shrink-0" />
+                          <span>Astrid Lindholm (Digital Signoff)</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-zinc-400 px-0.5">
+                        <span>Offline caching active</span>
+                        <span className="text-cyan-400 font-mono">Syncs instantly</span>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeDevice === "laptop" && (
+                    <motion.div
+                      key="laptop"
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500 pb-1.5 border-b border-white/[0.06]">
+                        <span className="font-mono">Desktop Power Workspace</span>
+                        <span className="text-zinc-400 font-mono text-[10px]">Multi-tab sync</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-[#14141d] p-2 border border-white/[0.04]">
+                          <div className="text-[10px] text-zinc-400">Monthly Revenue</div>
+                          <div className="text-xs font-mono font-bold text-white mt-0.5">$34,800.00</div>
+                        </div>
+                        <div className="rounded-lg bg-[#14141d] p-2 border border-white/[0.04]">
+                          <div className="text-[10px] text-zinc-400">Active Deals</div>
+                          <div className="text-xs font-mono font-bold text-cyan-400 mt-0.5">18 Closed</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-0.5">
+                        <span className="font-mono text-zinc-500">Universal Palette:</span>
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-[9px] font-mono text-zinc-300">
+                          ⌘ + K Quick Search
+                        </kbd>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Interactive Cloud Sync Bar */}
+              <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </div>
-                  <div className="text-xs">
-                    <div className="font-semibold text-white">100% Cloud Synced</div>
-                    <div className="text-[11px] text-zinc-400">Real-time updates on all devices</div>
+                  <div className="text-[11px]">
+                    <div className="font-medium text-zinc-200">
+                      {isSyncing ? "Syncing devices..." : syncSuccess ? "Synced across devices!" : "Cloud Synced"}
+                    </div>
+                    <div className="text-[10px] text-zinc-500 font-mono">
+                      {syncSuccess ? "Latency 14ms • Up to date" : "Instant real-time updates"}
+                    </div>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 font-mono">
-                  Live Sync
-                </Badge>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleTriggerSync}
+                  disabled={isSyncing}
+                  className="h-7 px-2.5 text-[11px] border-white/10 hover:border-purple-500/40 hover:bg-purple-500/10 text-zinc-300 cursor-pointer"
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 text-purple-400 ${isSyncing ? "animate-spin" : ""}`} />
+                  <span>{isSyncing ? "Syncing" : "Sync Now"}</span>
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -333,7 +517,7 @@ export function BentoGrid() {
               )}
 
               {/* Rich Interactive Dual-Panel Invoice & Payment Simulator */}
-              <div className="rounded-xl border border-white/[0.08] bg-[#0c0c12] p-4 sm:p-5 mb-5 shadow-inner">
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c0c12] p-4 sm:p-5 shadow-inner">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
                   {/* Panel Left: Branded Invoice Mockup */}
                   <div className="lg:col-span-7 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 space-y-3.5">
@@ -393,13 +577,23 @@ export function BentoGrid() {
                         </span>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] font-mono py-0.5 px-2 ${
+                          className={`text-[10px] font-mono py-0.5 px-2 inline-flex items-center gap-1.5 ${
                             invoicePaid
                               ? "text-emerald-300 bg-emerald-950/30 border-emerald-500/30"
                               : "text-amber-300 bg-amber-950/30 border-amber-500/30"
                           }`}
                         >
-                          {invoicePaid ? "✓ Paid in Full" : "● Awaiting Payment"}
+                          {invoicePaid ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-400" />
+                              <span>Paid in Full</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              <span>Awaiting Payment</span>
+                            </>
+                          )}
                         </Badge>
                       </div>
 
@@ -446,21 +640,6 @@ export function BentoGrid() {
                 </div>
               </div>
 
-              {/* Bottom 3 Metric Pills */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                  <div className="text-zinc-500 text-[11px]">Invoice Creation Time</div>
-                  <div className="text-white font-mono font-bold mt-1 text-sm">&lt; 15 Seconds</div>
-                </div>
-                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                  <div className="text-zinc-500 text-[11px]">Avg Payment Turnaround</div>
-                  <div className="text-emerald-400 font-mono font-bold mt-1 text-sm">2.8 Days (2x Faster)</div>
-                </div>
-                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                  <div className="text-zinc-500 text-[11px]">Payment Reminders</div>
-                  <div className="text-cyan-300 font-mono font-bold mt-1 text-sm">1-Click Automated</div>
-                </div>
-              </div>
             </div>
           </motion.div>
         </div>
