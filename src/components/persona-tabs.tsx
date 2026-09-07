@@ -16,10 +16,41 @@ import {
   Send,
   Clock,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+const TABS = [
+  {
+    id: "customers",
+    label: "Companies & Customers",
+    icon: Users,
+    solidBg: "bg-cyan-600",
+    shadow: "shadow-cyan-600/30",
+  },
+  {
+    id: "orders",
+    label: "Orders & Projects",
+    icon: Package,
+    solidBg: "bg-indigo-600",
+    shadow: "shadow-indigo-600/30",
+  },
+  {
+    id: "invoices",
+    label: "Invoices & Payments",
+    icon: FileText,
+    solidBg: "bg-blue-600",
+    shadow: "shadow-blue-600/30",
+  },
+  {
+    id: "reports",
+    label: "Reports & Charts",
+    icon: TrendingUp,
+    solidBg: "bg-purple-600",
+    shadow: "shadow-purple-600/30",
+  },
+] as const;
 
 export function PersonaTabs() {
   const [activeTab, setActiveTab] = useState<string>("customers");
@@ -72,51 +103,44 @@ export function PersonaTabs() {
             {/* Centered Tab Triggers */}
             <div className="flex justify-center mb-10">
               <TabsList className="bg-[#121218]/90 border border-white/10 p-1.5 rounded-xl h-auto flex-wrap sm:flex-nowrap gap-1">
-                <TabsTrigger
-                  value="customers"
-                  className="rounded-lg px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>Companies & Customers</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="orders"
-                  className="rounded-lg px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    <span>Orders & Projects</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="invoices"
-                  className="rounded-lg px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span>Invoices & Payments</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="reports"
-                  className="rounded-lg px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Reports & Charts</span>
-                  </div>
-                </TabsTrigger>
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="relative rounded-lg px-3.5 py-2 text-xs sm:text-sm font-semibold transition-colors duration-200 cursor-pointer overflow-hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none text-zinc-400 hover:text-white data-[state=active]:text-white"
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="persona-active-tab-indicator"
+                          className={`absolute inset-0 rounded-lg ${tab.solidBg} shadow-md ${tab.shadow}`}
+                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </span>
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
             </div>
 
-            {/* Tab 1: Customers */}
-            <TabsContent value="customers" className="focus-visible:outline-none">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Tab Contents with Smooth Animated Transition */}
+            <TabsContent value={activeTab} className="focus-visible:outline-none mt-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 14, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -14, filter: "blur(4px)" }}
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {activeTab === "customers" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-5 space-y-6">
                   <div>
                     <Badge variant="outline" className="mb-2 text-cyan-400 border-cyan-500/30 font-mono text-[11px]">
@@ -209,11 +233,11 @@ export function PersonaTabs() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            )}
 
-            {/* Tab 2: Orders */}
-            <TabsContent value="orders" className="focus-visible:outline-none">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                {/* Tab 2: Orders */}
+                {activeTab === "orders" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-5 space-y-6">
                   <div>
                     <Badge variant="outline" className="mb-2 text-indigo-400 border-indigo-500/30 font-mono text-[11px]">
@@ -297,11 +321,11 @@ export function PersonaTabs() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            )}
 
-            {/* Tab 3: Invoices */}
-            <TabsContent value="invoices" className="focus-visible:outline-none">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                {/* Tab 3: Invoices */}
+                {activeTab === "invoices" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-5 space-y-6">
                   <div>
                     <Badge variant="outline" className="mb-2 text-cyan-400 border-cyan-500/30 font-mono text-[11px]">
@@ -391,11 +415,11 @@ export function PersonaTabs() {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            )}
 
-            {/* Tab 4: Reports & Charts */}
-            <TabsContent value="reports" className="focus-visible:outline-none">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                {/* Tab 4: Reports & Charts */}
+                {activeTab === "reports" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div className="lg:col-span-5 space-y-6">
                   <div>
                     <Badge variant="outline" className="mb-2 text-purple-400 border-purple-500/30 font-mono text-[11px]">
@@ -496,6 +520,9 @@ export function PersonaTabs() {
                   </div>
                 </div>
               </div>
+            )}
+                </motion.div>
+              </AnimatePresence>
             </TabsContent>
           </Tabs>
         </motion.div>
