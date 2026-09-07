@@ -7,17 +7,25 @@ import {
   ArrowRight,
   ChevronDown,
   Menu,
-  X,
-  Users,
-  Package,
-  FileText,
   Store,
   Briefcase,
   UserCheck,
+  LayoutDashboard,
+  Sparkles,
+  Layers,
+  CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface NavbarProps {
   onOpenCommand?: () => void;
@@ -206,77 +214,142 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
             </a>
           </Button>
 
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex md:hidden items-center justify-center rounded-lg border border-white/10 p-2 text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-            aria-label="Toggle Menu"
-          >
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
+          {/* Mobile Navigation Drawer Trigger */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button
+                className="flex md:hidden items-center justify-center rounded-lg border border-white/10 p-2 text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer transition-colors"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="flex flex-col justify-between w-[85vw] max-w-sm p-6 overflow-y-auto"
+            >
+              <div>
+                <SheetHeader className="text-left pb-4 border-b border-white/[0.08]">
+                  <SheetTitle className="flex items-center">
+                    <LightCrmLogo size="sm" />
+                  </SheetTitle>
+                  <SheetDescription className="text-xs text-zinc-400">
+                    Simple CRM for everyday business operations.
+                  </SheetDescription>
+                </SheetHeader>
+
+                {/* Quick Search Button */}
+                <div className="mt-5 mb-5">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenCommand?.();
+                    }}
+                    className="flex items-center justify-between w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-xs text-zinc-300 hover:border-cyan-500/40 hover:bg-white/[0.07] transition-all cursor-pointer shadow-xs"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Search className="h-3.5 w-3.5 text-cyan-400" />
+                      <span>Search Customers & Orders</span>
+                    </span>
+                    <kbd className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
+                      ⌘K
+                    </kbd>
+                  </button>
+                </div>
+
+                {/* Main Navigation Links */}
+                <div className="space-y-1 font-medium text-sm">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 px-3 py-1">
+                    Navigation
+                  </div>
+                  <a
+                    href="#pipeline"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-cyan-400" />
+                    <span>Dashboard</span>
+                  </a>
+                  <a
+                    href="#features"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4 text-indigo-400" />
+                    <span>Features & Tools</span>
+                  </a>
+                  <a
+                    href="#overview"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <Layers className="h-4 w-4 text-purple-400" />
+                    <span>How It Works</span>
+                  </a>
+                  <a
+                    href="#pricing"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    <span>Pricing Plans</span>
+                  </a>
+                </div>
+
+                {/* Built for Your Business Section */}
+                <div className="mt-6 pt-5 border-t border-white/[0.08] space-y-1">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 px-3 py-1">
+                    Built For Your Business
+                  </div>
+                  <a
+                    href="#features"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <Store className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <span>Small Businesses & Local Shops</span>
+                  </a>
+                  <a
+                    href="#features"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <Briefcase className="h-4 w-4 text-indigo-400 shrink-0" />
+                    <span>Agencies & Freelancers</span>
+                  </a>
+                  <a
+                    href="#features"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <UserCheck className="h-4 w-4 text-purple-400 shrink-0" />
+                    <span>Consultants & Services</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="mt-8 pt-5 border-t border-white/[0.08] flex flex-col gap-2.5">
+                <a
+                  href="#pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-zinc-950 shadow-md cursor-pointer hover:bg-zinc-200 transition-colors"
+                >
+                  <span>Start Free 14-Day Trial</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+                <a
+                  href="#pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  Sign In
+                </a>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
-
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/[0.08] bg-[#0c0c10]/95 px-4 pt-3 pb-6 backdrop-blur-2xl animate-in slide-in-from-top-2 duration-200">
-          <div className="flex flex-col space-y-2 text-sm font-medium">
-            <a
-              href="#pipeline"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white"
-            >
-              Dashboard
-            </a>
-            <a
-              href="#features"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white"
-            >
-              Features & Tools
-            </a>
-            <a
-              href="#overview"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white"
-            >
-              How It Works
-            </a>
-            <a
-              href="#pricing"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white"
-            >
-              Pricing Plans
-            </a>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenCommand?.();
-              }}
-              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300"
-            >
-              <span className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-zinc-500" />
-                Search Customers & Orders
-              </span>
-              <kbd className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
-                ⌘K
-              </kbd>
-            </button>
-            <a
-              href="#pricing"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-zinc-950 shadow-md cursor-pointer hover:bg-zinc-200 transition-colors"
-            >
-              <span>Try for Free</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
