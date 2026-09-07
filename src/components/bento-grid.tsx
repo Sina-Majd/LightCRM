@@ -68,106 +68,108 @@ export function BentoGrid() {
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6 }}
-            className="md:col-span-2 rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-cyan-500/30 transition-colors shadow-lg"
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="md:col-span-2 rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-cyan-500/30 transition-colors shadow-lg isolate"
           >
-            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none -z-10" />
+            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <Badge variant="outline" className="mb-2 font-mono text-[11px] text-cyan-300 border-cyan-500/30">
-                  ORDER & JOB TRACKER
-                </Badge>
-                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Visual Drag-and-Drop Order Stages
-                </h3>
-                <p className="mt-1 text-xs sm:text-sm text-zinc-400 max-w-md">
-                  Keep active customer jobs organized from new request to final delivery.
-                  Advance status with one click so your team always knows what to do next.
-                </p>
-              </div>
-
-              <div className="shrink-0 flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-zinc-400">
-                <Package className="h-3.5 w-3.5 text-cyan-400" />
-                <span>Zero Training Needed</span>
-              </div>
-            </div>
-
-            {/* Interactive Simulated Order Reorder */}
-            <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0c0c11] p-4">
-              <div className="text-[11px] text-zinc-500 font-mono mb-3 flex items-center justify-between">
-                <span>INTERACTIVE ORDER DEMO (CLICK CARD TO ADVANCE)</span>
-                <span className="text-cyan-400">Live Status Sync</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
-                  <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
-                    <span>In Progress</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">{!orderCompleted ? "1 Active" : "0 Active"}</span>
-                  </div>
-                  <div
-                    onClick={() => setOrderCompleted(!orderCompleted)}
-                    className={`rounded-md border p-3 transition-all cursor-pointer ${
-                      !orderCompleted
-                        ? "border-cyan-500/40 bg-cyan-950/20 text-white shadow-md shadow-cyan-950/40"
-                        : "border-white/[0.06] bg-white/[0.02] text-zinc-500 opacity-60"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <img
-                          src="/solstice-logo.jpg"
-                          alt="Solstice Creative"
-                          className="h-4 w-4 rounded object-cover"
-                        />
-                        <span className="text-xs font-semibold text-white">Solstice Creative</span>
-                      </div>
-                      <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
-                    <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1.5">
-                      <MousePointerClick className="h-3 w-3 text-cyan-400" />
-                      <span>{!orderCompleted ? "Click to mark complete" : "Completed"}</span>
-                    </div>
-                  </div>
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <Badge variant="outline" className="mb-2 font-mono text-[11px] text-cyan-300 border-cyan-500/30">
+                    ORDER & JOB TRACKER
+                  </Badge>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Visual Drag-and-Drop Order Stages
+                  </h3>
+                  <p className="mt-1 text-xs sm:text-sm text-zinc-400 max-w-md">
+                    Keep active customer jobs organized from new request to final delivery.
+                    Advance status with one click so your team always knows what to do next.
+                  </p>
                 </div>
 
-                <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
-                  <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
-                    <span>Completed & Ready to Invoice</span>
-                    <span className="text-[10px] text-emerald-400 font-mono">{orderCompleted ? "1 Ready" : "0"}</span>
-                  </div>
-                  <div
-                    onClick={() => setOrderCompleted(!orderCompleted)}
-                    className={`rounded-md border p-3 transition-all cursor-pointer ${
-                      orderCompleted
-                        ? "border-emerald-500/40 bg-emerald-950/20 text-white shadow-md shadow-emerald-950/40"
-                        : "border-dashed border-white/10 bg-transparent text-zinc-500 text-center py-4"
-                    }`}
-                  >
-                    {orderCompleted ? (
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <img
-                              src="/solstice-logo.jpg"
-                              alt="Solstice Creative"
-                              className="h-4 w-4 rounded object-cover"
-                            />
-                            <span className="text-xs font-semibold text-white">Solstice Creative</span>
-                          </div>
-                          <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
+                <div className="shrink-0 flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-zinc-400">
+                  <Package className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>Zero Training Needed</span>
+                </div>
+              </div>
+
+              {/* Interactive Simulated Order Reorder */}
+              <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0c0c11] p-4">
+                <div className="text-[11px] text-zinc-500 font-mono mb-3 flex items-center justify-between">
+                  <span>INTERACTIVE ORDER DEMO (CLICK CARD TO ADVANCE)</span>
+                  <span className="text-cyan-400">Live Status Sync</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
+                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
+                      <span>In Progress</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">{!orderCompleted ? "1 Active" : "0 Active"}</span>
+                    </div>
+                    <div
+                      onClick={() => setOrderCompleted(!orderCompleted)}
+                      className={`rounded-md border p-3 transition-all cursor-pointer ${
+                        !orderCompleted
+                          ? "border-cyan-500/40 bg-cyan-950/20 text-white shadow-md shadow-cyan-950/40"
+                          : "border-white/[0.06] bg-white/[0.02] text-zinc-500 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src="/solstice-logo.jpg"
+                            alt="Solstice Creative"
+                            className="h-4 w-4 rounded object-cover"
+                          />
+                          <span className="text-xs font-semibold text-white">Solstice Creative</span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
-                        <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Ready! 1-click invoice generated</span>
-                        </div>
+                        <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
                       </div>
-                    ) : (
-                      <span className="text-xs text-zinc-500">Order appears here once finished</span>
-                    )}
+                      <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
+                      <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1.5">
+                        <MousePointerClick className="h-3 w-3 text-cyan-400" />
+                        <span>{!orderCompleted ? "Click to mark complete" : "Completed"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
+                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
+                      <span>Completed & Ready to Invoice</span>
+                      <span className="text-[10px] text-emerald-400 font-mono">{orderCompleted ? "1 Ready" : "0"}</span>
+                    </div>
+                    <div
+                      onClick={() => setOrderCompleted(!orderCompleted)}
+                      className={`rounded-md border p-3 transition-all cursor-pointer ${
+                        orderCompleted
+                          ? "border-emerald-500/40 bg-emerald-950/20 text-white shadow-md shadow-emerald-950/40"
+                          : "border-dashed border-white/10 bg-transparent text-zinc-500 text-center py-4"
+                      }`}
+                    >
+                      {orderCompleted ? (
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <img
+                                src="/solstice-logo.jpg"
+                                alt="Solstice Creative"
+                                className="h-4 w-4 rounded object-cover"
+                              />
+                              <span className="text-xs font-semibold text-white">Solstice Creative</span>
+                            </div>
+                            <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
+                          <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Ready! 1-click invoice generated</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-zinc-500">Order appears here once finished</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -179,52 +181,54 @@ export function BentoGrid() {
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-indigo-500/30 transition-colors shadow-lg"
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-indigo-500/30 transition-colors shadow-lg isolate"
           >
-            <div className="absolute top-0 right-0 w-60 h-60 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none -z-10" />
+            <div className="absolute top-0 right-0 w-60 h-60 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
 
-            <Badge variant="outline" className="mb-2 font-mono text-[11px] text-indigo-300 border-indigo-500/30">
-              CUSTOMER DIRECTORY
-            </Badge>
-            <h3 className="text-xl font-bold text-white tracking-tight">
-              Companies & Customer Profiles
-            </h3>
-            <p className="mt-2 text-xs sm:text-sm text-zinc-400">
-              Instant access to phone numbers, emails, addresses, client notes, and past order history in under 1 second.
-            </p>
+            <div className="relative z-10">
+              <Badge variant="outline" className="mb-2 font-mono text-[11px] text-indigo-300 border-indigo-500/30">
+                CUSTOMER DIRECTORY
+              </Badge>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                Companies & Customer Profiles
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-zinc-400">
+                Instant access to phone numbers, emails, addresses, client notes, and past order history in under 1 second.
+              </p>
 
-            <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src="/astrid-avatar.jpg"
-                    alt="Astrid Lindholm"
-                    className="h-8 w-8 rounded-full object-cover border border-cyan-500/30 shrink-0"
-                  />
-                  <div>
-                    <span className="text-white font-semibold">Astrid Lindholm</span>
-                    <div className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                      <img
-                        src="/solstice-logo.jpg"
-                        alt="Solstice Creative"
-                        className="h-3 w-3 rounded object-cover"
-                      />
-                      <span>Solstice Creative</span>
+              <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/astrid-avatar.jpg"
+                      alt="Astrid Lindholm"
+                      className="h-8 w-8 rounded-full object-cover border border-cyan-500/30 shrink-0"
+                    />
+                    <div>
+                      <span className="text-white font-semibold">Astrid Lindholm</span>
+                      <div className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
+                        <img
+                          src="/solstice-logo.jpg"
+                          alt="Solstice Creative"
+                          className="h-3 w-3 rounded object-cover"
+                        />
+                        <span>Solstice Creative</span>
+                      </div>
                     </div>
                   </div>
+                  <span className="font-mono text-emerald-400 font-bold">$18.5k Spent</span>
                 </div>
-                <span className="font-mono text-emerald-400 font-bold">$18.5k Spent</span>
-              </div>
 
-              <div className="text-[11px] text-zinc-400 border-t border-white/[0.06] pt-2 flex items-center justify-between">
-                <span>Phone: +1 (555) 234-8901</span>
-                <span className="text-cyan-400 font-medium">Verified Client</span>
-              </div>
+                <div className="text-[11px] text-zinc-400 border-t border-white/[0.06] pt-2 flex items-center justify-between">
+                  <span>Phone: +1 (555) 234-8901</span>
+                  <span className="text-cyan-400 font-medium">Verified Client</span>
+                </div>
 
-              <div className="text-[11px] text-zinc-400 flex items-center gap-1.5 pt-0.5">
-                <Building2 className="h-3.5 w-3.5 text-indigo-400" />
-                <span>3 orders completed · 100% on-time payment</span>
+                <div className="text-[11px] text-zinc-400 flex items-center gap-1.5 pt-0.5">
+                  <Building2 className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>3 orders completed · 100% on-time payment</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -234,34 +238,36 @@ export function BentoGrid() {
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-purple-500/30 transition-colors shadow-lg"
+            transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+            className="rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-purple-500/30 transition-colors shadow-lg isolate"
           >
-            <div className="absolute top-0 right-0 w-60 h-60 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none -z-10" />
+            <div className="absolute top-0 right-0 w-60 h-60 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
 
-            <Badge variant="outline" className="mb-2 font-mono text-[11px] text-purple-300 border-purple-500/30">
-              WORKS ANYWHERE
-            </Badge>
-            <h3 className="text-xl font-bold text-white tracking-tight">
-              Phone, Tablet & Laptop Access
-            </h3>
-            <p className="mt-2 text-xs sm:text-sm text-zinc-400">
-              Run your business from your desk or on the go. View customer info, log new orders, and check paid invoices from anywhere.
-            </p>
-
-            <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 border border-purple-500/25 text-purple-400">
-                  <Smartphone className="h-4 w-4" />
-                </div>
-                <div className="text-xs">
-                  <div className="font-semibold text-white">100% Cloud Synced</div>
-                  <div className="text-[11px] text-zinc-400">Real-time updates on all devices</div>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 font-mono">
-                Live Sync
+            <div className="relative z-10">
+              <Badge variant="outline" className="mb-2 font-mono text-[11px] text-purple-300 border-purple-500/30">
+                WORKS ANYWHERE
               </Badge>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                Phone, Tablet & Laptop Access
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-zinc-400">
+                Run your business from your desk or on the go. View customer info, log new orders, and check paid invoices from anywhere.
+              </p>
+
+              <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15 border border-purple-500/25 text-purple-400">
+                    <Smartphone className="h-4 w-4" />
+                  </div>
+                  <div className="text-xs">
+                    <div className="font-semibold text-white">100% Cloud Synced</div>
+                    <div className="text-[11px] text-zinc-400">Real-time updates on all devices</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30 font-mono">
+                  Live Sync
+                </Badge>
+              </div>
             </div>
           </motion.div>
 
@@ -270,188 +276,190 @@ export function BentoGrid() {
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="md:col-span-2 rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-cyan-500/30 transition-colors shadow-lg"
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+            className="md:col-span-2 rounded-2xl border border-white/[0.1] bg-gradient-to-b from-[#14141c]/90 to-[#0e0e14]/95 p-6 sm:p-8 relative overflow-hidden group hover:border-cyan-500/30 transition-colors shadow-lg isolate"
           >
-            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none -z-10" />
+            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none" />
 
-            {/* Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <Badge variant="outline" className="mb-2 font-mono text-[11px] text-cyan-300 border-cyan-500/30">
-                  1-CLICK INVOICES & PAYMENTS
-                </Badge>
-                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Get Paid Faster With Professional Invoices
-                </h3>
-                <p className="mt-1 text-xs sm:text-sm text-zinc-400 max-w-xl">
-                  Turn completed orders into clean, professional invoices in seconds.
-                  Clients pay directly online with one click, and your dashboard updates in real time.
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleExport("PDF Invoice")}
-                  className="h-8 text-xs border-white/10 hover:border-cyan-500/40 hover:bg-white/[0.04] text-zinc-300 cursor-pointer"
-                >
-                  <Download className="h-3.5 w-3.5 mr-1 text-cyan-400" />
-                  <span>Download PDF</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleExport("Payment Link")}
-                  className="h-8 text-xs border-white/10 hover:border-cyan-500/40 hover:bg-white/[0.04] text-zinc-300 cursor-pointer"
-                >
-                  <Share2 className="h-3.5 w-3.5 mr-1 text-cyan-400" />
-                  <span>Copy Link</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Export notification badge if triggered */}
-            {exportedFormat && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-4 rounded-lg bg-emerald-950/40 border border-emerald-500/40 p-2.5 text-xs text-emerald-300 flex items-center gap-2"
-              >
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Generated {exportedFormat}! Link copied to clipboard & invoice ready.</span>
-              </motion.div>
-            )}
-
-            {/* Rich Interactive Dual-Panel Invoice & Payment Simulator */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#0c0c12] p-4 sm:p-5 mb-5 shadow-inner">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-                {/* Panel Left: Branded Invoice Mockup */}
-                <div className="lg:col-span-7 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 space-y-3.5">
-                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src="/solstice-logo.jpg"
-                        alt="Solstice Creative"
-                        className="h-7 w-7 rounded-md object-cover border border-white/10"
-                      />
-                      <div>
-                        <div className="text-xs font-bold text-white leading-tight">Solstice Creative</div>
-                        <div className="text-[10px] font-mono text-zinc-500">Invoice #INV-2048</div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono border-white/10 text-zinc-400">
-                      Due: Oct 20, 2026
-                    </Badge>
-                  </div>
-
-                  {/* Customer Billed */}
-                  <div className="flex items-center justify-between text-xs bg-white/[0.02] rounded p-2 border border-white/[0.04]">
-                    <span className="text-zinc-400 text-[11px]">Billed To:</span>
-                    <div className="flex items-center gap-1.5 font-medium text-zinc-200">
-                      <img
-                        src="/astrid-avatar.jpg"
-                        alt="Astrid Lindholm"
-                        className="h-4 w-4 rounded-full object-cover"
-                      />
-                      <span>Astrid Lindholm</span>
-                    </div>
-                  </div>
-
-                  {/* Line Items */}
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between py-1 text-zinc-300">
-                      <span className="text-[11px]">Brand Identity & Design System</span>
-                      <span className="font-mono text-zinc-300">$3,200.00</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 text-zinc-300">
-                      <span className="text-[11px]">UI Component Library & Assets</span>
-                      <span className="font-mono text-zinc-300">$1,600.00</span>
-                    </div>
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between font-semibold">
-                      <span className="text-zinc-200">Total Amount Due:</span>
-                      <span className="font-mono text-base font-bold text-emerald-400">$4,800.00</span>
-                    </div>
-                  </div>
+            <div className="relative z-10">
+              {/* Header Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <Badge variant="outline" className="mb-2 font-mono text-[11px] text-cyan-300 border-cyan-500/30">
+                    1-CLICK INVOICES & PAYMENTS
+                  </Badge>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Get Paid Faster With Professional Invoices
+                  </h3>
+                  <p className="mt-1 text-xs sm:text-sm text-zinc-400 max-w-xl">
+                    Turn completed orders into clean, professional invoices in seconds.
+                    Clients pay directly online with one click, and your dashboard updates in real time.
+                  </p>
                 </div>
 
-                {/* Panel Right: Interactive Client Payment Terminal */}
-                <div className="lg:col-span-5 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 flex flex-col justify-between h-full space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-                        Payment Status
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-mono py-0.5 px-2 ${
-                          invoicePaid
-                            ? "text-emerald-300 bg-emerald-950/30 border-emerald-500/30"
-                            : "text-amber-300 bg-amber-950/30 border-amber-500/30"
-                        }`}
-                      >
-                        {invoicePaid ? "✓ Paid in Full" : "● Awaiting Payment"}
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExport("PDF Invoice")}
+                    className="h-8 text-xs border-white/10 hover:border-cyan-500/40 hover:bg-white/[0.04] text-zinc-300 cursor-pointer"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1 text-cyan-400" />
+                    <span>Download PDF</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExport("Payment Link")}
+                    className="h-8 text-xs border-white/10 hover:border-cyan-500/40 hover:bg-white/[0.04] text-zinc-300 cursor-pointer"
+                  >
+                    <Share2 className="h-3.5 w-3.5 mr-1 text-cyan-400" />
+                    <span>Copy Link</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Export notification badge if triggered */}
+              {exportedFormat && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 rounded-lg bg-emerald-950/40 border border-emerald-500/40 p-2.5 text-xs text-emerald-300 flex items-center gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Generated {exportedFormat}! Link copied to clipboard & invoice ready.</span>
+                </motion.div>
+              )}
+
+              {/* Rich Interactive Dual-Panel Invoice & Payment Simulator */}
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c0c12] p-4 sm:p-5 mb-5 shadow-inner">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                  {/* Panel Left: Branded Invoice Mockup */}
+                  <div className="lg:col-span-7 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 space-y-3.5">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src="/solstice-logo.jpg"
+                          alt="Solstice Creative"
+                          className="h-7 w-7 rounded-md object-cover border border-white/10"
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-white leading-tight">Solstice Creative</div>
+                          <div className="text-[10px] font-mono text-zinc-500">Invoice #INV-2048</div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono border-white/10 text-zinc-400">
+                        Due: Oct 20, 2026
                       </Badge>
                     </div>
 
-                    <p className="text-xs text-zinc-400 leading-relaxed">
-                      {invoicePaid
-                        ? "Payment of $4,800 received instantly. Receipt sent to astrid@solsticecreative.com."
-                        : "Client receives a frictionless 1-click checkout page with instant Apple Pay or card payments."}
-                    </p>
+                    {/* Customer Billed */}
+                    <div className="flex items-center justify-between text-xs bg-white/[0.02] rounded p-2 border border-white/[0.04]">
+                      <span className="text-zinc-400 text-[11px]">Billed To:</span>
+                      <div className="flex items-center gap-1.5 font-medium text-zinc-200">
+                        <img
+                          src="/astrid-avatar.jpg"
+                          alt="Astrid Lindholm"
+                          className="h-4 w-4 rounded-full object-cover"
+                        />
+                        <span>Astrid Lindholm</span>
+                      </div>
+                    </div>
+
+                    {/* Line Items */}
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between py-1 text-zinc-300">
+                        <span className="text-[11px]">Brand Identity & Design System</span>
+                        <span className="font-mono text-zinc-300">$3,200.00</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1 text-zinc-300">
+                        <span className="text-[11px]">UI Component Library & Assets</span>
+                        <span className="font-mono text-zinc-300">$1,600.00</span>
+                      </div>
+                      <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between font-semibold">
+                        <span className="text-zinc-200">Total Amount Due:</span>
+                        <span className="font-mono text-base font-bold text-emerald-400">$4,800.00</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Interactive Button */}
-                  <div className="space-y-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => setInvoicePaid(!invoicePaid)}
-                      className={`w-full text-xs font-semibold cursor-pointer transition-all shadow-md ${
-                        invoicePaid
-                          ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                          : "bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-cyan-950/40"
-                      }`}
-                    >
-                      {invoicePaid ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          <span>Reset Payment Demo</span>
+                  {/* Panel Right: Interactive Client Payment Terminal */}
+                  <div className="lg:col-span-5 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 flex flex-col justify-between h-full space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+                          Payment Status
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5">
-                          <CreditCard className="h-3.5 w-3.5" />
-                          <span>Simulate 1-Click Payment</span>
-                        </span>
-                      )}
-                    </Button>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-mono py-0.5 px-2 ${
+                            invoicePaid
+                              ? "text-emerald-300 bg-emerald-950/30 border-emerald-500/30"
+                              : "text-amber-300 bg-amber-950/30 border-amber-500/30"
+                          }`}
+                        >
+                          {invoicePaid ? "✓ Paid in Full" : "● Awaiting Payment"}
+                        </Badge>
+                      </div>
 
-                    <div className="flex items-center justify-center gap-3 text-[10px] text-zinc-500 pt-1">
-                      <span>Apple Pay</span>
-                      <span>•</span>
-                      <span>Visa / Mastercard</span>
-                      <span>•</span>
-                      <span>Direct Wire</span>
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                        {invoicePaid
+                          ? "Payment of $4,800 received instantly. Receipt sent to astrid@solsticecreative.com."
+                          : "Client receives a frictionless 1-click checkout page with instant Apple Pay or card payments."}
+                      </p>
+                    </div>
+
+                    {/* Interactive Button */}
+                    <div className="space-y-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => setInvoicePaid(!invoicePaid)}
+                        className={`w-full text-xs font-semibold cursor-pointer transition-all shadow-md ${
+                          invoicePaid
+                            ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                            : "bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-cyan-950/40"
+                        }`}
+                      >
+                        {invoicePaid ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                            <span>Reset Payment Demo</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5">
+                            <CreditCard className="h-3.5 w-3.5" />
+                            <span>Simulate 1-Click Payment</span>
+                          </span>
+                        )}
+                      </Button>
+
+                      <div className="flex items-center justify-center gap-3 text-[10px] text-zinc-500 pt-1">
+                        <span>Apple Pay</span>
+                        <span>•</span>
+                        <span>Visa / Mastercard</span>
+                        <span>•</span>
+                        <span>Direct Wire</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom 3 Metric Pills */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                <div className="text-zinc-500 text-[11px]">Invoice Creation Time</div>
-                <div className="text-white font-mono font-bold mt-1 text-sm">&lt; 15 Seconds</div>
-              </div>
-              <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                <div className="text-zinc-500 text-[11px]">Avg Payment Turnaround</div>
-                <div className="text-emerald-400 font-mono font-bold mt-1 text-sm">2.8 Days (2x Faster)</div>
-              </div>
-              <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
-                <div className="text-zinc-500 text-[11px]">Payment Reminders</div>
-                <div className="text-cyan-300 font-mono font-bold mt-1 text-sm">1-Click Automated</div>
+              {/* Bottom 3 Metric Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
+                  <div className="text-zinc-500 text-[11px]">Invoice Creation Time</div>
+                  <div className="text-white font-mono font-bold mt-1 text-sm">&lt; 15 Seconds</div>
+                </div>
+                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
+                  <div className="text-zinc-500 text-[11px]">Avg Payment Turnaround</div>
+                  <div className="text-emerald-400 font-mono font-bold mt-1 text-sm">2.8 Days (2x Faster)</div>
+                </div>
+                <div className="rounded-lg border border-white/[0.06] bg-[#101016] p-3 text-xs">
+                  <div className="text-zinc-500 text-[11px]">Payment Reminders</div>
+                  <div className="text-cyan-300 font-mono font-bold mt-1 text-sm">1-Click Automated</div>
+                </div>
               </div>
             </div>
           </motion.div>
