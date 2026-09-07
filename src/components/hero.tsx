@@ -26,16 +26,22 @@ export function Hero() {
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] p-1 pr-3.5 text-xs text-zinc-300 backdrop-blur-md hover:border-cyan-500/30 hover:bg-white/[0.07] transition-colors group cursor-pointer"
+          className="inline-flex items-center gap-2 sm:gap-2.5 rounded-full border border-white/10 bg-white/[0.04] p-1 pr-3 sm:pr-3.5 text-xs text-zinc-300 backdrop-blur-md hover:border-cyan-500/30 hover:bg-white/[0.07] transition-colors group cursor-pointer max-w-[92vw] sm:max-w-none shadow-xs"
         >
-          <Badge variant="indigo" className="gap-1.5 py-0.5 text-[11px] font-medium shadow-xs bg-cyan-500/15 text-cyan-300 border-cyan-500/30">
-            <Zap className="h-3 w-3 text-cyan-400" />
-            What's new
+          <Badge
+            variant="indigo"
+            className="shrink-0 whitespace-nowrap gap-1.5 px-2.5 py-0.5 text-[11px] sm:text-xs font-medium shadow-xs bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+          >
+            <Zap className="h-3.5 w-3.5 shrink-0 text-cyan-400 fill-cyan-400/20" />
+            <span>What's new</span>
           </Badge>
-          <span className="font-normal text-zinc-300">
-            Faster invoicing, smarter order tracking — agencies, shops, freelancers & consultants
+          <span className="font-normal text-zinc-300 truncate text-left">
+            <span className="sm:hidden">Faster invoicing & order tracking</span>
+            <span className="hidden sm:inline">
+              Faster invoicing, smarter order tracking — agencies, shops, freelancers & consultants
+            </span>
           </span>
-          <ChevronRight className="h-3 w-3 text-zinc-500 group-hover:translate-x-0.5 group-hover:text-cyan-300 transition-transform" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-zinc-500 group-hover:translate-x-0.5 group-hover:text-cyan-300 transition-transform" />
         </motion.div>
 
         {/* Universal Headline */}
