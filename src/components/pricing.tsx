@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Check, Sparkles, Zap, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ export function Pricing() {
         "Standard email support",
       ],
       cta: "Start Free 14-Day Trial",
-      href: "#cta",
+      href: "/register?plan=starter",
     },
     {
       name: "Business",
@@ -48,7 +49,7 @@ export function Pricing() {
         "Priority email & chat support",
       ],
       cta: "Start Free 14-Day Trial",
-      href: "#cta",
+      href: "/register?plan=business",
     },
     {
       name: "Pro Team",
@@ -67,7 +68,7 @@ export function Pricing() {
         "Dedicated VIP priority support",
       ],
       cta: "Start Free 14-Day Trial",
-      href: "#cta",
+      href: "/register?plan=pro",
     },
   ];
 
@@ -212,10 +213,10 @@ export function Pricing() {
                           : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
                       }`}
                     >
-                      <a href={tier.href} className="inline-flex items-center justify-center gap-2">
+                      <Link href={tier.href} className="inline-flex items-center justify-center gap-2">
                         <span>{tier.cta}</span>
                         <ArrowRight className="h-4 w-4" />
-                      </a>
+                      </Link>
                     </Button>
                   </div>
                 </Card>

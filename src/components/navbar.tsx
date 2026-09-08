@@ -200,7 +200,7 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
             asChild
             className="hidden sm:inline-flex text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/[0.05]"
           >
-            <a href="#pricing">Sign In</a>
+            <Link href="/login">Sign In</Link>
           </Button>
 
           <Button
@@ -208,10 +208,10 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
             asChild
             className="h-8 px-3.5 text-xs font-semibold group hover:shadow-[0_0_20px_rgba(56,189,248,0.35)] transition-shadow cursor-pointer bg-white text-zinc-950 hover:bg-zinc-200"
           >
-            <a href="#pricing" className="inline-flex items-center gap-1.5">
+            <Link href="/register" className="inline-flex items-center gap-1.5">
               <span>Try for Free</span>
               <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform duration-200" />
-            </a>
+            </Link>
           </Button>
 
           {/* Mobile Navigation Drawer Trigger */}
@@ -330,21 +330,21 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
 
               {/* Drawer Footer Actions */}
               <div className="mt-8 pt-5 border-t border-white/[0.08] flex flex-col gap-2.5">
-                <a
-                  href="#pricing"
+                <Link
+                  href="/register"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-semibold text-zinc-950 shadow-md cursor-pointer hover:bg-zinc-200 transition-colors"
                 >
                   <span>Start Free 14-Day Trial</span>
                   <ArrowRight className="h-3.5 w-3.5" />
-                </a>
-                <a
-                  href="#pricing"
+                </Link>
+                <Link
+                  href="/login"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/[0.06] transition-colors"
                 >
                   Sign In
-                </a>
+                </Link>
               </div>
             </SheetContent>
           </Sheet>

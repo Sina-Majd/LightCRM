@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Building2,
@@ -12,6 +13,8 @@ import {
   Search,
   Download,
   Check,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -29,6 +32,7 @@ interface CommandMenuProps {
 }
 
 export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
+  const router = useRouter();
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
   // Keyboard shortcut listener: Cmd+K or Ctrl+K
@@ -237,6 +241,47 @@ export function CommandMenu({ isOpen, onClose }: CommandMenuProps) {
               </div>
             </div>
             <CommandShortcut>Jump</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+
+        {/* Group 4: Account & Access */}
+        <CommandGroup heading="Account & Access">
+          <CommandItem
+            onSelect={() => {
+              onClose();
+              router.push("/login");
+            }}
+            className="flex items-center justify-between rounded-lg p-2 text-xs hover:bg-white/[0.06] cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-cyan-500/10 text-cyan-400">
+                <LogIn className="h-3.5 w-3.5" />
+              </div>
+              <div>
+                <div className="font-medium text-white">Sign In to LightCRM</div>
+                <div className="text-[11px] text-zinc-500">Access your workspace and customer data</div>
+              </div>
+            </div>
+            <CommandShortcut>↵</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            onSelect={() => {
+              onClose();
+              router.push("/register");
+            }}
+            className="flex items-center justify-between rounded-lg p-2 text-xs hover:bg-white/[0.06] cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                <UserPlus className="h-3.5 w-3.5" />
+              </div>
+              <div>
+                <div className="font-medium text-white">Start Free 14-Day Trial</div>
+                <div className="text-[11px] text-zinc-500">Create new workspace with no credit card</div>
+              </div>
+            </div>
+            <CommandShortcut>↵</CommandShortcut>
           </CommandItem>
         </CommandGroup>
       </CommandList>

@@ -1,19 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export function CtaBanner() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
-      setSubmitted(true);
+      router.push(`/register?email=${encodeURIComponent(email)}`);
+    } else {
+      router.push("/register");
     }
   };
 
@@ -58,43 +61,29 @@ export function CtaBanner() {
             </p>
 
             {/* Form */}
-            {submitted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mt-8 flex items-center gap-2 rounded-xl bg-emerald-950/40 border border-emerald-500/40 px-6 py-4 text-sm text-emerald-300 shadow-xl"
+            <form
+              onSubmit={handleSubmit}
+              className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full max-w-md"
+            >
+              <input
+                type="email"
+                required
+                placeholder="Enter your work email address..."
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-white/15 bg-white/[0.05] px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 backdrop-blur-sm"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full sm:w-auto shrink-0 font-semibold shadow-lg shadow-cyan-950/50 hover:shadow-[0_0_24px_rgba(56,189,248,0.4)] transition-all cursor-pointer bg-white text-zinc-950 hover:bg-zinc-200"
               >
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                <span>
-                  Welcome to LightCRM! Your setup link has been sent to{" "}
-                  <strong>{email}</strong>.
+                <span className="inline-flex items-center gap-1.5">
+                  <span>Start Free Trial</span>
+                  <ArrowRight className="h-4 w-4 text-zinc-950" />
                 </span>
-              </motion.div>
-            ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full max-w-md"
-              >
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email address..."
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-white/15 bg-white/[0.05] px-4 py-3 text-sm text-white placeholder-zinc-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 backdrop-blur-sm"
-                />
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full sm:w-auto shrink-0 font-semibold shadow-lg shadow-cyan-950/50 hover:shadow-[0_0_24px_rgba(56,189,248,0.4)] transition-all cursor-pointer bg-white text-zinc-950 hover:bg-zinc-200"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <span>Start Free Trial</span>
-                    <ArrowRight className="h-4 w-4 text-zinc-950" />
-                  </span>
-                </Button>
-              </form>
-            )}
+              </Button>
+            </form>
 
             {/* Feature Checklist */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-400 font-medium">

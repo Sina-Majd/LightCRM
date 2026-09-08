@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { ArrowRight, Play, ChevronRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { CLIENT_LOGOS } from "@/data/mock-data";
@@ -80,10 +81,10 @@ export function Hero() {
             asChild
             className="w-full sm:w-auto shadow-xl shadow-cyan-950/40 group cursor-pointer hover:shadow-[0_0_28px_rgba(56,189,248,0.35)] hover:bg-zinc-100 transition-all duration-200 bg-white text-zinc-950 font-semibold"
           >
-            <a href="#pricing" className="inline-flex items-center gap-2">
+            <Link href="/register" className="inline-flex items-center gap-2">
               <span>Start Free 14-Day Trial</span>
               <ArrowRight className="h-4 w-4 text-zinc-900 group-hover:translate-x-1 transition-transform duration-200" />
-            </a>
+            </Link>
           </Button>
 
           <Button

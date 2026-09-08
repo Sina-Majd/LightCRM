@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
 
@@ -12,7 +13,9 @@ export function Footer() {
           {/* Brand Column */}
           <div className="col-span-2 space-y-4">
             <div className="flex items-center">
-              <LightCrmLogo size="md" />
+              <Link href="/">
+                <LightCrmLogo size="md" />
+              </Link>
             </div>
 
             <p className="text-xs text-zinc-400 max-w-xs leading-relaxed">
@@ -125,9 +128,9 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="hover:text-white transition-colors">
+                <Link href="/register" className="hover:text-white transition-colors">
                   14-Day Free Trial
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
