@@ -121,9 +121,11 @@ export default function LoginPage() {
                 &ldquo;LightCRM cut our invoice turnaround from 14 days down to 24 hours. The interface is lightning fast and our entire team uses it without any training.&rdquo;
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
-                  AL
-                </div>
+                <img
+                  src="/astrid-avatar.jpg"
+                  alt="Astrid Lindholm"
+                  className="h-9 w-9 rounded-full object-cover border border-white/20 shadow-md shrink-0"
+                />
                 <div>
                   <div className="text-xs font-semibold text-white">Astrid Lindholm</div>
                   <div className="text-[11px] text-zinc-400">Founder & Director · Solstice Studio</div>
