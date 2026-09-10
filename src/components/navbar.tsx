@@ -58,12 +58,13 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-1 pl-4 text-xs font-medium text-zinc-400">
-            <a
-              href="#pipeline"
-              className="rounded-md px-3 py-1.5 text-zinc-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+            <Link
+              href="/dashboard"
+              className="rounded-md px-3 py-1.5 text-zinc-300 hover:text-white hover:bg-white/[0.04] transition-colors flex items-center gap-1.5 font-semibold"
             >
-              Dashboard
-            </a>
+              <span>Dashboard</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            </Link>
 
             {/* Who is it for Dropdown */}
             <div
@@ -217,12 +218,14 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
           {/* Mobile Navigation Drawer Trigger */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <button
-                className="flex md:hidden items-center justify-center rounded-lg border border-white/10 p-2 text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer transition-colors"
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex md:hidden h-8 w-8 p-0 items-center justify-center rounded-lg border border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer"
                 aria-label="Open Navigation Menu"
               >
                 <Menu className="h-4 w-4" />
-              </button>
+              </Button>
             </SheetTrigger>
             <SheetContent
               side="right"
@@ -262,14 +265,17 @@ export function Navbar({ onOpenCommand }: NavbarProps) {
                   <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 px-3 py-1">
                     Navigation
                   </div>
-                  <a
-                    href="#pipeline"
+                  <Link
+                    href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/[0.06] hover:text-white transition-colors"
                   >
                     <LayoutDashboard className="h-4 w-4 text-cyan-400" />
-                    <span>Dashboard</span>
-                  </a>
+                    <span className="font-semibold text-white">Dashboard</span>
+                    <span className="ml-auto text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                      Live
+                    </span>
+                  </Link>
                   <a
                     href="#features"
                     onClick={() => setMobileMenuOpen(false)}
