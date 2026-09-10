@@ -30,12 +30,23 @@
     box-shadow: 0 0 0 1000px transparent inset !important;
     transition: background-color 5000000s ease-in-out 0s;
   }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+  }
 }
 
 /* Custom glow and grid patterns */
 .bg-grid-pattern {
   background-image: linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
   background-size: 56px 56px;
   background-position: center top;
 }
@@ -67,6 +78,7 @@
 .glass-panel-hover {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .glass-panel-hover:hover {
   border-color: rgba(255, 255, 255, 0.16);
   transform: translateY(-2px);
@@ -78,21 +90,29 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: #09090b;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #27272a;
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
 
 /* Animations */
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
 }
 
 .animate-shimmer {
@@ -100,8 +120,15 @@
 }
 
 @keyframes pulseSlow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .animate-pulse-slow {
@@ -110,10 +137,13 @@
 
 /* Ambient Halo Background Animations */
 @keyframes haloPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1) translate3d(0, 0, 0);
     opacity: 0.65;
   }
+
   50% {
     transform: scale(1.08) translate3d(0, -10px, 0);
     opacity: 0.85;
@@ -125,9 +155,12 @@
 }
 
 @keyframes auroraDriftOne {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate3d(0, 0, 0) rotate(0deg);
   }
+
   50% {
     transform: translate3d(40px, -30px, 0) rotate(4deg);
   }
@@ -138,9 +171,12 @@
 }
 
 @keyframes auroraDriftTwo {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate3d(0, 0, 0) rotate(0deg);
   }
+
   50% {
     transform: translate3d(-35px, 25px, 0) rotate(-4deg);
   }
@@ -155,12 +191,15 @@
     top: -150px;
     opacity: 0;
   }
+
   20% {
     opacity: 1;
   }
+
   80% {
     opacity: 1;
   }
+
   100% {
     top: 100%;
     opacity: 0;
@@ -176,10 +215,13 @@
 }
 
 @keyframes particleFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) translateX(0px);
     opacity: 0.3;
   }
+
   50% {
     transform: translateY(-16px) translateX(8px);
     opacity: 0.8;
@@ -197,7 +239,7 @@
 
 .bg-circuit-grid {
   background-size: 48px 48px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
 }
@@ -210,6 +252,7 @@
   from {
     transform: translate3d(100%, 0, 0);
   }
+
   to {
     transform: translate3d(0, 0, 0);
   }
@@ -219,6 +262,7 @@
   from {
     transform: translate3d(0, 0, 0);
   }
+
   to {
     transform: translate3d(100%, 0, 0);
   }
@@ -228,6 +272,7 @@
   from {
     transform: translate3d(-100%, 0, 0);
   }
+
   to {
     transform: translate3d(0, 0, 0);
   }
@@ -237,6 +282,7 @@
   from {
     transform: translate3d(0, 0, 0);
   }
+
   to {
     transform: translate3d(-100%, 0, 0);
   }
@@ -246,6 +292,7 @@
   from {
     transform: translate3d(0, -100%, 0);
   }
+
   to {
     transform: translate3d(0, 0, 0);
   }
@@ -255,6 +302,7 @@
   from {
     transform: translate3d(0, 0, 0);
   }
+
   to {
     transform: translate3d(0, -100%, 0);
   }
@@ -264,6 +312,7 @@
   from {
     transform: translate3d(0, 100%, 0);
   }
+
   to {
     transform: translate3d(0, 0, 0);
   }
@@ -273,6 +322,7 @@
   from {
     transform: translate3d(0, 0, 0);
   }
+
   to {
     transform: translate3d(0, 100%, 0);
   }
@@ -282,6 +332,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -291,6 +342,7 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -337,4 +389,3 @@
 [data-slot="sheet-content"][data-side="bottom"][data-state="closed"] {
   animation: sheetSlideOutBottom 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-
