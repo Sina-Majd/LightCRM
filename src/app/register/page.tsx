@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 function RegisterContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
   const initialPlan = searchParams.get("plan") || "business";
@@ -80,7 +81,10 @@ function RegisterContent() {
     setTimeout(() => {
       setIsLoading(false);
       setStatusMessage("Account workspace created! Setting up your CRM...");
-    }, 1000);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 600);
+    }, 900);
   };
 
   return (
