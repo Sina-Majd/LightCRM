@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +43,10 @@ export default function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       setStatusMessage("Sign in successful! Redirecting to your dashboard...");
-    }, 900);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 600);
+    }, 800);
   };
 
   const handleForgotPassword = (e: React.MouseEvent) => {
