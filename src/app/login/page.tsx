@@ -34,7 +34,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [forgotPasswordNotice, setForgotPasswordNotice] = useState(false);
 
@@ -42,7 +41,6 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
-    setStatusMessage(null);
 
     try {
       const supabase = createClient();
@@ -60,10 +58,21 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success("Welcome back!", {
-        description: "Signing into your LightCRM workspace...",
+      toast.success("Sign in successful!", {
+        description: "Redirecting to your dashboard...",
+        position: "top-center",
+        icon: <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />,
+        className: "!bg-emerald-950/95 !border-emerald-500/40 !text-emerald-100 shadow-[0_10px_35px_-5px_rgba(16,185,129,0.3)] backdrop-blur-md",
+        classNames: {
+          title: "!text-emerald-200 font-semibold",
+          description: "!text-emerald-300/80 text-xs",
+        },
+        style: {
+          background: "rgba(6, 44, 30, 0.95)",
+          borderColor: "rgba(16, 185, 129, 0.4)",
+          color: "#ecfdf5",
+        },
       });
-      setStatusMessage("Sign in successful! Redirecting to your dashboard...");
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
@@ -214,17 +223,6 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              {/* Status Message Notification */}
-              {statusMessage && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-5 flex items-center gap-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 p-3 text-xs text-emerald-300"
-                >
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>{statusMessage}</span>
-                </motion.div>
-              )}
 
               {/* Forgot Password Notification Notice */}
               {forgotPasswordNotice && (
@@ -248,8 +246,7 @@ export default function LoginPage() {
                   variant="outline"
                   className="h-10 text-xs font-medium border-white/10 hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
                   onClick={() => {
-                    setStatusMessage("Connecting to Google OAuth...");
-                    setTimeout(() => setStatusMessage(null), 2500);
+                    toast.info("Connecting to Google OAuth...", { position: "top-center" });
                   }}
                 >
                   <svg className="h-4 w-4 mr-1.5" viewBox="0 0 24 24">
@@ -279,8 +276,7 @@ export default function LoginPage() {
                   variant="outline"
                   className="h-10 text-xs font-medium border-white/10 hover:border-white/20 hover:bg-white/[0.06] cursor-pointer"
                   onClick={() => {
-                    setStatusMessage("Connecting to GitHub OAuth...");
-                    setTimeout(() => setStatusMessage(null), 2500);
+                    toast.info("Connecting to GitHub OAuth...", { position: "top-center" });
                   }}
                 >
                   <svg className="h-4 w-4 mr-1.5 fill-current text-white" viewBox="0 0 24 24">
