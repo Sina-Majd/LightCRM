@@ -102,13 +102,17 @@ export function PipelineBoard({
     .filter((d) => d.stageId === "stage-won")
     .reduce((sum, d) => sum + d.value, 0);
 
+  const isDealInStage = (deal: Deal, stageId: string) => {
+    return deal.stageId === stageId || (!deal.stageId && stageId === "stage-new");
+  };
+
   const handleDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
     // Dropped outside a valid drop target
     if (!destination) return;
 
-    // Dropped in same position
+    // Dropped in exact same position in the same column
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
@@ -119,14 +123,10 @@ export function PipelineBoard({
     const sourceStageId = source.droppableId;
     const destStageId = destination.droppableId;
 
-    // Copy array
-    const updated = [...deals];
-    const movedDealIndex = updated.findIndex((d) => d.id === draggableId);
-    if (movedDealIndex === -1) return;
+    const movedDeal = deals.find((d) => d.id === draggableId);
+    if (!movedDeal) return;
 
-    const [movedDeal] = updated.splice(movedDealIndex, 1);
-
-    // Update the stage if moved to another column
+    // Update the stage attributes if moved to another column
     const updatedDeal: Deal = {
       ...movedDeal,
       stageId: destStageId,
@@ -151,11 +151,7 @@ export function PipelineBoard({
         action: {
           label: "Undo",
           onClick: () => {
-            onDealsChange(
-              deals.map((d) =>
-                d.id === updatedDeal.id ? { ...d, stageId: sourceStageId } : d
-              )
-            );
+            onDealsChange(deals);
           },
         },
         duration: 5000,
@@ -167,24 +163,64 @@ export function PipelineBoard({
         action: {
           label: "Undo",
           onClick: () => {
-            onDealsChange(
-              deals.map((d) =>
-                d.id === updatedDeal.id ? { ...d, stageId: sourceStageId } : d
-              )
-            );
+            onDealsChange(deals);
           },
         },
         duration: 5000,
       });
     }
 
-    // Insert back in target column position
-    const destColumnDeals = updated.filter((d) => d.stageId === destStageId);
-    const otherColumnDeals = updated.filter((d) => d.stageId !== destStageId);
+    // Get the destination column's deals currently visible on screen (respecting filters)
+    const visibleDestDeals = filteredDeals.filter(
+      (d) => d.id !== draggableId && isDealInStage(d, destStageId)
+    );
 
-    destColumnDeals.splice(destination.index, 0, updatedDeal);
+    // Get all deals belonging to destStageId from the complete unfiltered list
+    const allDestDeals = deals.filter(
+      (d) => d.id !== draggableId && isDealInStage(d, destStageId)
+    );
 
-    onDealsChange([...otherColumnDeals, ...destColumnDeals]);
+    // Calculate exact insertion index preserving top/bottom/middle placement
+    let insertIndex: number;
+    if (destination.index <= 0 || visibleDestDeals.length === 0) {
+      // User dropped at the very top of the column
+      insertIndex = 0;
+    } else if (destination.index >= visibleDestDeals.length) {
+      // User dropped at the very bottom of the column
+      insertIndex = allDestDeals.length;
+    } else {
+      // User dropped before a specific visible card
+      const targetDeal = visibleDestDeals[destination.index];
+      const foundIdx = allDestDeals.findIndex((d) => d.id === targetDeal?.id);
+      insertIndex = foundIdx !== -1 ? foundIdx : destination.index;
+    }
+
+    // Insert the updated deal at the exact target location
+    allDestDeals.splice(insertIndex, 0, updatedDeal);
+
+    // Build the new unified deals array stage-by-stage to keep stable organization
+    const nextDeals: Deal[] = [];
+    for (const stage of stages) {
+      if (stage.id === destStageId) {
+        nextDeals.push(...allDestDeals);
+      } else {
+        nextDeals.push(
+          ...deals.filter(
+            (d) => d.id !== draggableId && isDealInStage(d, stage.id)
+          )
+        );
+      }
+    }
+
+    // Include any edge-case deals not in the active stages list
+    const includedIds = new Set(nextDeals.map((d) => d.id));
+    for (const d of deals) {
+      if (!includedIds.has(d.id) && d.id !== draggableId) {
+        nextDeals.push(d);
+      }
+    }
+
+    onDealsChange(nextDeals);
   };
 
   return (

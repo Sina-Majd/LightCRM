@@ -75,6 +75,64 @@ function dedupeById<T extends { id: string }>(items: T[]): T[] {
   return result;
 }
 
+// Helpers to maintain custom DnD card ordering across page reloads and Supabase syncs
+function saveDealOrder(dealsList: Deal[]) {
+  if (typeof window === "undefined" || !dealsList) return;
+  try {
+    localStorage.setItem(
+      "lightcrm_deals_order",
+      JSON.stringify(dealsList.map((d) => d.id))
+    );
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+function orderDealsBySavedOrder(dealsList: Deal[]): Deal[] {
+  if (typeof window === "undefined" || !dealsList) return dealsList;
+  try {
+    const raw = localStorage.getItem("lightcrm_deals_order");
+    if (!raw) return dealsList;
+    const orderList: string[] = JSON.parse(raw);
+    const orderMap = new Map(orderList.map((id, index) => [id, index]));
+
+    return [...dealsList].sort((a, b) => {
+      const idxA = orderMap.has(a.id) ? orderMap.get(a.id)! : 999999;
+      const idxB = orderMap.has(b.id) ? orderMap.get(b.id)! : 999999;
+      return idxA - idxB;
+    });
+  } catch {
+    return dealsList;
+  }
+}
+
+function mergeDealsPreservingOrder(prevDeals: Deal[], freshDeals: Deal[]): Deal[] {
+  if (!prevDeals || prevDeals.length === 0) return freshDeals;
+
+  const freshMap = new Map(freshDeals.map((d) => [d.id, d]));
+  const freshIds = new Set(freshDeals.map((d) => d.id));
+
+  // 1. Keep existing deals in their current relative order, updating data from freshDeals
+  const updatedExisting: Deal[] = [];
+  for (const prev of prevDeals) {
+    if (freshIds.has(prev.id)) {
+      const fresh = freshMap.get(prev.id)!;
+      updatedExisting.push({
+        ...prev,
+        ...fresh,
+        stageId: fresh.stageId || prev.stageId,
+      });
+      freshMap.delete(prev.id);
+    }
+  }
+
+  // 2. Any brand new deals in freshDeals that were not in prevDeals:
+  const brandNew = Array.from(freshMap.values());
+  const result = [...updatedExisting, ...brandNew];
+  saveDealOrder(result);
+  return result;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DashboardTab>("pipeline");
@@ -144,9 +202,10 @@ export default function DashboardPage() {
         }
 
         if (dl && dl.length > 0) {
-          setDeals(dedupeById(dl));
+          const ordered = dedupeById(orderDealsBySavedOrder(dl));
+          setDeals(ordered);
         } else {
-          setDeals(INITIAL_DEALS);
+          setDeals(orderDealsBySavedOrder(INITIAL_DEALS));
         }
 
         if (ld && ld.length > 0) {
@@ -205,7 +264,7 @@ export default function DashboardPage() {
         async () => {
           const freshDeals = await fetchDeals(user.id);
           if (freshDeals && freshDeals.length > 0) {
-            setDeals(dedupeById(freshDeals));
+            setDeals((prev) => dedupeById(mergeDealsPreservingOrder(prev, freshDeals)));
           }
         }
       )
@@ -383,6 +442,7 @@ export default function DashboardPage() {
   // Handle Drag & Drop across pipeline columns
   const handleDealsChange = async (updatedDeals: Deal[]) => {
     const prevDeals = deals;
+    saveDealOrder(updatedDeals);
     setDeals(dedupeById(updatedDeals));
 
     // Identify which deal changed stage
@@ -474,7 +534,11 @@ export default function DashboardPage() {
   };
 
   const handleDeleteDeal = async (dealId: string) => {
-    setDeals((prev) => prev.filter((d) => d.id !== dealId));
+    setDeals((prev) => {
+      const updated = prev.filter((d) => d.id !== dealId);
+      saveDealOrder(updated);
+      return updated;
+    });
     if (selectedDeal?.id === dealId) {
       setIsDetailOpen(false);
       setSelectedDeal(null);
