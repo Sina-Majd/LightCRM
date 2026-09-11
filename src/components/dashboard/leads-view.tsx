@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Edit,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Lead, LeadStatus, LeadSource } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,29 +98,30 @@ export function LeadsView({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
 
-  // Filter leads
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.title.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter leads with guaranteed unique IDs
+  const filteredLeads = React.useMemo(() => {
+    const seen = new Set<string>();
+    return leads.filter((lead) => {
+      if (!lead || !lead.id || seen.has(lead.id)) return false;
+      seen.add(lead.id);
 
-    const matchesStatus =
-      statusFilter === "all" || lead.status === statusFilter;
+      const matchesSearch =
+        lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lead.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesSource =
-      sourceFilter === "all" || lead.source === sourceFilter;
+      const matchesStatus =
+        statusFilter === "all" || lead.status === statusFilter;
 
-    return matchesSearch && matchesStatus && matchesSource;
-  });
+      const matchesSource =
+        sourceFilter === "all" || lead.source === sourceFilter;
+
+      return matchesSearch && matchesStatus && matchesSource;
+    });
+  }, [leads, searchQuery, statusFilter, sourceFilter]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -137,30 +139,30 @@ export function LeadsView({
 
   const handleConvert = (lead: Lead) => {
     onConvertToDeal(lead);
-    showToast(`Lead ${lead.name} converted into active pipeline opportunity!`);
+    toast.success("Lead Converted", {
+      description: `${lead.name} (${lead.company}) converted into an active pipeline opportunity.`,
+      icon: <ArrowRightLeft className="h-4 w-4 text-cyan-400" />,
+    });
   };
 
   const handleDeleteSingle = (lead: Lead) => {
     onDeleteLead?.(lead.id);
     setSelectedLeadIds((prev) => prev.filter((id) => id !== lead.id));
-    showToast(`Lead ${lead.name} removed.`);
+    toast.info("Lead Removed", {
+      description: `${lead.name} removed from your database.`,
+    });
   };
 
   const handleBatchDelete = () => {
     selectedLeadIds.forEach((id) => onDeleteLead?.(id));
-    showToast(`Removed ${selectedLeadIds.length} leads.`);
+    toast.info("Batch Delete Complete", {
+      description: `Removed ${selectedLeadIds.length} leads.`,
+    });
     setSelectedLeadIds([]);
   };
 
   return (
     <div className="space-y-4">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-xs font-semibold text-emerald-300 flex items-center gap-2 shadow-lg">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* Top Filter and Controls Bar using Shadcn Tabs and Select */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#111117] p-4">
@@ -233,7 +235,10 @@ export function LeadsView({
               className="h-7 text-[11px] border-rose-500/30 text-rose-300 hover:bg-rose-500/10 cursor-pointer"
               onClick={() => {
                 selectedLeadIds.forEach((id) => onUpdateLeadStatus?.(id, "hot"));
-                showToast(`Marked ${selectedLeadIds.length} leads as Hot.`);
+                toast.success("Leads Updated", {
+                  description: `Marked ${selectedLeadIds.length} leads as Hot.`,
+                  icon: <Flame className="h-4 w-4 text-rose-400" />,
+                });
               }}
             >
               <Flame className="h-3 w-3 mr-1 text-rose-400" />
@@ -245,7 +250,10 @@ export function LeadsView({
               className="h-7 text-[11px] border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
               onClick={() => {
                 selectedLeadIds.forEach((id) => onUpdateLeadStatus?.(id, "qualified"));
-                showToast(`Marked ${selectedLeadIds.length} leads as Qualified.`);
+                toast.success("Leads Updated", {
+                  description: `Marked ${selectedLeadIds.length} leads as Qualified.`,
+                  icon: <CheckCircle2 className="h-4 w-4 text-cyan-400" />,
+                });
               }}
             >
               <CheckCircle2 className="h-3 w-3 mr-1 text-cyan-400" />
@@ -255,7 +263,12 @@ export function LeadsView({
               size="sm"
               variant="outline"
               className="h-7 text-[11px] border-white/10 text-zinc-300 hover:bg-white/[0.06] cursor-pointer"
-              onClick={() => showToast(`Exported ${selectedLeadIds.length} leads to CSV.`)}
+              onClick={() =>
+                toast.success("CSV Export Complete", {
+                  description: `Exported ${selectedLeadIds.length} leads to CSV.`,
+                  icon: <Download className="h-3 w-3 text-zinc-300" />,
+                })
+              }
             >
               <Download className="h-3 w-3 mr-1" />
               Export CSV
@@ -445,14 +458,24 @@ export function LeadsView({
                             <span>Compose Email</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => showToast(`Call logged with ${lead.name}`)}
+                            onClick={() =>
+                              toast.success("Call Logged", {
+                                description: `Call recorded with ${lead.name}.`,
+                                icon: <PhoneCall className="h-3.5 w-3.5 text-cyan-400" />,
+                              })
+                            }
                             className="text-xs cursor-pointer flex items-center gap-2"
                           >
                             <PhoneCall className="h-3.5 w-3.5" />
                             <span>Log Phone Call</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => showToast(`Meeting invite generated for ${lead.name}`)}
+                            onClick={() =>
+                              toast.success("Meeting Scheduled", {
+                                description: `Meeting invite generated for ${lead.name}.`,
+                                icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
+                              })
+                            }
                             className="text-xs cursor-pointer flex items-center gap-2"
                           >
                             <Calendar className="h-3.5 w-3.5" />

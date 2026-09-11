@@ -16,6 +16,7 @@ import {
   Calendar,
   AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,12 +72,7 @@ export function TasksView({
   const [newRelated, setNewRelated] = useState("");
   const [newType, setNewType] = useState<"call" | "email" | "meeting" | "review">("email");
   const [newPriority, setNewPriority] = useState<DealPriority>("high");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,31 +91,33 @@ export function TasksView({
     };
 
     onAddTask(newTask);
-    showToast(`Task created: "${newTask.title}"`);
+    toast.success("Task Created", {
+      description: `"${newTask.title}" added to agenda.`,
+      icon: <CheckCircle2 className="h-4 w-4 text-cyan-400" />,
+    });
     setNewTitle("");
     setNewRelated("");
   };
 
-  // Filter tasks
-  const filteredTasks = tasks.filter((t) => {
-    if (filterTab === "pending") return !t.completed;
-    if (filterTab === "completed") return t.completed;
-    if (filterTab === "urgent") return !t.completed && (t.priority === "urgent" || t.priority === "high");
-    return true;
-  });
+  // Filter tasks with guaranteed unique IDs
+  const filteredTasks = React.useMemo(() => {
+    const seen = new Set<string>();
+    return tasks.filter((t) => {
+      if (!t || !t.id || seen.has(t.id)) return false;
+      seen.add(t.id);
+
+      if (filterTab === "pending") return !t.completed;
+      if (filterTab === "completed") return t.completed;
+      if (filterTab === "urgent") return !t.completed && (t.priority === "urgent" || t.priority === "high");
+      return true;
+    });
+  }, [tasks, filterTab]);
 
   const pendingCount = tasks.filter((t) => !t.completed).length;
   const completedCount = tasks.filter((t) => t.completed).length;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-xs font-semibold text-emerald-300 flex items-center gap-2 shadow-lg">
-          <Sparkles className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* Quick Add Task Strip */}
       <Card className="bg-[#111117] border-white/[0.08] shadow-lg">
@@ -308,7 +306,12 @@ export function TasksView({
                         <span>{task.completed ? "Mark as Pending" : "Mark as Completed"}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => showToast(`Rescheduled "${task.title}" for tomorrow.`)}
+                        onClick={() =>
+                          toast.info("Task Rescheduled", {
+                            description: `"${task.title}" rescheduled for tomorrow.`,
+                            icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
+                          })
+                        }
                         className="text-xs cursor-pointer flex items-center gap-2"
                       >
                         <Calendar className="h-3.5 w-3.5 text-cyan-400" />
@@ -319,7 +322,10 @@ export function TasksView({
                         <DropdownMenuItem
                           onClick={() => {
                             onDeleteTask(task.id);
-                            showToast("Task removed.");
+                            toast.info("Task Removed", {
+                              description: "Task removed from agenda.",
+                              icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
+                            });
                           }}
                           className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                         >

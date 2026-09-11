@@ -16,6 +16,7 @@ import {
   Phone,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Customer, CustomerTier, CustomerHealth } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,24 +87,25 @@ export function CustomersView({
   onAddOpportunityForCustomer,
 }: CustomersViewProps) {
   const [tierFilter, setTierFilter] = useState<string>("all");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
 
-  const filteredCustomers = customers.filter((cust) => {
-    const matchesSearch =
-      cust.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cust.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cust.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cust.location.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredCustomers = React.useMemo(() => {
+    const seen = new Set<string>();
+    return customers.filter((cust) => {
+      if (!cust || !cust.id || seen.has(cust.id)) return false;
+      seen.add(cust.id);
 
-    const matchesTier = tierFilter === "all" || cust.tier === tierFilter;
+      const matchesSearch =
+        cust.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cust.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cust.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cust.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && matchesTier;
-  });
+      const matchesTier = tierFilter === "all" || cust.tier === tierFilter;
+
+      return matchesSearch && matchesTier;
+    });
+  }, [customers, searchQuery, tierFilter]);
 
   const totalPortfolioLtv = customers.reduce((sum, c) => sum + c.ltv, 0);
   const avgHealth = Math.round(
@@ -112,13 +114,6 @@ export function CustomersView({
 
   return (
     <div className="space-y-4">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-xs font-semibold text-emerald-300 flex items-center gap-2 shadow-lg">
-          <Sparkles className="h-4 w-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* Portfolio Quick Summary Strip via Shadcn Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -362,21 +357,36 @@ export function CustomersView({
                         <span>Compose Email</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => showToast(`Call logged with ${customer.name}`)}
+                        onClick={() =>
+                          toast.success("Call Logged", {
+                            description: `Call recorded for ${customer.name}.`,
+                            icon: <Phone className="h-3.5 w-3.5 text-cyan-400" />,
+                          })
+                        }
                         className="text-xs cursor-pointer flex items-center gap-2"
                       >
                         <Phone className="h-3.5 w-3.5" />
                         <span>Log Phone Call</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => showToast(`Invoice generated for ${customer.company}`)}
+                        onClick={() =>
+                          toast.success("Invoice Generated", {
+                            description: `Draft invoice generated for ${customer.company}.`,
+                            icon: <FileText className="h-3.5 w-3.5 text-cyan-400" />,
+                          })
+                        }
                         className="text-xs cursor-pointer flex items-center gap-2"
                       >
                         <FileText className="h-3.5 w-3.5" />
                         <span>Generate Invoice</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => showToast(`Touchpoint logged for ${customer.company}`)}
+                        onClick={() =>
+                          toast.success("Touchpoint Logged", {
+                            description: `Client touchpoint recorded for ${customer.company}.`,
+                            icon: <PhoneCall className="h-3.5 w-3.5 text-cyan-400" />,
+                          })
+                        }
                         className="text-xs cursor-pointer flex items-center gap-2"
                       >
                         <PhoneCall className="h-3.5 w-3.5" />
@@ -388,7 +398,10 @@ export function CustomersView({
                       <DropdownMenuItem
                         onClick={() => {
                           onDeleteCustomer?.(customer.id);
-                          showToast(`Account ${customer.company} removed.`);
+                          toast.info("Customer Removed", {
+                            description: `Account ${customer.company} removed from records.`,
+                            icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
+                          });
                         }}
                         className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                       >

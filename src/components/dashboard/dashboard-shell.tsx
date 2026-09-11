@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   Kanban,
   Users,
@@ -48,6 +49,8 @@ import {
 } from "@/components/ui/sheet";
 import { CRMNotification } from "@/data/dashboard-mock-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { UserProfile, updateUserStatus } from "@/lib/supabase/crm-service";
 
 export type DashboardTab =
   | "pipeline"
@@ -65,6 +68,7 @@ interface DashboardShellProps {
   onOpenCommandMenu?: () => void;
   notifications: CRMNotification[];
   onMarkNotificationRead?: (id: string) => void;
+  userProfile?: UserProfile | null;
   counts: {
     deals: number;
     leads: number;
@@ -83,12 +87,47 @@ export function DashboardShell({
   onOpenCommandMenu,
   notifications,
   onMarkNotificationRead,
+  userProfile,
   counts,
   children,
 }: DashboardShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [activeWorkspace, setActiveWorkspace] = useState("Acme Global · Enterprise");
-  const [userStatus, setUserStatus] = useState<"Available" | "Away" | "Do Not Disturb">("Available");
+  const [userStatus, setUserStatus] = useState<"Available" | "Away" | "Do Not Disturb">(
+    userProfile?.status || "Available"
+  );
+  const [activeWorkspace, setActiveWorkspace] = useState(
+    userProfile
+      ? `${userProfile.companyName} · ${userProfile.plan.toUpperCase()}`
+      : "Acme Global · Enterprise"
+  );
+
+  useEffect(() => {
+    if (userProfile?.companyName) {
+      setActiveWorkspace(
+        `${userProfile.companyName} · ${userProfile.plan.toUpperCase()}`
+      );
+    }
+  }, [userProfile]);
+
+  const handleStatusChange = (status: "Available" | "Away" | "Do Not Disturb") => {
+    setUserStatus(status);
+    toast.success("Status Updated", {
+      description: `Your status is now ${status}.`,
+    });
+    if (userProfile?.id) {
+      updateUserStatus(userProfile.id, status);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      window.location.href = "/login";
+    } catch (e) {
+      window.location.href = "/login";
+    }
+  };
 
   const statusColorMap: Record<"Available" | "Away" | "Do Not Disturb", string> = {
     Available: "bg-emerald-400",
@@ -96,7 +135,16 @@ export function DashboardShell({
     "Do Not Disturb": "bg-red-500",
   };
 
-  const unreadNotifications = notifications.filter((n) => !n.read).length;
+  const uniqueNotifications = React.useMemo(() => {
+    const seen = new Set<string>();
+    return notifications.filter((n) => {
+      if (!n || !n.id || seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    });
+  }, [notifications]);
+
+  const unreadNotifications = uniqueNotifications.filter((n) => !n.read).length;
 
   const navItems: Array<{
     id: DashboardTab;
@@ -281,7 +329,7 @@ export function DashboardShell({
                   </Avatar>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-white truncate">
-                      Jane Doe
+                      {userProfile?.fullName || "Alex Rivera"}
                     </div>
                     <div className="text-[10px] text-zinc-400 flex items-center gap-1.5">
                       <span className={`h-1.5 w-1.5 rounded-full ${statusColorMap[userStatus]}`} />
@@ -294,25 +342,28 @@ export function DashboardShell({
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 bg-[#12121c] border-white/10 text-zinc-100 mb-2">
               <DropdownMenuLabel className="text-xs font-semibold">
-                Jane Doe (Head of Sales)
+                {userProfile?.fullName || "Alex Rivera"} ({userProfile?.role || "Head of Sales"})
               </DropdownMenuLabel>
+              <div className="px-2 py-1 text-[10px] text-zinc-400 truncate">
+                {userProfile?.email || "demo@lightcrm.io"}
+              </div>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
-                onClick={() => setUserStatus("Available")}
+                onClick={() => handleStatusChange("Available")}
                 className="text-xs cursor-pointer flex items-center gap-2"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span>Set status: Available</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setUserStatus("Away")}
+                onClick={() => handleStatusChange("Away")}
                 className="text-xs cursor-pointer flex items-center gap-2"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                 <span>Set status: Away</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setUserStatus("Do Not Disturb")}
+                onClick={() => handleStatusChange("Do Not Disturb")}
                 className="text-xs cursor-pointer flex items-center gap-2"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -320,13 +371,11 @@ export function DashboardShell({
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem
-                asChild
-                className="text-xs cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                onClick={handleSignOut}
+                className="text-xs cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 flex items-center gap-2"
               >
-                <Link href="/" className="flex items-center gap-2 w-full text-red-400 hover:text-red-300">
-                  <LogOut className="h-3.5 w-3.5 text-red-400" />
-                  <span>Sign out</span>
-                </Link>
+                <LogOut className="h-3.5 w-3.5 text-red-400" />
+                <span>Sign out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -405,7 +454,7 @@ export function DashboardShell({
                 </div>
 
                 <div className="space-y-1 max-h-72 overflow-y-auto py-1">
-                  {notifications.map((notif) => (
+                  {uniqueNotifications.map((notif) => (
                     <div
                       key={notif.id}
                       onClick={() => onMarkNotificationRead?.(notif.id)}
