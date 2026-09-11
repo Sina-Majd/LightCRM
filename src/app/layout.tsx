@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Toaster } from "@/components/ui/sonner";
+
 export default function RootLayout({
   children,
 }: {
@@ -47,6 +49,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-[#09090b] text-zinc-100 overflow-x-hidden"
       >
         {children}
+        <Toaster position="bottom-right" closeButton />
       </body>
     </html>
   );
