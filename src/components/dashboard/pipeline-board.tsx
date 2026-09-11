@@ -13,13 +13,35 @@ import {
   Filter,
   Sparkles,
   Trophy,
+  CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
 import { DealCard } from "./deal-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Static dot styles to guarantee Tailwind CSS compiler includes all color variations
+const STAGE_DOT_CLASSES: Record<string, string> = {
+  "stage-new": "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]",
+  "stage-qualified": "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]",
+  "stage-proposal": "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]",
+  "stage-negotiation": "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]",
+  "stage-won": "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]",
+};
+
+function getStageDotClass(stageId: string, stageColor: string): string {
+  if (STAGE_DOT_CLASSES[stageId]) return STAGE_DOT_CLASSES[stageId];
+  if (stageColor.includes("blue")) return "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]";
+  if (stageColor.includes("cyan")) return "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]";
+  if (stageColor.includes("indigo")) return "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]";
+  if (stageColor.includes("amber")) return "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]";
+  if (stageColor.includes("emerald") || stageColor.includes("green")) return "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]";
+  if (stageColor.includes("purple")) return "bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.6)]";
+  return "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]";
+}
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
@@ -41,20 +63,35 @@ export function PipelineBoard({
   searchQuery,
 }: PipelineBoardProps) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [celebrateWon, setCelebrateWon] = useState<string | null>(null);
 
-  // Filter deals based on search term & priority
-  const filteredDeals = deals.filter((deal) => {
-    const matchesSearch =
-      deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deal.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      deal.contact.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter deals based on search term & priority with guaranteed unique IDs
+  const filteredDeals = React.useMemo(() => {
+    if (!Array.isArray(deals)) return [];
+    const seen = new Set<string>();
+    const q = (searchQuery || "").trim().toLowerCase();
 
-    const matchesPriority =
-      priorityFilter === "all" || deal.priority === priorityFilter;
+    return deals.filter((deal) => {
+      if (!deal || !deal.id || seen.has(deal.id)) return false;
+      seen.add(deal.id);
 
-    return matchesSearch && matchesPriority;
-  });
+      const title = (deal.title || "").toLowerCase();
+      const company = (deal.company || "").toLowerCase();
+      const contact = (deal.contact || "").toLowerCase();
+
+      const matchesSearch =
+        !q ||
+        title.includes(q) ||
+        company.includes(q) ||
+        contact.includes(q);
+
+      const matchesPriority =
+        !priorityFilter ||
+        priorityFilter === "all" ||
+        deal.priority === priorityFilter;
+
+      return matchesSearch && matchesPriority;
+    });
+  }, [deals, searchQuery, priorityFilter]);
 
   // Calculate overall metrics
   const totalPipelineValue = deals
@@ -107,10 +144,38 @@ export function PipelineBoard({
           : 30,
     };
 
-    // If moved to Closed Won, trigger celebration flash
+    // Notify stage change via toast with Undo action
     if (destStageId === "stage-won" && sourceStageId !== "stage-won") {
-      setCelebrateWon(`🎉 ${updatedDeal.company} moved to Closed Won!`);
-      setTimeout(() => setCelebrateWon(null), 4500);
+      toast.success(`${updatedDeal.company} moved to Closed Won`, {
+        description: `${updatedDeal.title} (${updatedDeal.formattedValue}) successfully closed.`,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            onDealsChange(
+              deals.map((d) =>
+                d.id === updatedDeal.id ? { ...d, stageId: sourceStageId } : d
+              )
+            );
+          },
+        },
+        duration: 5000,
+      });
+    } else if (destStageId !== sourceStageId) {
+      const targetStage = stages.find((s) => s.id === destStageId);
+      toast(`${updatedDeal.company} stage updated`, {
+        description: `Moved to ${targetStage?.title || "new stage"}.`,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            onDealsChange(
+              deals.map((d) =>
+                d.id === updatedDeal.id ? { ...d, stageId: sourceStageId } : d
+              )
+            );
+          },
+        },
+        duration: 5000,
+      });
     }
 
     // Insert back in target column position
@@ -185,32 +250,14 @@ export function PipelineBoard({
         </div>
       </div>
 
-      {/* Celebratory Won Alert Banner */}
-      <AnimatePresence>
-        {celebrateWon && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-xs font-semibold text-emerald-300 flex items-center justify-between shadow-lg shadow-emerald-950/30"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-emerald-400 animate-spin" />
-              <span>{celebrateWon}</span>
-            </div>
-            <span className="font-mono text-[10px] text-emerald-400/80">
-              Revenue added to closed pool
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Drag and Drop Stage Columns Container */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-3.5 items-start pb-6">
           {stages.map((stage) => {
             const stageDeals = filteredDeals.filter(
-              (deal) => deal.stageId === stage.id
+              (deal) => deal.stageId === stage.id || (!deal.stageId && stage.id === "stage-new")
             );
             const stageTotalValue = stageDeals.reduce(
               (acc, d) => acc + d.value,
@@ -226,7 +273,7 @@ export function PipelineBoard({
                 <div className={`p-3.5 border-b border-white/[0.06] bg-gradient-to-b ${stage.bgGradient}`}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${stage.color.replace("text-", "bg-")}`} />
+                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStageDotClass(stage.id, stage.color)}`} />
                       <h3 className="text-xs font-bold text-white tracking-tight">
                         {stage.title}
                       </h3>
@@ -269,14 +316,42 @@ export function PipelineBoard({
                           onSelect={onSelectDeal}
                           onDeleteDeal={onDeleteDeal}
                           onMoveToStage={(dealId, targetStageId) => {
+                            const targetStage = stages.find((s) => s.id === targetStageId);
                             onDealsChange(
                               deals.map((d) =>
                                 d.id === dealId ? { ...d, stageId: targetStageId } : d
                               )
                             );
                             if (targetStageId === "stage-won") {
-                              setCelebrateWon(`🎉 ${deal.company} moved to Closed Won!`);
-                              setTimeout(() => setCelebrateWon(null), 4500);
+                              toast.success(`${deal.company} moved to Closed Won`, {
+                                description: `${deal.title} (${deal.formattedValue}) successfully closed.`,
+                                action: {
+                                  label: "Undo",
+                                  onClick: () => {
+                                    onDealsChange(
+                                      deals.map((d) =>
+                                        d.id === deal.id ? { ...d, stageId: deal.stageId } : d
+                                      )
+                                    );
+                                  },
+                                },
+                                duration: 5000,
+                              });
+                            } else {
+                              toast(`${deal.company} stage updated`, {
+                                description: `Moved to ${targetStage?.title || "new stage"}.`,
+                                action: {
+                                  label: "Undo",
+                                  onClick: () => {
+                                    onDealsChange(
+                                      deals.map((d) =>
+                                        d.id === deal.id ? { ...d, stageId: deal.stageId } : d
+                                      )
+                                    );
+                                  },
+                                },
+                                duration: 5000,
+                              });
                             }
                           }}
                         />
