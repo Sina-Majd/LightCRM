@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   DashboardShell,
   DashboardTab,
@@ -15,6 +16,7 @@ import {
   CreateRecordDialog,
   RecordType,
 } from "@/components/dashboard/create-record-dialog";
+import { LightCrmLogo } from "@/components/lightcrm-logo";
 import { CommandMenu } from "@/components/command-menu";
 import {
   INITIAL_PIPELINE_STAGES,
@@ -29,22 +31,67 @@ import {
   Customer,
   CRMTask,
   CRMNotification,
+  PipelineStage,
 } from "@/data/dashboard-mock-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import {
+  UserProfile,
+  fetchUserProfile,
+  fetchPipelineStages,
+  fetchDeals,
+  createDeal,
+  updateDealStage,
+  deleteDeal,
+  fetchLeads,
+  createLead,
+  updateLeadStatus,
+  deleteLead,
+  convertLeadToDeal,
+  fetchCustomers,
+  createCustomer,
+  deleteCustomer,
+  fetchTasks,
+  createTask,
+  toggleTask,
+  deleteTask,
+  fetchNotifications,
+  createNotification,
+  markNotificationRead,
+} from "@/lib/supabase/crm-service";
+import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
+
+// Helper to guarantee unique IDs in arrays across optimistic and realtime updates
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    if (item && item.id && !seen.has(item.id)) {
+      seen.add(item.id);
+      result.push(item);
+    }
+  }
+  return result;
+}
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<DashboardTab>("pipeline");
   const [searchQuery, setSearchQuery] = useState("");
-  const [stages] = useState(INITIAL_PIPELINE_STAGES);
 
-  // Core CRM Reactive State
+  // Supabase User & Profile
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Core CRM Reactive State with resilient defaults so board is never empty
+  const [stages, setStages] = useState<PipelineStage[]>(INITIAL_PIPELINE_STAGES);
   const [deals, setDeals] = useState<Deal[]>(INITIAL_DEALS);
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
   const [tasks, setTasks] = useState<CRMTask[]>(INITIAL_TASKS);
-  const [notifications, setNotifications] = useState<CRMNotification[]>(
-    INITIAL_NOTIFICATIONS
-  );
+  const [notifications, setNotifications] = useState<CRMNotification[]>(INITIAL_NOTIFICATIONS);
 
   // Modals and Drawers
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -55,6 +102,171 @@ export default function DashboardPage() {
     string | undefined
   >(undefined);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+
+  // Initial Data Load
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadWorkspaceData() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user: currentUser },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !currentUser) {
+          router.push("/login");
+          return;
+        }
+
+        if (!isMounted) return;
+        setUser(currentUser);
+
+        // Fetch data in parallel
+        const [prof, stg, dl, ld, cs, tk, nt] = await Promise.all([
+          fetchUserProfile(currentUser.id),
+          fetchPipelineStages(currentUser.id),
+          fetchDeals(currentUser.id),
+          fetchLeads(currentUser.id),
+          fetchCustomers(currentUser.id),
+          fetchTasks(currentUser.id),
+          fetchNotifications(currentUser.id),
+        ]);
+
+        if (!isMounted) return;
+
+        setUserProfile(prof);
+        if (stg && stg.length > 0) {
+          setStages(dedupeById(stg));
+        } else {
+          setStages(INITIAL_PIPELINE_STAGES);
+        }
+
+        if (dl && dl.length > 0) {
+          setDeals(dedupeById(dl));
+        } else {
+          setDeals(INITIAL_DEALS);
+        }
+
+        if (ld && ld.length > 0) {
+          setLeads(dedupeById(ld));
+        } else {
+          setLeads(INITIAL_LEADS);
+        }
+
+        if (cs && cs.length > 0) {
+          setCustomers(dedupeById(cs));
+        } else {
+          setCustomers(INITIAL_CUSTOMERS);
+        }
+
+        if (tk && tk.length > 0) {
+          setTasks(dedupeById(tk));
+        } else {
+          setTasks(INITIAL_TASKS);
+        }
+
+        if (nt && nt.length > 0) {
+          setNotifications(dedupeById(nt));
+        } else {
+          setNotifications(INITIAL_NOTIFICATIONS);
+        }
+
+        setIsLoadingData(false);
+      } catch (err) {
+        console.error("Failed to load CRM data:", err);
+        if (isMounted) setIsLoadingData(false);
+      }
+    }
+
+    loadWorkspaceData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  // Supabase Real-time Listener
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`crm-sync-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "deals",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const freshDeals = await fetchDeals(user.id);
+          if (freshDeals && freshDeals.length > 0) {
+            setDeals(dedupeById(freshDeals));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "leads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const freshLeads = await fetchLeads(user.id);
+          setLeads((prev) => dedupeById(freshLeads));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "customers",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const freshCustomers = await fetchCustomers(user.id);
+          setCustomers((prev) => dedupeById(freshCustomers));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const freshTasks = await fetchTasks(user.id);
+          setTasks((prev) => dedupeById(freshTasks));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          const freshNotifs = await fetchNotifications(user.id);
+          setNotifications((prev) => dedupeById(freshNotifs));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   // Open Create Record Modal with selected type and stage
   const handleOpenCreateRecord = (
@@ -72,78 +284,144 @@ export default function DashboardPage() {
   };
 
   // Create Opportunity / Deal Handler
-  const handleCreateDeal = (newDeal: Deal) => {
-    setDeals((prev) => [newDeal, ...prev]);
+  const handleCreateDeal = async (newDeal: Deal) => {
+    if (!user?.id) return;
 
-    setNotifications((prev) => [
-      {
-        id: `notif-${Date.now()}`,
-        title: "New opportunity created",
-        description: `${newDeal.title} (${newDeal.formattedValue}) was added to pipeline.`,
-        time: "Just now",
-        read: false,
-        type: "deal",
-      },
-      ...prev,
-    ]);
+    // Optimistic update
+    setDeals((prev) => dedupeById([newDeal, ...prev]));
+
+    toast.success("Opportunity Created", {
+      description: `${newDeal.title} (${newDeal.formattedValue}) added to pipeline.`,
+    });
+
+    const created = await createDeal(user.id, newDeal);
+    if (created) {
+      setDeals((prev) => {
+        const hasExisting = prev.some((d) => d.id === created.id || d.id === newDeal.id);
+        const mapped = prev.map((d) => (d.id === newDeal.id ? created : d));
+        return dedupeById(hasExisting ? mapped : [created, ...mapped]);
+      });
+    }
+
+    const notif = await createNotification(user.id, {
+      title: "New opportunity created",
+      description: `${newDeal.title} (${newDeal.formattedValue}) was added to pipeline.`,
+      time: "Just now",
+      read: false,
+      type: "deal",
+    });
+
+    if (notif) {
+      setNotifications((prev) => dedupeById([notif, ...prev]));
+    }
   };
 
   // Create Lead Handler
-  const handleCreateLead = (newLead: Lead) => {
-    setLeads((prev) => [newLead, ...prev]);
+  const handleCreateLead = async (newLead: Lead) => {
+    if (!user?.id) return;
 
-    setNotifications((prev) => [
-      {
-        id: `notif-${Date.now()}`,
-        title: "New lead registered",
-        description: `${newLead.name} (${newLead.company}) scored ${newLead.score}/100.`,
-        time: "Just now",
-        read: false,
-        type: "lead",
-      },
-      ...prev,
-    ]);
+    setLeads((prev) => dedupeById([newLead, ...prev]));
+
+    toast.success("Lead Registered", {
+      description: `${newLead.name} (${newLead.company}) added to leads directory.`,
+    });
+
+    const created = await createLead(user.id, newLead);
+    if (created) {
+      setLeads((prev) => {
+        const hasExisting = prev.some((l) => l.id === created.id || l.id === newLead.id);
+        const mapped = prev.map((l) => (l.id === newLead.id ? created : l));
+        return dedupeById(hasExisting ? mapped : [created, ...mapped]);
+      });
+    }
+
+    const notif = await createNotification(user.id, {
+      title: "New lead registered",
+      description: `${newLead.name} (${newLead.company}) scored ${newLead.score}/100.`,
+      time: "Just now",
+      read: false,
+      type: "lead",
+    });
+
+    if (notif) {
+      setNotifications((prev) => dedupeById([notif, ...prev]));
+    }
   };
 
   // Create Customer Handler
-  const handleCreateCustomer = (newCustomer: Customer) => {
-    setCustomers((prev) => [newCustomer, ...prev]);
+  const handleCreateCustomer = async (newCustomer: Customer) => {
+    if (!user?.id) return;
 
-    setNotifications((prev) => [
-      {
-        id: `notif-${Date.now()}`,
-        title: "New customer added",
-        description: `${newCustomer.company} added with ${newCustomer.formattedLtv} initial LTV.`,
-        time: "Just now",
-        read: false,
-        type: "payment",
-      },
-      ...prev,
-    ]);
+    setCustomers((prev) => dedupeById([newCustomer, ...prev]));
+
+    toast.success("Customer Added", {
+      description: `${newCustomer.company} added to client directory.`,
+    });
+
+    const created = await createCustomer(user.id, newCustomer);
+    if (created) {
+      setCustomers((prev) => {
+        const hasExisting = prev.some((c) => c.id === created.id || c.id === newCustomer.id);
+        const mapped = prev.map((c) => (c.id === newCustomer.id ? created : c));
+        return dedupeById(hasExisting ? mapped : [created, ...mapped]);
+      });
+    }
+
+    const notif = await createNotification(user.id, {
+      title: "New customer added",
+      description: `${newCustomer.company} added with ${newCustomer.formattedLtv} initial LTV.`,
+      time: "Just now",
+      read: false,
+      type: "payment",
+    });
+
+    if (notif) {
+      setNotifications((prev) => dedupeById([notif, ...prev]));
+    }
   };
 
-  const handleStageChangeFromSheet = (
+  // Handle Drag & Drop across pipeline columns
+  const handleDealsChange = async (updatedDeals: Deal[]) => {
+    const prevDeals = deals;
+    setDeals(dedupeById(updatedDeals));
+
+    // Identify which deal changed stage
+    for (const nd of updatedDeals) {
+      const old = prevDeals.find((d) => d.id === nd.id);
+      if (old && (old.stageId !== nd.stageId || old.probability !== nd.probability)) {
+        await updateDealStage(nd.id, nd.stageId, nd.probability);
+      }
+    }
+  };
+
+  // Handle Stage Change from Deal Detail Drawer
+  const handleStageChangeFromSheet = async (
     dealId: string,
     newStageId: string
   ) => {
+    const prob =
+      newStageId === "stage-won"
+        ? 100
+        : newStageId === "stage-negotiation"
+        ? 85
+        : newStageId === "stage-proposal"
+        ? 70
+        : newStageId === "stage-qualified"
+        ? 50
+        : 30;
+
     setDeals((prev) =>
-      prev.map((d) =>
-        d.id === dealId
-          ? {
-              ...d,
-              stageId: newStageId,
-              probability:
-                newStageId === "stage-won"
-                  ? 100
-                  : newStageId === "stage-negotiation"
-                  ? 85
-                  : newStageId === "stage-proposal"
-                  ? 70
-                  : newStageId === "stage-qualified"
-                  ? 50
-                  : 30,
-            }
-          : d
+      dedupeById(
+        prev.map((d) =>
+          d.id === dealId
+            ? {
+                ...d,
+                stageId: newStageId,
+                probability: prob,
+                lastActivity: "Just now",
+              }
+            : d
+        )
       )
     );
 
@@ -153,95 +431,146 @@ export default function DashboardPage() {
           ? {
               ...prev,
               stageId: newStageId,
+              probability: prob,
+              lastActivity: "Just now",
             }
           : null
       );
     }
+
+    const targetStage = stages.find((s) => s.id === newStageId);
+    toast.success("Stage Updated", {
+      description: `Opportunity moved to ${targetStage?.title || "new stage"}.`,
+    });
+
+    await updateDealStage(dealId, newStageId, prob);
   };
 
-  const handleConvertLeadToDeal = (lead: Lead) => {
-    const newDeal: Deal = {
-      id: `deal-from-lead-${Date.now()}`,
-      title: `${lead.company} Contract Implementation`,
-      company: lead.company,
-      contact: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      value: lead.estimatedValue,
-      formattedValue: lead.formattedValue,
-      stageId: "stage-qualified",
-      priority: lead.score > 80 ? "urgent" : "high",
-      probability: 60,
-      tags: ["Inbound Lead", lead.source],
-      notes: lead.notes,
-      daysInStage: 0,
-      lastActivity: "Just now",
-      assignee: {
-        name: lead.assignedTo || "You",
-        avatar: "",
-        initials: "SL",
-      },
-    };
+  // Convert Lead into Deal
+  const handleConvertLeadToDeal = async (lead: Lead) => {
+    if (!user?.id) return;
 
-    setDeals((prev) => [newDeal, ...prev]);
+    // Remove from leads
     setLeads((prev) => prev.filter((l) => l.id !== lead.id));
 
-    setNotifications((prev) => [
-      {
-        id: `notif-${Date.now()}`,
-        title: "Lead converted to deal",
-        description: `${lead.name} (${lead.company}) converted into Qualified Opportunity.`,
-        time: "Just now",
-        read: false,
-        type: "lead",
-      },
-      ...prev,
-    ]);
+    const convertedDeal = await convertLeadToDeal(user.id, lead);
+    if (convertedDeal) {
+      setDeals((prev) => dedupeById([convertedDeal, ...prev]));
+    }
+
+    const notif = await createNotification(user.id, {
+      title: "Lead converted to deal",
+      description: `${lead.name} (${lead.company}) converted into Qualified Opportunity.`,
+      time: "Just now",
+      read: false,
+      type: "lead",
+    });
+
+    if (notif) {
+      setNotifications((prev) => dedupeById([notif, ...prev]));
+    }
 
     setActiveTab("pipeline");
   };
 
-  const handleDeleteDeal = (dealId: string) => {
+  const handleDeleteDeal = async (dealId: string) => {
     setDeals((prev) => prev.filter((d) => d.id !== dealId));
     if (selectedDeal?.id === dealId) {
       setIsDetailOpen(false);
       setSelectedDeal(null);
     }
+    toast.info("Opportunity Removed", {
+      description: "Deal deleted from pipeline.",
+    });
+    await deleteDeal(dealId);
   };
 
-  const handleDeleteLead = (leadId: string) => {
+  const handleDeleteLead = async (leadId: string) => {
     setLeads((prev) => prev.filter((l) => l.id !== leadId));
+    toast.info("Lead Removed", {
+      description: "Lead removed from directory.",
+    });
+    await deleteLead(leadId);
   };
 
-  const handleUpdateLeadStatus = (leadId: string, status: LeadStatus) => {
+  const handleUpdateLeadStatus = async (
+    leadId: string,
+    status: LeadStatus
+  ) => {
     setLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status } : l))
     );
+    toast.info("Lead Status Updated", {
+      description: `Status changed to ${status.toUpperCase()}.`,
+    });
+    await updateLeadStatus(leadId, status);
   };
 
-  const handleDeleteCustomer = (customerId: string) => {
+  const handleDeleteCustomer = async (customerId: string) => {
     setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+    toast.info("Customer Removed", {
+      description: "Customer record removed.",
+    });
+    await deleteCustomer(customerId);
   };
 
-  const handleToggleTask = (taskId: string) => {
+  const handleToggleTask = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t))
+      prev.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      )
     );
+    toast.success(task.completed ? "Task Reopened" : "Task Completed", {
+      description: `"${task.title}" status updated.`,
+    });
+    await toggleTask(taskId, task.completed);
   };
 
-  const handleAddTask = (newTask: CRMTask) => {
-    setTasks((prev) => [newTask, ...prev]);
+  const handleAddTask = async (newTask: CRMTask) => {
+    if (!user?.id) return;
+
+    setTasks((prev) => dedupeById([newTask, ...prev]));
+
+    const created = await createTask(user.id, newTask);
+    if (created) {
+      setTasks((prev) => {
+        const hasExisting = prev.some((t) => t.id === created.id || t.id === newTask.id);
+        const mapped = prev.map((t) => (t.id === newTask.id ? created : t));
+        return dedupeById(hasExisting ? mapped : [created, ...mapped]);
+      });
+    }
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    await deleteTask(taskId);
   };
 
-  const handleMarkNotificationRead = (id: string) => {
+  const handleMarkNotificationRead = async (id: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      dedupeById(prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
     );
+    await markNotificationRead(id);
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-[#08080c] flex flex-col items-center justify-center text-zinc-100">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative flex items-center justify-center">
+            <LightCrmLogo size="lg" />
+            <div className="absolute -inset-3 bg-cyan-500/10 rounded-2xl blur-xl -z-10 animate-pulse" />
+          </div>
+          <p className="text-xs text-zinc-400 font-mono tracking-wide animate-pulse">
+            connecting to database...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DashboardShell
@@ -261,6 +590,7 @@ export default function DashboardPage() {
       onOpenCommandMenu={() => setCommandMenuOpen(true)}
       notifications={notifications}
       onMarkNotificationRead={handleMarkNotificationRead}
+      userProfile={userProfile}
       counts={{
         deals: deals.length,
         leads: leads.length,
@@ -282,7 +612,7 @@ export default function DashboardPage() {
             <PipelineBoard
               stages={stages}
               deals={deals}
-              onDealsChange={setDeals}
+              onDealsChange={handleDealsChange}
               onSelectDeal={handleSelectDeal}
               onOpenNewDealModal={(stageId) =>
                 handleOpenCreateRecord("deal", stageId)
