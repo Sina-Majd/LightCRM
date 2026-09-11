@@ -16,6 +16,7 @@ import {
   Sparkles,
   Zap,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,21 +35,44 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [forgotPasswordNotice, setForgotPasswordNotice] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
     setStatusMessage(null);
 
-    // Simulated auth UI response for pairing/testing
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setIsLoading(false);
+        setErrorMessage(error.message || "Invalid email or password.");
+        toast.error("Sign In Failed", {
+          description: error.message || "Invalid email or password.",
+        });
+        return;
+      }
+
+      toast.success("Welcome back!", {
+        description: "Signing into your LightCRM workspace...",
+      });
       setStatusMessage("Sign in successful! Redirecting to your dashboard...");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 600);
-    }, 800);
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || "An unexpected error occurred.");
+      toast.error("Sign In Error", {
+        description: err.message || "An unexpected error occurred.",
+      });
+    }
   };
 
   const handleForgotPassword = (e: React.MouseEvent) => {
@@ -175,6 +201,18 @@ export default function LoginPage() {
                   Welcome back! Please enter your workspace credentials.
                 </p>
               </div>
+
+              {/* Error Message Notification */}
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-5 flex items-center gap-2 rounded-xl bg-red-950/60 border border-red-500/40 p-3 text-xs text-red-300"
+                >
+                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+                  <span>{errorMessage}</span>
+                </motion.div>
+              )}
 
               {/* Status Message Notification */}
               {statusMessage && (

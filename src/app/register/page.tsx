@@ -18,6 +18,7 @@ import {
   Sparkles,
   Zap,
   Check,
+  AlertCircle,
 } from "lucide-react";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 function RegisterContent() {
   const router = useRouter();
@@ -41,6 +44,7 @@ function RegisterContent() {
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialEmail) {
@@ -68,23 +72,68 @@ function RegisterContent() {
     "bg-emerald-400",
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreedToTerms) {
-      alert("Please agree to the Terms of Service to create your account.");
+      setErrorMessage("Please agree to the Terms of Service to create your account.");
       return;
     }
+
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
+      return;
+    }
+
     setIsLoading(true);
+    setErrorMessage(null);
     setStatusMessage(null);
 
-    // Simulated auth UI response for pairing/testing
-    setTimeout(() => {
-      setIsLoading(false);
-      setStatusMessage("Account workspace created! Setting up your CRM...");
-      setTimeout(() => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            company: company,
+            plan: selectedPlan,
+          },
+        },
+      });
+
+      if (error) {
+        setIsLoading(false);
+        setErrorMessage(error.message);
+        toast.error("Registration Failed", {
+          description: error.message,
+        });
+        return;
+      }
+
+      if (data.session) {
+        toast.success("Workspace Created", {
+          description: `Welcome to LightCRM, ${fullName}! Setting up your pipeline...`,
+        });
+        setStatusMessage("Account workspace created! Redirecting to your dashboard...");
         router.push("/dashboard");
-      }, 600);
-    }, 900);
+        router.refresh();
+      } else {
+        toast.success("Account Created", {
+          description: "Please check your email to confirm your account.",
+        });
+        setStatusMessage(
+          "Account created successfully! Please check your email inbox to confirm your account or sign in."
+        );
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || "Failed to register account.");
+      toast.error("Registration Error", {
+        description: err.message || "Failed to register account.",
+      });
+    }
   };
 
   return (
@@ -223,6 +272,18 @@ function RegisterContent() {
                   Start your 14-day free trial. No credit card required.
                 </p>
               </div>
+
+              {/* Error Message */}
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-5 flex items-center gap-2 rounded-xl bg-red-950/60 border border-red-500/40 p-3 text-xs text-red-300"
+                >
+                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+                  <span>{errorMessage}</span>
+                </motion.div>
+              )}
 
               {/* Status Message */}
               {statusMessage && (
