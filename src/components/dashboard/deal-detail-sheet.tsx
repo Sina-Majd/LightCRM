@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 
 interface DealDetailSheetProps {
   deal: Deal | null;
@@ -45,6 +46,7 @@ export function DealDetailSheet({
   const [notesList, setNotesList] = useState<
     Array<{ text: string; author: string; time: string }>
   >([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   if (!deal) return null;
 
@@ -275,10 +277,7 @@ export function DealDetailSheet({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  onDeleteDeal(deal.id);
-                  onClose();
-                }}
+                onClick={() => setIsDeleteDialogOpen(true)}
                 className="text-xs border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1.5" />
@@ -321,6 +320,21 @@ export function DealDetailSheet({
           </div>
         </div>
       </SheetContent>
+
+      {/* Confirmation Dialog for Opportunity Deletion */}
+      <ConfirmDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Opportunity"
+        itemName={`${deal.title} (${deal.company})`}
+        description="Are you sure you want to remove this opportunity from your pipeline? This action cannot be undone."
+        confirmLabel="Delete Opportunity"
+        onConfirm={() => {
+          onDeleteDeal?.(deal.id);
+          setIsDeleteDialogOpen(false);
+          onClose();
+        }}
+      />
     </Sheet>
   );
 }

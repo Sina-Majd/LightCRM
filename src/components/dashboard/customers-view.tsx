@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Customer, CustomerTier, CustomerHealth } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -87,6 +88,7 @@ export function CustomersView({
   onAddOpportunityForCustomer,
 }: CustomersViewProps) {
   const [tierFilter, setTierFilter] = useState<string>("all");
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
 
   const filteredCustomers = React.useMemo(() => {
@@ -396,13 +398,7 @@ export function CustomersView({
                       <DropdownMenuSeparator className="bg-white/10" />
 
                       <DropdownMenuItem
-                        onClick={() => {
-                          onDeleteCustomer?.(customer.id);
-                          toast.info("Customer Removed", {
-                            description: `Account ${customer.company} removed from records.`,
-                            icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
-                          });
-                        }}
+                        onClick={() => setCustomerToDelete(customer)}
                         className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -416,6 +412,26 @@ export function CustomersView({
           );
         })}
       </div>
+
+      {/* Confirmation Dialog for Customer Deletion */}
+      <ConfirmDeleteDialog
+        open={!!customerToDelete}
+        onOpenChange={(open) => !open && setCustomerToDelete(null)}
+        title="Delete Customer Account"
+        itemName={customerToDelete ? `${customerToDelete.company} (${customerToDelete.name})` : undefined}
+        description="Are you sure you want to delete this customer account? This will permanently remove their records, touchpoints, and history from your CRM."
+        confirmLabel="Delete Customer"
+        onConfirm={() => {
+          if (customerToDelete) {
+            onDeleteCustomer?.(customerToDelete.id);
+            toast.info("Customer Removed", {
+              description: `Account ${customerToDelete.company} removed from records.`,
+              icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
+            });
+            setCustomerToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
 import { DealCard } from "./deal-card";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +64,7 @@ export function PipelineBoard({
   searchQuery,
 }: PipelineBoardProps) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
 
   // Filter deals based on search term & priority with guaranteed unique IDs
   const filteredDeals = React.useMemo(() => {
@@ -350,7 +352,7 @@ export function PipelineBoard({
                           deal={deal}
                           index={idx}
                           onSelect={onSelectDeal}
-                          onDeleteDeal={onDeleteDeal}
+                          onDeleteDeal={() => setDealToDelete(deal)}
                           onMoveToStage={(dealId, targetStageId) => {
                             if (deal.stageId === targetStageId) return;
                             const targetStage = stages.find((s) => s.id === targetStageId);
@@ -434,6 +436,22 @@ export function PipelineBoard({
           })}
         </div>
       </DragDropContext>
+
+      {/* Confirmation Dialog for Pipeline Deal Deletion */}
+      <ConfirmDeleteDialog
+        open={!!dealToDelete}
+        onOpenChange={(open) => !open && setDealToDelete(null)}
+        title="Delete Opportunity"
+        itemName={dealToDelete ? `${dealToDelete.title} (${dealToDelete.company})` : undefined}
+        description="Are you sure you want to remove this opportunity from your pipeline? This action cannot be undone."
+        confirmLabel="Delete Opportunity"
+        onConfirm={() => {
+          if (dealToDelete) {
+            onDeleteDeal?.(dealToDelete.id);
+            setDealToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

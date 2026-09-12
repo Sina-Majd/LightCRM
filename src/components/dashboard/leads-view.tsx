@@ -24,6 +24,7 @@ import { Lead, LeadStatus, LeadSource } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -98,6 +99,8 @@ export function LeadsView({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
 
 
   // Filter leads with guaranteed unique IDs
@@ -277,7 +280,7 @@ export function LeadsView({
               size="sm"
               variant="destructive"
               className="h-7 text-[11px] bg-red-600 hover:bg-red-500 text-white cursor-pointer"
-              onClick={handleBatchDelete}
+              onClick={() => setIsBatchDeleteOpen(true)}
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Delete ({selectedLeadIds.length})
@@ -506,7 +509,7 @@ export function LeadsView({
 
                           {/* Delete Lead */}
                           <DropdownMenuItem
-                            onClick={() => handleDeleteSingle(lead)}
+                            onClick={() => setLeadToDelete(lead)}
                             className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -530,6 +533,35 @@ export function LeadsView({
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirmation Dialog for Single Lead Deletion */}
+      <ConfirmDeleteDialog
+        open={!!leadToDelete}
+        onOpenChange={(open) => !open && setLeadToDelete(null)}
+        title="Delete Lead"
+        itemName={leadToDelete ? `${leadToDelete.name} (${leadToDelete.company})` : undefined}
+        description="Are you sure you want to delete this lead? This action cannot be undone and will permanently remove this record from your CRM."
+        confirmLabel="Delete Lead"
+        onConfirm={() => {
+          if (leadToDelete) {
+            handleDeleteSingle(leadToDelete);
+            setLeadToDelete(null);
+          }
+        }}
+      />
+
+      {/* Confirmation Dialog for Batch Leads Deletion */}
+      <ConfirmDeleteDialog
+        open={isBatchDeleteOpen}
+        onOpenChange={setIsBatchDeleteOpen}
+        title="Delete Multiple Leads"
+        description={`Are you sure you want to permanently delete these ${selectedLeadIds.length} selected leads? This action cannot be undone.`}
+        confirmLabel={`Delete ${selectedLeadIds.length} Leads`}
+        onConfirm={() => {
+          handleBatchDelete();
+          setIsBatchDeleteOpen(false);
+        }}
+      />
     </div>
   );
 }

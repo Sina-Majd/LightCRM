@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -72,6 +73,7 @@ export function TasksView({
   const [newRelated, setNewRelated] = useState("");
   const [newType, setNewType] = useState<"call" | "email" | "meeting" | "review">("email");
   const [newPriority, setNewPriority] = useState<DealPriority>("high");
+  const [taskToDelete, setTaskToDelete] = useState<CRMTask | null>(null);
 
 
   const handleCreateTask = (e: React.FormEvent) => {
@@ -320,13 +322,7 @@ export function TasksView({
                       <DropdownMenuSeparator className="bg-white/10" />
                       {onDeleteTask && (
                         <DropdownMenuItem
-                          onClick={() => {
-                            onDeleteTask(task.id);
-                            toast.info("Task Removed", {
-                              description: "Task removed from agenda.",
-                              icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
-                            });
-                          }}
+                          onClick={() => setTaskToDelete(task)}
                           className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -347,6 +343,26 @@ export function TasksView({
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog for Task Deletion */}
+      <ConfirmDeleteDialog
+        open={!!taskToDelete}
+        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        title="Delete Task"
+        itemName={taskToDelete ? taskToDelete.title : undefined}
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete Task"
+        onConfirm={() => {
+          if (taskToDelete) {
+            onDeleteTask?.(taskToDelete.id);
+            toast.info("Task Removed", {
+              description: `"${taskToDelete.title}" removed from agenda.`,
+              icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
+            });
+            setTaskToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }
