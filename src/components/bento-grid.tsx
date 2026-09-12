@@ -121,71 +121,77 @@ export function BentoGrid() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
-                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
-                      <span>In Progress</span>
-                      <span className="text-[10px] text-zinc-500 font-mono">{!orderCompleted ? "1 Active" : "0 Active"}</span>
+                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between h-5">
+                      <span className="truncate">In Progress</span>
+                      <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">
+                        {!orderCompleted ? "1 Active" : "0 Active"}
+                      </span>
                     </div>
                     <div
                       onClick={() => setOrderCompleted(!orderCompleted)}
-                      className={`rounded-md border p-3 transition-all cursor-pointer ${
+                      className={`rounded-md border p-3 transition-all cursor-pointer h-[86px] flex flex-col justify-between select-none ${
                         !orderCompleted
                           ? "border-cyan-500/40 bg-cyan-950/20 text-white shadow-md shadow-cyan-950/40"
                           : "border-white/[0.06] bg-white/[0.02] text-zinc-500 opacity-60"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <img
                             src="/solstice-logo.jpg"
                             alt="Solstice Creative"
-                            className="h-4 w-4 rounded object-cover"
+                            className="h-4 w-4 rounded object-cover shrink-0"
                           />
-                          <span className="text-xs font-semibold text-white">Solstice Creative</span>
+                          <span className="text-xs font-semibold text-white truncate">Solstice Creative</span>
                         </div>
-                        <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
+                        <span className="font-mono text-[11px] text-emerald-400 shrink-0">$4,800</span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
-                      <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1.5">
-                        <MousePointerClick className="h-3 w-3 text-cyan-400" />
-                        <span>{!orderCompleted ? "Click to mark complete" : "Completed"}</span>
+                      <p className="text-[11px] text-zinc-400 truncate">Brand Identity & Design System</p>
+                      <div className="text-[10px] text-zinc-400 flex items-center gap-1.5">
+                        <MousePointerClick className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">{!orderCompleted ? "Click to mark complete" : "Completed · Click to reset"}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="rounded-lg border border-white/[0.06] bg-[#121218] p-3">
-                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between">
-                      <span>Completed & Ready to Invoice</span>
-                      <span className="text-[10px] text-emerald-400 font-mono">{orderCompleted ? "1 Ready" : "0"}</span>
+                    <div className="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider flex items-center justify-between h-5">
+                      <span className="truncate">Completed</span>
+                      <span className="text-[10px] text-emerald-400 font-mono shrink-0 ml-2">
+                        {orderCompleted ? "1 Ready" : "0 Ready"}
+                      </span>
                     </div>
                     <div
                       onClick={() => setOrderCompleted(!orderCompleted)}
-                      className={`rounded-md border p-3 transition-all cursor-pointer ${
+                      className={`rounded-md border p-3 transition-all cursor-pointer h-[86px] flex flex-col justify-between select-none ${
                         orderCompleted
                           ? "border-emerald-500/40 bg-emerald-950/20 text-white shadow-md shadow-emerald-950/40"
-                          : "border-dashed border-white/10 bg-transparent text-zinc-500 text-center py-4"
+                          : "border-dashed border-white/10 bg-transparent text-zinc-500"
                       }`}
                     >
                       {orderCompleted ? (
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
+                        <>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <img
                                 src="/solstice-logo.jpg"
                                 alt="Solstice Creative"
-                                className="h-4 w-4 rounded object-cover"
+                                className="h-4 w-4 rounded object-cover shrink-0"
                               />
-                              <span className="text-xs font-semibold text-white">Solstice Creative</span>
+                              <span className="text-xs font-semibold text-white truncate">Solstice Creative</span>
                             </div>
-                            <span className="font-mono text-[11px] text-emerald-400">$4,800</span>
+                            <span className="font-mono text-[11px] text-emerald-400 shrink-0">$4,800</span>
                           </div>
-                          <p className="text-[11px] text-zinc-400 mt-1">Brand Identity & Design System</p>
-                          <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            <span>Ready! 1-click invoice generated</span>
+                          <p className="text-[11px] text-zinc-400 truncate">Brand Identity & Design System</p>
+                          <div className="text-[10px] text-emerald-400 flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">Ready! 1-click invoice</span>
                           </div>
-                        </div>
+                        </>
                       ) : (
-                        <span className="text-xs text-zinc-500">Order appears here once finished</span>
+                        <div className="flex items-center justify-center h-full text-center">
+                          <span className="text-xs text-zinc-500">Order appears here once finished</span>
+                        </div>
                       )}
                     </div>
                   </div>
