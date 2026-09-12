@@ -459,6 +459,11 @@ export default function DashboardPage() {
     dealId: string,
     newStageId: string
   ) => {
+    const currentDeal = deals.find((d) => d.id === dealId) || selectedDeal;
+    if (currentDeal && currentDeal.stageId === newStageId) {
+      return;
+    }
+
     const prob =
       newStageId === "stage-won"
         ? 100

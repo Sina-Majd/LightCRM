@@ -133,11 +133,14 @@ export function DealDetailSheet({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => onStageChange?.(deal.id, stage.id)}
-                    className={`rounded-lg py-2 px-1 h-auto text-center transition-all cursor-pointer text-[10px] font-medium leading-tight ${
+                    onClick={() => {
+                      if (isSelected) return;
+                      onStageChange?.(deal.id, stage.id);
+                    }}
+                    className={`rounded-lg py-2 px-1 h-auto text-center transition-all text-[10px] font-medium leading-tight ${
                       isSelected
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm"
-                        : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm cursor-default"
+                        : "text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer"
                     }`}
                   >
                     {stage.title.split(" ")[0]}
@@ -296,14 +299,25 @@ export function DealDetailSheet({
                 Quick Email
               </a>
             </Button>
-            <Button
-              type="button"
-              className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer"
-              onClick={() => onStageChange?.(deal.id, "stage-won")}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-              Mark as Won
-            </Button>
+            {deal.stageId !== "stage-won" ? (
+              <Button
+                type="button"
+                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer"
+                onClick={() => onStageChange?.(deal.id, "stage-won")}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                Mark as Won
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="text-xs bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 cursor-default"
+                onClick={(e) => e.preventDefault()}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+                Deal Won
+              </Button>
+            )}
           </div>
         </div>
       </SheetContent>

@@ -352,6 +352,7 @@ export function PipelineBoard({
                           onSelect={onSelectDeal}
                           onDeleteDeal={onDeleteDeal}
                           onMoveToStage={(dealId, targetStageId) => {
+                            if (deal.stageId === targetStageId) return;
                             const targetStage = stages.find((s) => s.id === targetStageId);
                             onDealsChange(
                               deals.map((d) =>
