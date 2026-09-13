@@ -145,7 +145,6 @@ export function CreateRecordDialog({
       assignee: {
         name: "You",
         avatar: "",
-        initials: "ME",
       },
     };
 

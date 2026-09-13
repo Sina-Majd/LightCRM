@@ -4,6 +4,50 @@ export type LeadSource = "Website" | "LinkedIn" | "Referral" | "Outbound" | "Pro
 export type CustomerTier = "Enterprise" | "Growth" | "Startup";
 export type CustomerHealth = "excellent" | "good" | "warning" | "critical";
 
+export interface StageTheme {
+  color: string;
+  accentBorder: string;
+  bgGradient: string;
+}
+
+export const STAGE_THEMES: Record<string, StageTheme> = {
+  "stage-new": {
+    color: "text-cyan-400",
+    accentBorder: "border-cyan-500/30",
+    bgGradient: "from-cyan-500/10 to-transparent",
+  },
+  "stage-qualified": {
+    color: "text-blue-400",
+    accentBorder: "border-blue-500/30",
+    bgGradient: "from-blue-500/10 to-transparent",
+  },
+  "stage-proposal": {
+    color: "text-indigo-400",
+    accentBorder: "border-indigo-500/30",
+    bgGradient: "from-indigo-500/10 to-transparent",
+  },
+  "stage-negotiation": {
+    color: "text-amber-400",
+    accentBorder: "border-amber-500/30",
+    bgGradient: "from-amber-500/10 to-transparent",
+  },
+  "stage-won": {
+    color: "text-emerald-400",
+    accentBorder: "border-emerald-500/30",
+    bgGradient: "from-emerald-500/10 to-transparent",
+  },
+};
+
+export const DEFAULT_STAGE_THEME: StageTheme = {
+  color: "text-cyan-400",
+  accentBorder: "border-cyan-500/30",
+  bgGradient: "from-cyan-500/10 to-transparent",
+};
+
+export function getStageTheme(stageId: string): StageTheme {
+  return STAGE_THEMES[stageId] ?? DEFAULT_STAGE_THEME;
+}
+
 export interface PipelineStage {
   id: string;
   title: string;
@@ -31,7 +75,6 @@ export interface Deal {
   assignee: {
     name: string;
     avatar: string;
-    initials: string;
   };
 }
 
@@ -95,37 +138,27 @@ export const INITIAL_PIPELINE_STAGES: PipelineStage[] = [
   {
     id: "stage-new",
     title: "New Inquiries",
-    color: "text-cyan-400",
-    accentBorder: "border-cyan-500/30",
-    bgGradient: "from-cyan-500/10 to-transparent",
+    ...STAGE_THEMES["stage-new"],
   },
   {
     id: "stage-qualified",
     title: "Qualified",
-    color: "text-blue-400",
-    accentBorder: "border-blue-500/30",
-    bgGradient: "from-blue-500/10 to-transparent",
+    ...STAGE_THEMES["stage-qualified"],
   },
   {
     id: "stage-proposal",
     title: "Proposal / Demo",
-    color: "text-indigo-400",
-    accentBorder: "border-indigo-500/30",
-    bgGradient: "from-indigo-500/10 to-transparent",
+    ...STAGE_THEMES["stage-proposal"],
   },
   {
     id: "stage-negotiation",
     title: "Negotiation",
-    color: "text-amber-400",
-    accentBorder: "border-amber-500/30",
-    bgGradient: "from-amber-500/10 to-transparent",
+    ...STAGE_THEMES["stage-negotiation"],
   },
   {
     id: "stage-won",
     title: "Closed Won",
-    color: "text-emerald-400",
-    accentBorder: "border-emerald-500/30",
-    bgGradient: "from-emerald-500/10 to-transparent",
+    ...STAGE_THEMES["stage-won"],
   },
 ];
 
@@ -149,7 +182,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Sarah Lin",
       avatar: "",
-      initials: "SL",
     },
   },
   {
@@ -171,7 +203,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Alex Rivera",
       avatar: "",
-      initials: "AR",
     },
   },
   {
@@ -193,7 +224,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Elena Rostova",
       avatar: "",
-      initials: "ER",
     },
   },
   {
@@ -215,7 +245,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Sarah Lin",
       avatar: "",
-      initials: "SL",
     },
   },
   {
@@ -237,7 +266,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Alex Rivera",
       avatar: "",
-      initials: "AR",
     },
   },
   {
@@ -259,7 +287,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Elena Rostova",
       avatar: "",
-      initials: "ER",
     },
   },
   {
@@ -281,7 +308,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Sarah Lin",
       avatar: "",
-      initials: "SL",
     },
   },
   {
@@ -303,7 +329,6 @@ export const INITIAL_DEALS: Deal[] = [
     assignee: {
       name: "Alex Rivera",
       avatar: "",
-      initials: "AR",
     },
   },
 ];

@@ -78,7 +78,6 @@ export function NewDealDialog({
       assignee: {
         name: "You",
         avatar: "",
-        initials: "ME",
       },
     };
 

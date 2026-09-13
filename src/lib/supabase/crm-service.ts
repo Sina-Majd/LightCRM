@@ -8,6 +8,7 @@ import {
   CRMNotification,
   PipelineStage,
   INITIAL_PIPELINE_STAGES,
+  getStageTheme,
 } from "@/data/dashboard-mock-data";
 
 export interface UserProfile {
@@ -66,7 +67,7 @@ export async function fetchPipelineStages(userId: string): Promise<PipelineStage
   const supabase = createClient();
   const { data, error } = await supabase
     .from("pipeline_stages")
-    .select("*")
+    .select("stage_key, title, position")
     .eq("user_id", userId)
     .order("position", { ascending: true });
 
@@ -74,13 +75,16 @@ export async function fetchPipelineStages(userId: string): Promise<PipelineStage
     return INITIAL_PIPELINE_STAGES;
   }
 
-  return data.map((s) => ({
-    id: s.stage_key,
-    title: s.title,
-    color: s.color || "text-cyan-400",
-    accentBorder: s.accent_border || "border-cyan-500/30",
-    bgGradient: s.bg_gradient || "from-cyan-500/10 to-transparent",
-  }));
+  return data.map((s) => {
+    const theme = getStageTheme(s.stage_key);
+    return {
+      id: s.stage_key,
+      title: s.title,
+      color: theme.color,
+      accentBorder: theme.accentBorder,
+      bgGradient: theme.bgGradient,
+    };
+  });
 }
 
 // -------------------------------------------------------------
@@ -118,7 +122,6 @@ export async function fetchDeals(userId: string): Promise<Deal[]> {
       assignee: {
         name: d.assignee_name || "You",
         avatar: d.assignee_avatar || "",
-        initials: d.assignee_initials || "ME",
       },
     };
   });
@@ -144,7 +147,6 @@ export async function createDeal(userId: string, deal: Deal): Promise<Deal | nul
       days_in_stage: deal.daysInStage,
       last_activity: deal.lastActivity,
       assignee_name: deal.assignee?.name || "You",
-      assignee_initials: deal.assignee?.initials || "ME",
       assignee_avatar: deal.assignee?.avatar || "",
     })
     .select()
@@ -175,7 +177,6 @@ export async function createDeal(userId: string, deal: Deal): Promise<Deal | nul
     assignee: {
       name: data.assignee_name || "You",
       avatar: data.assignee_avatar || "",
-      initials: data.assignee_initials || "ME",
     },
   };
 }
@@ -327,7 +328,6 @@ export async function convertLeadToDeal(userId: string, lead: Lead): Promise<Dea
     assignee: {
       name: lead.assignedTo || "You",
       avatar: "",
-      initials: "SL",
     },
   });
 
