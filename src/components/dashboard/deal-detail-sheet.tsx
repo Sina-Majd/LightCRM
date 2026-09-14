@@ -50,8 +50,6 @@ export function DealDetailSheet({
 
   if (!deal) return null;
 
-  const currentStage = stages.find((s) => s.id === deal.stageId);
-
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.trim()) return;
@@ -73,8 +71,8 @@ export function DealDetailSheet({
         className="w-full sm:max-w-xl bg-[#0d0d14]/98 border-white/10 text-zinc-100 p-0 flex flex-col overflow-hidden"
       >
         {/* Header Strip */}
-        <div className="p-6 pr-14 border-b border-white/[0.08] bg-[#11111a]/80">
-          <div className="flex items-center gap-2.5 mb-2.5 flex-wrap">
+        <div className="p-4 sm:p-6 pr-12 sm:pr-14 border-b border-white/[0.08] bg-[#11111a]/80">
+          <div className="flex items-center gap-2.5 mb-2 flex-wrap">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <span className="text-xs font-mono uppercase tracking-wider text-cyan-400">
               Deal Details
@@ -88,23 +86,23 @@ export function DealDetailSheet({
             </Badge>
           </div>
 
-          <SheetTitle className="text-xl font-bold text-white tracking-tight leading-snug">
+          <SheetTitle className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
             {deal.title}
           </SheetTitle>
           <SheetDescription className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-zinc-400" />
+            <Building2 className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
             <span className="text-zinc-300 font-semibold">{deal.company}</span>
             <span className="text-zinc-600">·</span>
             <span>Created 14 days ago</span>
           </SheetDescription>
 
           {/* Deal Value Hero Callout */}
-          <div className="mt-4 flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/40 p-4">
+          <div className="mt-3.5 flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/40 p-3.5 sm:p-4">
             <div>
               <div className="text-[10px] font-mono uppercase text-zinc-500">
                 Total Deal Value
               </div>
-              <div className="font-mono text-2xl font-black text-emerald-400 mt-0.5">
+              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">
                 {deal.formattedValue}
               </div>
             </div>
@@ -112,7 +110,7 @@ export function DealDetailSheet({
               <div className="text-[10px] font-mono uppercase text-zinc-500">
                 Win Probability
               </div>
-              <div className="font-mono text-base font-bold text-cyan-300 mt-0.5">
+              <div className="font-mono text-sm sm:text-base font-bold text-cyan-300 mt-0.5">
                 {deal.probability}%
               </div>
             </div>
@@ -120,13 +118,13 @@ export function DealDetailSheet({
         </div>
 
         {/* Scrollable Body Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Stage Progression Selector */}
           <div>
             <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider block mb-2 font-mono">
               Pipeline Stage
             </label>
-            <div className="grid grid-cols-5 gap-1 rounded-xl bg-black/40 border border-white/[0.08] p-1.5">
+            <div className="flex sm:grid sm:grid-cols-5 gap-1 rounded-xl bg-black/40 border border-white/[0.08] p-1.5 overflow-x-auto no-scrollbar">
               {stages.map((stage) => {
                 const isSelected = stage.id === deal.stageId;
                 return (
@@ -139,7 +137,7 @@ export function DealDetailSheet({
                       if (isSelected) return;
                       onStageChange?.(deal.id, stage.id);
                     }}
-                    className={`rounded-lg py-2 px-1 h-auto text-center transition-all text-[10px] font-medium leading-tight ${
+                    className={`rounded-lg py-1.5 sm:py-2 px-2.5 sm:px-1 h-auto text-center transition-all text-[11px] sm:text-[10px] font-medium leading-tight shrink-0 sm:shrink ${
                       isSelected
                         ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm cursor-default"
                         : "text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer"
@@ -271,50 +269,51 @@ export function DealDetailSheet({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-white/[0.08] bg-[#11111a] flex items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] sm:pb-4 border-t border-white/[0.08] bg-[#11111a] flex items-center justify-between gap-2 flex-wrap">
           <div>
             {onDeleteDeal && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="text-xs border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+                className="h-8 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                Delete Opportunity
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                <span className="hidden sm:inline">Delete Opportunity</span>
+                <span className="sm:hidden">Delete</span>
               </Button>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               type="button"
               variant="outline"
               asChild
-              className="text-xs border-white/10 text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-500/10 cursor-pointer"
+              className="h-8 text-xs border-white/10 text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-500/10 cursor-pointer"
             >
               <a href={`mailto:${deal.email}`}>
-                <Mail className="h-3.5 w-3.5 mr-1" />
-                Quick Email
+                <Mail className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Quick Email</span>
               </a>
             </Button>
             {deal.stageId !== "stage-won" ? (
               <Button
                 type="button"
-                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer"
+                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer"
                 onClick={() => onStageChange?.(deal.id, "stage-won")}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                Mark as Won
+                <span>Mark Won</span>
               </Button>
             ) : (
               <Button
                 type="button"
-                className="text-xs bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 cursor-default"
+                className="h-8 text-xs bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 cursor-default"
                 onClick={(e) => e.preventDefault()}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-                Deal Won
+                <span>Won</span>
               </Button>
             )}
           </div>

@@ -49,15 +49,15 @@ export function AnalyticsView({ deals }: AnalyticsViewProps) {
               <span className="text-xs font-mono uppercase text-zinc-500">
                 Win Rate
               </span>
-              <Badge
-                variant="outline"
-                className="bg-emerald-500/10 border-emerald-500/20 text-emerald-400 text-[10px] font-mono px-1.5 py-0.5"
-              >
-                +4.8% vs last month
-              </Badge>
+              <TrendingUp className="h-4 w-4 text-emerald-400" />
             </div>
-            <div className="mt-2 font-mono text-2xl sm:text-3xl font-black text-white">
-              {PIPELINE_ANALYTICS.winRate}%
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-mono text-2xl sm:text-3xl font-black text-white">
+                {PIPELINE_ANALYTICS.winRate}%
+              </span>
+              <span className="inline-flex items-center text-[11px] font-mono font-semibold text-emerald-400">
+                +4.8%
+              </span>
             </div>
             <p className="mt-1 text-[11px] text-zinc-400">
               Based on completed evaluation cycles
