@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Search,
-  Filter,
   Flame,
   UserPlus,
   Mail,
@@ -17,10 +15,9 @@ import {
   Calendar,
   PhoneCall,
   CheckCircle2,
-  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Lead, LeadStatus, LeadSource } from "@/data/dashboard-mock-data";
+import { Lead, LeadStatus } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,12 +46,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface LeadsViewProps {
   leads: Lead[];
@@ -297,8 +288,8 @@ export function LeadsView({
         </div>
       )}
 
-      {/* Leads Table using Shadcn Table Component */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0f0f16] overflow-hidden shadow-xl">
+      {/* Leads Table for Desktop Screens */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0f0f16] overflow-hidden shadow-xl hidden md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-white/[0.08] hover:bg-transparent">
@@ -533,6 +524,176 @@ export function LeadsView({
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile Card List View (Senior Developer Responsive Architecture) */}
+      <div className="md:hidden space-y-3">
+        {filteredLeads.map((lead) => {
+          const status = statusConfig[lead.status];
+          const isSelected = selectedLeadIds.includes(lead.id);
+
+          return (
+            <div
+              key={lead.id}
+              className={`rounded-xl border p-3.5 bg-[#0f0f16] transition-all ${
+                isSelected
+                  ? "border-cyan-500/50 bg-cyan-950/20"
+                  : "border-white/[0.08] hover:border-white/20"
+              }`}
+            >
+              {/* Header: Checkbox + Name & Company + Status */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="pt-0.5">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => handleToggleLead(lead.id)}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-white text-sm truncate">
+                      {lead.name}
+                    </div>
+                    <div className="text-xs text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
+                      <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
+                      <span className="truncate">{lead.company}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-zinc-400 truncate">{lead.title}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-mono py-0.5 px-2 shrink-0 ${status.badge}`}
+                >
+                  {status.label}
+                </Badge>
+              </div>
+
+              {/* Metrics Row: Score Flame & Value */}
+              <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-zinc-500 font-mono">Score:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`font-bold font-mono flex items-center gap-0.5 ${
+                        lead.score >= 85
+                          ? "text-rose-400"
+                          : lead.score >= 70
+                          ? "text-amber-400"
+                          : "text-zinc-400"
+                      }`}
+                    >
+                      {lead.score >= 85 && (
+                        <Flame className="h-3 w-3 fill-rose-500 text-rose-500 animate-pulse" />
+                      )}
+                      {lead.score}
+                    </span>
+                    <div className="h-1.5 w-12 rounded-full bg-white/[0.08] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          lead.score >= 85
+                            ? "bg-rose-500"
+                            : lead.score >= 70
+                            ? "bg-amber-400"
+                            : "bg-cyan-500"
+                        }`}
+                        style={{ width: `${lead.score}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="font-mono font-bold text-emerald-400">
+                  {lead.formattedValue}
+                </div>
+              </div>
+
+              {/* Contact info & actions */}
+              <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/[0.06] gap-2">
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="h-8 w-8 rounded-lg bg-white/[0.05] hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                    title="Call lead"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                  </a>
+                  <a
+                    href={`mailto:${lead.email}`}
+                    className="h-8 w-8 rounded-lg bg-white/[0.05] hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                    title="Email lead"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleConvert(lead)}
+                    className="h-8 px-2.5 text-[11px] font-medium bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-white rounded-lg transition-all cursor-pointer shadow-xs"
+                  >
+                    <ArrowRightLeft className="h-3 w-3 mr-1 text-cyan-400" />
+                    <span>Convert</span>
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl">
+                      <DropdownMenuItem
+                        onClick={() => handleConvert(lead)}
+                        className="text-xs cursor-pointer flex items-center gap-2 text-cyan-300"
+                      >
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                        <span>Convert to Opportunity</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onUpdateLeadStatus?.(lead.id, "hot")}
+                        className="text-xs cursor-pointer flex items-center gap-2 text-rose-400"
+                      >
+                        <Flame className="h-3.5 w-3.5" />
+                        <span>Mark as Hot</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onUpdateLeadStatus?.(lead.id, "qualified")}
+                        className="text-xs cursor-pointer flex items-center gap-2 text-cyan-400"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Mark as Qualified</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuItem
+                        onClick={() => setLeadToDelete(lead)}
+                        className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete Lead</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {filteredLeads.length === 0 && (
+          <div className="py-10 text-center text-zinc-500 rounded-xl border border-dashed border-white/[0.08]">
+            No leads found matching current search or filters.
+          </div>
+        )}
+      </div>
+
 
       {/* Confirmation Dialog for Single Lead Deletion */}
       <ConfirmDeleteDialog
