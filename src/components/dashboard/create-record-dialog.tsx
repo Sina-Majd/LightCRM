@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -34,8 +34,6 @@ import {
   Kanban,
   Users,
   UserCheck,
-  ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
 import {
   Deal,
@@ -73,13 +71,16 @@ export function CreateRecordDialog({
   onCreateCustomer,
 }: CreateRecordDialogProps) {
   const [activeTab, setActiveTab] = useState<RecordType>(defaultType);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevDefaultType, setPrevDefaultType] = useState(defaultType);
 
-  // Sync defaultType whenever dialog opens
-  useEffect(() => {
+  if (isOpen !== prevIsOpen || defaultType !== prevDefaultType) {
+    setPrevIsOpen(isOpen);
+    setPrevDefaultType(defaultType);
     if (isOpen) {
       setActiveTab(defaultType);
     }
-  }, [isOpen, defaultType]);
+  }
 
   // Deal Form State
   const [dealTitle, setDealTitle] = useState("");

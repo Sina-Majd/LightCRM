@@ -14,7 +14,6 @@ import {
   FileText,
   PhoneCall,
   Phone,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Customer, CustomerTier, CustomerHealth } from "@/data/dashboard-mock-data";
@@ -177,13 +176,14 @@ export function CustomersView({
         </Card>
       </div>
 
-      {/* Filter Selector via Shadcn Tabs */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#111117] p-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono uppercase text-zinc-500 mr-1">
+      {/* Filter Selector & Quick Add Customer Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#111117] p-3">
+        {/* Tier Filter Tabs with clean horizontal scrolling on narrow viewports */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0">
+          <span className="text-xs font-mono uppercase text-zinc-500 mr-1 shrink-0">
             Tier:
           </span>
-          <Tabs value={tierFilter} onValueChange={setTierFilter} className="w-auto">
+          <Tabs value={tierFilter} onValueChange={setTierFilter} className="w-auto shrink-0">
             <TabsList className="h-9">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="Enterprise" className="text-purple-400">
@@ -199,8 +199,9 @@ export function CustomersView({
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-xs text-zinc-400 font-mono hidden sm:block">
+        {/* Right Section: Counter + Add Customer Action Button */}
+        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06]">
+          <div className="text-xs text-zinc-400 font-mono">
             Showing {filteredCustomers.length} client profiles
           </div>
 
@@ -208,7 +209,7 @@ export function CustomersView({
             <Button
               size="sm"
               onClick={onOpenNewCustomerModal}
-              className="h-8 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+              className="h-8 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer shrink-0"
             >
               <UserPlus className="h-3.5 w-3.5 mr-1.5" />
               <span>Add Customer</span>
