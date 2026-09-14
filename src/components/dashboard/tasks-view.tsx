@@ -14,7 +14,6 @@ import {
   Trash2,
   MoreHorizontal,
   Calendar,
-  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";
@@ -130,7 +129,7 @@ export function TasksView({
           </div>
 
           <form onSubmit={handleCreateTask} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-            <div className="sm:col-span-6">
+            <div className="sm:col-span-4">
               <Input
                 placeholder="e.g. Call Marcus Chen regarding Q3 pricing proposal..."
                 value={newTitle}
@@ -148,22 +147,39 @@ export function TasksView({
               />
             </div>
 
+            <div className="sm:col-span-2">
+              <Select
+                value={newType}
+                onValueChange={(v) =>
+                  setNewType(v as "call" | "email" | "meeting" | "review")
+                }
+              >
+                <SelectTrigger className="h-10 text-xs">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="call">Phone Call</SelectItem>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="review">Contract Review</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="sm:col-span-3 flex items-center gap-2">
               <div className="flex-1">
                 <Select
-                  value={newType}
-                  onValueChange={(v) =>
-                    setNewType(v as "call" | "email" | "meeting" | "review")
-                  }
+                  value={newPriority}
+                  onValueChange={(v) => setNewPriority(v as DealPriority)}
                 >
-                  <SelectTrigger className="h-10 text-xs">
-                    <SelectValue placeholder="Type" />
+                  <SelectTrigger className="h-10 text-xs capitalize">
+                    <SelectValue placeholder="Priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="call">Phone Call</SelectItem>
-                    <SelectItem value="meeting">Meeting</SelectItem>
-                    <SelectItem value="review">Contract Review</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -207,26 +223,26 @@ export function TasksView({
 
       {/* Task List Section */}
       <Card className="bg-[#0f0f16] border-white/[0.08] shadow-lg">
-        <CardHeader className="pb-3 border-b border-white/[0.06] flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-cyan-400" />
-            <CardTitle className="text-sm font-bold text-white">
+            <Clock className="h-4 w-4 text-cyan-400 shrink-0" />
+            <CardTitle className="text-sm font-bold text-white tracking-tight">
               Agenda & Follow-Up Items
             </CardTitle>
             <Badge
               variant="outline"
-              className="bg-cyan-500/10 border-cyan-500/20 text-[10px] font-mono text-cyan-300 py-0.5 px-2"
+              className="bg-cyan-500/10 border-cyan-500/20 text-[10px] font-mono text-cyan-300 py-0.5 px-2 shrink-0"
             >
               {filteredTasks.length} items
             </Badge>
           </div>
 
-          <span className="text-xs font-mono text-zinc-500">
+          <span className="text-[11px] font-mono text-zinc-500">
             Check box to mark completed
           </span>
         </CardHeader>
 
-        <CardContent className="p-5 space-y-2.5">
+        <CardContent className="p-3.5 sm:p-5 space-y-2.5">
           {filteredTasks.map((task) => {
             const Icon = typeIcons[task.type] || Clock;
             const priBadge = priorityBadges[task.priority];
@@ -234,27 +250,32 @@ export function TasksView({
             return (
               <div
                 key={task.id}
-                className={`group flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${
+                className={`group flex items-start gap-3 p-3 sm:p-3.5 rounded-xl border transition-all ${
                   task.completed
                     ? "border-white/[0.04] bg-black/20 text-zinc-400 opacity-60 hover:opacity-100"
                     : "border-white/[0.06] bg-[#14141d] hover:border-cyan-500/30 hover:bg-[#181826]"
                 }`}
               >
-                {/* Left: Checkbox + Type Icon + Title */}
-                <div className="flex items-center gap-3 min-w-0">
+                {/* Left: Checkbox with touch target */}
+                <div className="pt-0.5 shrink-0">
                   <Checkbox
                     checked={task.completed}
                     onCheckedChange={() => onToggleTask(task.id)}
-                    className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                    className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
                   />
+                </div>
 
-                  <div className="h-8 w-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-zinc-400 group-hover:text-cyan-300 shrink-0">
-                    <Icon className="h-4 w-4" />
-                  </div>
+                {/* Type Icon (Desktop/Tablet) */}
+                <div className="h-8 w-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-zinc-400 group-hover:text-cyan-300 shrink-0 hidden sm:flex">
+                  <Icon className="h-4 w-4" />
+                </div>
 
-                  <div className="min-w-0">
+                {/* Center Content: Title + Responsive Meta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
                     <div
-                      className={`text-xs font-medium truncate transition-colors ${
+                      onClick={() => onToggleTask(task.id)}
+                      className={`text-xs font-medium leading-snug cursor-pointer transition-colors ${
                         task.completed
                           ? "line-through text-zinc-500"
                           : "text-white group-hover:text-cyan-200"
@@ -262,75 +283,87 @@ export function TasksView({
                     >
                       {task.title}
                     </div>
-                    <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="h-3 w-3 text-zinc-500" />
-                        <span className="text-zinc-300">{task.relatedTo}</span>
-                      </span>
-                      <span className="text-zinc-600">·</span>
-                      <span className="text-zinc-500 font-mono">{task.dueDate}</span>
+
+                    {/* Priority Badge & Action Menu */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] sm:text-[10px] font-mono py-0 px-1.5 sm:px-2 capitalize shrink-0 ${priBadge}`}
+                      >
+                        {task.priority}
+                      </Badge>
+
+                      {/* Task Context Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-white/[0.08] cursor-pointer rounded-lg shrink-0"
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl"
+                        >
+                          <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
+                            Task Actions
+                          </DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => onToggleTask(task.id)}
+                            className="text-xs cursor-pointer flex items-center gap-2"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                            <span>{task.completed ? "Mark as Pending" : "Mark as Completed"}</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              toast.info("Task Rescheduled", {
+                                description: `"${task.title}" rescheduled for tomorrow.`,
+                                icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
+                              })
+                            }
+                            className="text-xs cursor-pointer flex items-center gap-2"
+                          >
+                            <Calendar className="h-3.5 w-3.5 text-cyan-400" />
+                            <span>Reschedule Tomorrow</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="bg-white/10" />
+                          {onDeleteTask && (
+                            <DropdownMenuItem
+                              onClick={() => setTaskToDelete(task)}
+                              className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Delete Task</span>
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                </div>
 
-                {/* Right: Priority Badge + Quick Action Buttons + Dropdown */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-mono py-0.5 px-2 capitalize ${priBadge}`}
-                  >
-                    {task.priority}
-                  </Badge>
+                  {/* Metadata Row: Mobile Type indicator + Related Deal/Client + Due Date */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-zinc-400">
+                    <span className="sm:hidden inline-flex items-center gap-1 text-[9px] font-mono uppercase text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/20">
+                      <Icon className="h-2.5 w-2.5" />
+                      <span>{task.type}</span>
+                    </span>
 
-                  {/* Task Context Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-zinc-500 hover:text-white hover:bg-white/[0.06] cursor-pointer"
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl"
-                    >
-                      <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
-                        Task Actions
-                      </DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() => onToggleTask(task.id)}
-                        className="text-xs cursor-pointer flex items-center gap-2"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>{task.completed ? "Mark as Pending" : "Mark as Completed"}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          toast.info("Task Rescheduled", {
-                            description: `"${task.title}" rescheduled for tomorrow.`,
-                            icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
-                          })
-                        }
-                        className="text-xs cursor-pointer flex items-center gap-2"
-                      >
-                        <Calendar className="h-3.5 w-3.5 text-cyan-400" />
-                        <span>Reschedule Tomorrow</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      {onDeleteTask && (
-                        <DropdownMenuItem
-                          onClick={() => setTaskToDelete(task)}
-                          className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Delete Task</span>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    <span className="flex items-center gap-1 text-zinc-300">
+                      <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
+                      <span className="truncate max-w-[160px] sm:max-w-none">{task.relatedTo}</span>
+                    </span>
+
+                    <span className="text-zinc-600 hidden sm:inline">·</span>
+
+                    <span className="flex items-center gap-1 text-zinc-400 font-mono text-[10px]">
+                      <Calendar className="h-3 w-3 text-zinc-500 shrink-0" />
+                      <span>{task.dueDate}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             );
