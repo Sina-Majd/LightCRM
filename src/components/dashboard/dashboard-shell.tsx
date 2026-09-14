@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -13,16 +13,8 @@ import {
   Bell,
   Plus,
   ChevronDown,
-  Layers,
-  Sparkles,
   Command,
-  Settings,
   LogOut,
-  HelpCircle,
-  Menu,
-  X,
-  ExternalLink,
-  ShieldCheck,
   Building2,
   Check,
   User,
@@ -43,14 +35,12 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { CRMNotification } from "@/data/dashboard-mock-data";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile, updateUserStatus } from "@/lib/supabase/crm-service";
+import { useRouter } from "next/navigation";
 
 export type DashboardTab =
   | "pipeline"
@@ -91,23 +81,18 @@ export function DashboardShell({
   counts,
   children,
 }: DashboardShellProps) {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const router = useRouter();
+  const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
   const [userStatus, setUserStatus] = useState<"Available" | "Away" | "Do Not Disturb">(
     userProfile?.status || "Available"
   );
-  const [activeWorkspace, setActiveWorkspace] = useState(
-    userProfile
-      ? `${userProfile.companyName} · ${userProfile.plan.toUpperCase()}`
-      : "Acme Global · Enterprise"
-  );
+  const [customWorkspace, setCustomWorkspace] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (userProfile?.companyName) {
-      setActiveWorkspace(
-        `${userProfile.companyName} · ${userProfile.plan.toUpperCase()}`
-      );
-    }
-  }, [userProfile]);
+  const activeWorkspace =
+    customWorkspace ||
+    (userProfile?.companyName
+      ? `${userProfile.companyName} · ${userProfile.plan.toUpperCase()}`
+      : "Acme Global · Enterprise");
 
   const handleStatusChange = (status: "Available" | "Away" | "Do Not Disturb") => {
     setUserStatus(status);
@@ -123,9 +108,10 @@ export function DashboardShell({
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      window.location.href = "/login";
-    } catch (e) {
-      window.location.href = "/login";
+    } catch {
+      // ignore
+    } finally {
+      router.push("/login");
     }
   };
 
@@ -149,36 +135,42 @@ export function DashboardShell({
   const navItems: Array<{
     id: DashboardTab;
     label: string;
+    shortLabel: string;
     icon: React.ComponentType<{ className?: string }>;
     count?: number;
   }> = [
     {
       id: "pipeline",
       label: "Deals & Pipeline",
+      shortLabel: "Pipeline",
       icon: Kanban,
       count: counts.deals,
     },
     {
       id: "leads",
       label: "Leads Intelligence",
+      shortLabel: "Leads",
       icon: Users,
       count: counts.leads,
     },
     {
       id: "customers",
       label: "Customer Directory",
+      shortLabel: "Customers",
       icon: UserCheck,
       count: counts.customers,
     },
     {
       id: "tasks",
       label: "Tasks & Agenda",
+      shortLabel: "Tasks",
       icon: CheckSquare,
       count: counts.tasks,
     },
     {
       id: "analytics",
       label: "Analytics & Quota",
+      shortLabel: "Analytics",
       icon: BarChart3,
     },
   ];
@@ -227,14 +219,14 @@ export function DashboardShell({
                 Switch Organization
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => setActiveWorkspace("Acme Global · Enterprise")}
+                onClick={() => setCustomWorkspace("Acme Global · Enterprise")}
                 className="cursor-pointer text-xs flex items-center justify-between"
               >
                 <span>Acme Global · Enterprise</span>
                 {activeWorkspace.includes("Acme") && <Check className="h-3.5 w-3.5 text-cyan-400" />}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setActiveWorkspace("Solstice Studio · Pro")}
+                onClick={() => setCustomWorkspace("Solstice Studio · Pro")}
                 className="cursor-pointer text-xs flex items-center justify-between"
               >
                 <span>Solstice Studio · Pro</span>
@@ -314,7 +306,6 @@ export function DashboardShell({
 
         {/* Sidebar Footer: User Status */}
         <div className="p-3 border-t border-white/[0.08] bg-black/20">
-          {/* User Profile Tile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -323,7 +314,7 @@ export function DashboardShell({
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar className="h-8 w-8 ring-1 ring-white/10 shadow-md shrink-0">
-                    <AvatarFallback className="bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white">
+                    <AvatarFallback className="bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white">
                       <User className="h-4 w-4 text-white" />
                     </AvatarFallback>
                   </Avatar>
@@ -385,43 +376,37 @@ export function DashboardShell({
       {/* Main Content Pane */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Executive Header Bar */}
-        <header className="sticky top-0 z-20 h-16 border-b border-white/[0.08] bg-[#09090e]/90 backdrop-blur-xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          {/* Left: Mobile Nav Toggle + Search */}
-          <div className="flex items-center gap-3 flex-1 max-w-xl">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={() => setMobileNavOpen(true)}
-              className="md:hidden h-9 w-9 p-0 rounded-lg border-white/10 text-zinc-400 hover:text-white"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            {/* Global Search Bar with ⌘K Badge */}
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
-              <Input
-                placeholder="Search deals, leads, companies, or contacts..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="h-9 pl-9 pr-14 text-xs bg-white/[0.03] border-white/10 rounded-xl focus:border-cyan-500/50"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={onOpenCommandMenu}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex h-5 items-center gap-1 rounded bg-white/[0.08] px-1.5 py-0 text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <Command className="h-3 w-3" />
-                <span>K</span>
-              </Button>
-            </div>
+        <header className="sticky top-0 z-20 h-16 border-b border-white/[0.08] bg-[#09090e]/90 backdrop-blur-xl px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
+          {/* Mobile Logo Brand */}
+          <div className="flex md:hidden items-center gap-2 shrink-0">
+            <Link href="/" className="flex items-center gap-2">
+              <LightCrmLogo size="sm" />
+            </Link>
           </div>
 
-          {/* Right: Quick Action Controls + Notifications */}
-          <div className="flex items-center gap-3">
+          {/* Search Bar with ⌘K Badge */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+            <Input
+              placeholder="Search CRM..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="h-9 pl-9 pr-10 sm:pr-14 text-xs bg-white/[0.03] border-white/10 rounded-xl focus:border-cyan-500/50 w-full"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={onOpenCommandMenu}
+              className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex h-5 items-center gap-1 rounded bg-white/[0.08] px-1.5 py-0 text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
+            >
+              <Command className="h-3 w-3" />
+              <span>K</span>
+            </Button>
+          </div>
+
+          {/* Right Controls: Notifications, Quick Create & Mobile Profile Trigger */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Notification Center Popover */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -479,74 +464,250 @@ export function DashboardShell({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Back to Public Site Link */}
-            <Link
-              href="/"
-              className="hidden lg:flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
-            >
-              <span>Website</span>
-              <ExternalLink className="h-3 w-3" />
-            </Link>
-
-            {/* Direct "+ Create" Button */}
+            {/* Quick "+ Create" Button - perfectly aligned with Bell & Avatar */}
             <Button
               size="sm"
               onClick={onOpenNewDealModal}
-              className="h-9 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-950/40 cursor-pointer"
+              className="h-9 w-9 sm:w-auto p-0 sm:px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-950/40 rounded-xl cursor-pointer shrink-0 flex items-center justify-center"
             >
-              <Plus className="h-3.5 w-3.5 mr-1" />
+              <Plus className="h-4 w-4 sm:mr-1.5" />
               <span className="hidden sm:inline">New Record</span>
             </Button>
+
+            {/* Mobile User Profile Avatar Trigger - harmonized 36px rounded-xl */}
+            <button
+              type="button"
+              onClick={() => setAccountDrawerOpen(true)}
+              className="md:hidden relative h-9 w-9 rounded-xl shrink-0 p-0 flex items-center justify-center ring-1 ring-white/10 hover:ring-cyan-500/40 focus:outline-none transition-all cursor-pointer overflow-visible"
+              aria-label="Open user profile and account options"
+            >
+              <Avatar className="h-9 w-9 rounded-xl">
+                <AvatarFallback className="rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 text-white flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </AvatarFallback>
+              </Avatar>
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#09090e] ${statusColorMap[userStatus]}`}
+              />
+            </button>
           </div>
         </header>
 
-        {/* Mobile Navigation Drawer */}
-        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="bg-[#0c0c14] border-white/10 text-zinc-100 p-4">
-            <SheetHeader className="mb-4 text-left">
-              <LightCrmLogo size="sm" />
-              <SheetTitle className="text-sm font-bold text-zinc-400 mt-2">
-                Navigation
-              </SheetTitle>
-            </SheetHeader>
+        {/* Mobile Account & Workspace Drawer (Full Profile Info & Sign Out) */}
+        <Sheet open={accountDrawerOpen} onOpenChange={setAccountDrawerOpen}>
+          <SheetContent
+            side="bottom"
+            className="md:hidden bg-[#0e0e17] border-t border-white/10 text-zinc-100 pt-8 pb-6 px-5 rounded-t-3xl max-h-[85vh] overflow-y-auto"
+          >
+            {/* Top Sheet Drag Indicator */}
+            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-5" />
 
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      onTabChange(item.id);
-                      setMobileNavOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium ${
-                      isActive
-                        ? "bg-cyan-500/20 text-cyan-300 font-bold"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
+            {/* User Profile Header Card - positioned with generous clearance from the top X button */}
+            <div className="mt-2 flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
+              <div className="relative">
+                <Avatar className="h-12 w-12 rounded-xl ring-1 ring-white/15">
+                  <AvatarFallback className="rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white flex items-center justify-center">
+                    <User className="h-6 w-6 text-white" />
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-[#0e0e17] ${statusColorMap[userStatus]}`}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white truncate">
+                    {userProfile?.fullName || "Alex Rivera"}
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] font-mono py-0 px-1.5 border-cyan-500/30 text-cyan-300 bg-cyan-950/40 shrink-0"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.count !== undefined && (
-                      <span className="text-[10px] font-mono">{item.count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
+                    {userProfile?.plan?.toUpperCase() || "ENTERPRISE"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-zinc-400 truncate mt-0.5">
+                  {userProfile?.email || "demo@lightcrm.io"}
+                </p>
+                <p className="text-[11px] text-zinc-500 font-medium">
+                  {userProfile?.role || "Head of Sales"} · {userProfile?.companyName || "Acme Global"}
+                </p>
+              </div>
+            </div>
+
+            {/* Live Status Selector */}
+            <div className="mt-4">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block mb-2 px-1">
+                Availability Status
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["Available", "Away", "Do Not Disturb"] as const).map((status) => {
+                  const isSelected = userStatus === status;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => handleStatusChange(status)}
+                      className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-white/[0.08] border-cyan-500/50 text-white shadow-sm"
+                          : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${statusColorMap[status]}`} />
+                      <span className="truncate">{status === "Do Not Disturb" ? "DND" : status}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Organization / Workspace Switcher */}
+            <div className="mt-4">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 block mb-2 px-1">
+                Active Organization
+              </label>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomWorkspace("Acme Global · Enterprise");
+                    toast.success("Workspace switched to Acme Global");
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs text-left transition-colors ${
+                    activeWorkspace.includes("Acme")
+                      ? "bg-cyan-500/10 border-cyan-500/30 text-white font-medium"
+                      : "bg-white/[0.02] border-white/[0.06] text-zinc-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="h-4 w-4 text-cyan-400" />
+                    <span>Acme Global (Enterprise)</span>
+                  </div>
+                  {activeWorkspace.includes("Acme") && (
+                    <Check className="h-4 w-4 text-cyan-400" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomWorkspace("Solstice Studio · Pro");
+                    toast.success("Workspace switched to Solstice Studio");
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs text-left transition-colors ${
+                    activeWorkspace.includes("Solstice")
+                      ? "bg-cyan-500/10 border-cyan-500/30 text-white font-medium"
+                      : "bg-white/[0.02] border-white/[0.06] text-zinc-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="h-4 w-4 text-indigo-400" />
+                    <span>Solstice Studio (Pro)</span>
+                  </div>
+                  {activeWorkspace.includes("Solstice") && (
+                    <Check className="h-4 w-4 text-cyan-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Workspace Stats */}
+            <div className="mt-4 grid grid-cols-4 gap-2 text-center p-3 rounded-2xl bg-black/30 border border-white/[0.06]">
+              <div>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">Deals</div>
+                <div className="text-sm font-bold text-white mt-0.5">{counts.deals}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">Leads</div>
+                <div className="text-sm font-bold text-cyan-300 mt-0.5">{counts.leads}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">Clients</div>
+                <div className="text-sm font-bold text-indigo-300 mt-0.5">{counts.customers}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">Tasks</div>
+                <div className="text-sm font-bold text-amber-300 mt-0.5">{counts.tasks}</div>
+              </div>
+            </div>
+
+            {/* Sign Out Action Button */}
+            <div className="mt-6 pt-4 border-t border-white/[0.08]">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleSignOut}
+                className="w-full h-11 rounded-xl border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 font-medium text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <LogOut className="h-4 w-4 text-red-400" />
+                <span>Sign out of LightCRM</span>
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
 
-        {/* Responsive Content Workspace */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Responsive Content Workspace - with mobile bottom padding for navigation bar */}
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 md:pb-8 overflow-y-auto">
           {children}
         </main>
+
+        {/* Native Mobile Bottom Navigation Bar - Modern Full-Depth Glass Dock */}
+        <nav
+          aria-label="Mobile Navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#09090f]/95 backdrop-blur-2xl border-t border-white/[0.08] px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] flex items-center justify-around shadow-[0_-8px_32px_rgba(0,0,0,0.8)]"
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onTabChange(item.id)}
+                className="relative flex flex-col items-center justify-center py-2 px-1 flex-1 rounded-xl cursor-pointer select-none transition-all group"
+              >
+                {/* Modern Full Illuminated Glass Tile Active Indicator */}
+                {isActive && (
+                  <motion.div
+                    layoutId="mobileNavActiveFullTile"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-b from-cyan-500/[0.18] via-cyan-500/[0.08] to-transparent border border-cyan-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_20px_rgba(6,182,212,0.18)]"
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                  >
+                    {/* Micro Specular Top Glow Beam */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                  </motion.div>
+                )}
+
+                {/* Icon */}
+                <div className="relative z-10 flex items-center justify-center">
+                  <Icon
+                    className={`h-5 w-5 transition-all duration-200 ${
+                      isActive
+                        ? "text-cyan-300 scale-105 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                        : "text-zinc-400 group-hover:text-zinc-200"
+                    }`}
+                  />
+                </div>
+
+                {/* Short Label */}
+                <span
+                  className={`relative z-10 text-[10px] tracking-tight mt-1 transition-colors ${
+                    isActive
+                      ? "font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                      : "font-normal text-zinc-400 group-hover:text-zinc-200"
+                  }`}
+                >
+                  {item.shortLabel}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );
 }
+

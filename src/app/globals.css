@@ -104,6 +104,17 @@
   background: #3f3f46;
 }
 
+/* Hide scrollbar for smooth carousel swipe on mobile */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Animations */
 @keyframes shimmer {
   0% {
