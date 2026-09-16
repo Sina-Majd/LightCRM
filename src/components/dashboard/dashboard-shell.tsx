@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -18,7 +18,11 @@ import {
   Building2,
   Check,
   User,
+  Briefcase,
+  CreditCard,
+  CheckCheck,
 } from "lucide-react";
+import { formatNotificationTime, formatFullTimestamp } from "@/lib/date-utils";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +62,7 @@ interface DashboardShellProps {
   onOpenCommandMenu?: () => void;
   notifications: CRMNotification[];
   onMarkNotificationRead?: (id: string) => void;
+  onMarkAllNotificationsRead?: () => void;
   userProfile?: UserProfile | null;
   counts: {
     deals: number;
@@ -77,6 +82,7 @@ export function DashboardShell({
   onOpenCommandMenu,
   notifications,
   onMarkNotificationRead,
+  onMarkAllNotificationsRead,
   userProfile,
   counts,
   children,
@@ -87,6 +93,31 @@ export function DashboardShell({
     userProfile?.status || "Available"
   );
   const [customWorkspace, setCustomWorkspace] = useState<string | null>(null);
+
+  // Live ticker to refresh relative time strings every 30 seconds
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getNotificationIcon = (type: CRMNotification["type"]) => {
+    switch (type) {
+      case "deal":
+        return <Briefcase className="h-3.5 w-3.5 text-emerald-400" />;
+      case "lead":
+        return <UserCheck className="h-3.5 w-3.5 text-purple-400" />;
+      case "customer":
+        return <Building2 className="h-3.5 w-3.5 text-cyan-400" />;
+      case "payment":
+        return <CreditCard className="h-3.5 w-3.5 text-amber-400" />;
+      case "system":
+      default:
+        return <Bell className="h-3.5 w-3.5 text-zinc-400" />;
+    }
+  };
 
   const activeWorkspace =
     customWorkspace ||
@@ -186,9 +217,6 @@ export function DashboardShell({
         <div className="p-4 border-b border-white/[0.08]">
           <Link href="/" className="flex items-center gap-2 mb-4 group">
             <LightCrmLogo size="sm" />
-            <Badge variant="outline" className="text-[9px] font-mono py-0 px-1.5 border-cyan-500/30 text-cyan-300 bg-cyan-950/40">
-              v2.4
-            </Badge>
           </Link>
 
           {/* Workspace Selector Dropdown */}
@@ -426,40 +454,80 @@ export function DashboardShell({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-80 sm:w-96 bg-[#12121c] border-white/10 text-zinc-100 p-2 shadow-2xl"
+                className="w-80 sm:w-96 bg-[#12121c] border-white/10 text-zinc-100 p-2.5 shadow-2xl"
               >
-                <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.06] mb-1">
+                <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.06] mb-1.5">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-white">Notifications</span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-cyan-500/30 text-cyan-300">
-                      {unreadNotifications} new
-                    </Badge>
                   </div>
-                  <span className="text-[11px] text-zinc-500 font-mono">Live updates</span>
+                  <div className="flex items-center gap-2">
+                    {unreadNotifications > 0 && onMarkAllNotificationsRead && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMarkAllNotificationsRead();
+                        }}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                      >
+                        <CheckCheck className="h-3 w-3" />
+                        <span>Mark all read</span>
+                      </button>
+                    )}
+                    <span className="text-[10px] text-zinc-500 font-mono">Live updates</span>
+                  </div>
                 </div>
 
-                <div className="space-y-1 max-h-72 overflow-y-auto py-1">
-                  {uniqueNotifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      onClick={() => onMarkNotificationRead?.(notif.id)}
-                      className={`p-2.5 rounded-lg transition-colors cursor-pointer ${
-                        notif.read
-                          ? "hover:bg-white/[0.03] opacity-60"
-                          : "bg-cyan-500/[0.08] border border-cyan-500/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs font-semibold text-white mb-0.5">
-                        <span className="truncate">{notif.title}</span>
-                        <span className="text-[10px] font-mono text-zinc-500 shrink-0 ml-2">
-                          {notif.time}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-300 leading-snug">
-                        {notif.description}
-                      </p>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto py-1 pr-0.5">
+                  {uniqueNotifications.length === 0 ? (
+                    <div className="py-8 text-center text-zinc-500 flex flex-col items-center justify-center gap-1.5">
+                      <Bell className="h-5 w-5 text-zinc-600 opacity-60" />
+                      <span className="text-xs text-zinc-400">No notifications yet</span>
+                      <span className="text-[10px] text-zinc-600">Activity will appear here in real-time</span>
                     </div>
-                  ))}
+                  ) : (
+                    uniqueNotifications.map((notif) => {
+                      const displayTime = formatNotificationTime(notif.createdAt, notif.time);
+                      const fullTime = formatFullTimestamp(notif.createdAt);
+
+                      return (
+                        <div
+                          key={notif.id}
+                          onClick={() => onMarkNotificationRead?.(notif.id)}
+                          className={`p-2.5 rounded-lg transition-colors cursor-pointer relative ${
+                            notif.read
+                              ? "hover:bg-white/[0.03] opacity-60"
+                              : "bg-cyan-500/[0.08] border border-cyan-500/20 hover:bg-cyan-500/[0.12]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 shrink-0 h-6 w-6 rounded-md bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
+                              {getNotificationIcon(notif.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <span className="text-xs font-semibold text-white truncate">
+                                  {notif.title}
+                                </span>
+                                <span
+                                  title={fullTime || displayTime}
+                                  className="text-[10px] font-mono text-zinc-400 shrink-0 ml-1.5"
+                                >
+                                  {displayTime}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-zinc-300 leading-snug break-words">
+                                {notif.description}
+                              </p>
+                            </div>
+                            {!notif.read && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shrink-0 mt-1" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
