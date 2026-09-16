@@ -58,6 +58,7 @@ import {
   fetchNotifications,
   createNotification,
   markNotificationRead,
+  markAllNotificationsRead,
 } from "@/lib/supabase/crm-service";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -346,14 +347,38 @@ export default function DashboardPage() {
   const handleCreateDeal = async (newDeal: Deal) => {
     if (!user?.id) return;
 
-    // Optimistic update
+    // Optimistic record update
     setDeals((prev) => dedupeById([newDeal, ...prev]));
 
     toast.success("Opportunity Created", {
       description: `${newDeal.title} (${newDeal.formattedValue}) added to pipeline.`,
     });
 
-    const created = await createDeal(user.id, newDeal);
+    const nowIso = new Date().toISOString();
+    const tempNotifId = `temp-notif-${Date.now()}`;
+    const optimisticNotif: CRMNotification = {
+      id: tempNotifId,
+      title: "New opportunity created",
+      description: `${newDeal.title} (${newDeal.formattedValue}) was added to pipeline.`,
+      time: "Just now",
+      createdAt: nowIso,
+      read: false,
+      type: "deal",
+    };
+    setNotifications((prev) => dedupeById([optimisticNotif, ...prev]));
+
+    const [created, notif] = await Promise.all([
+      createDeal(user.id, newDeal),
+      createNotification(user.id, {
+        title: "New opportunity created",
+        description: `${newDeal.title} (${newDeal.formattedValue}) was added to pipeline.`,
+        time: "Just now",
+        createdAt: nowIso,
+        read: false,
+        type: "deal",
+      }),
+    ]);
+
     if (created) {
       setDeals((prev) => {
         const hasExisting = prev.some((d) => d.id === created.id || d.id === newDeal.id);
@@ -362,16 +387,10 @@ export default function DashboardPage() {
       });
     }
 
-    const notif = await createNotification(user.id, {
-      title: "New opportunity created",
-      description: `${newDeal.title} (${newDeal.formattedValue}) was added to pipeline.`,
-      time: "Just now",
-      read: false,
-      type: "deal",
-    });
-
     if (notif) {
-      setNotifications((prev) => dedupeById([notif, ...prev]));
+      setNotifications((prev) =>
+        dedupeById(prev.map((n) => (n.id === tempNotifId ? notif : n)))
+      );
     }
   };
 
@@ -385,7 +404,31 @@ export default function DashboardPage() {
       description: `${newLead.name} (${newLead.company}) added to leads directory.`,
     });
 
-    const created = await createLead(user.id, newLead);
+    const nowIso = new Date().toISOString();
+    const tempNotifId = `temp-notif-${Date.now()}`;
+    const optimisticNotif: CRMNotification = {
+      id: tempNotifId,
+      title: "New lead registered",
+      description: `${newLead.name} (${newLead.company}) scored ${newLead.score}/100.`,
+      time: "Just now",
+      createdAt: nowIso,
+      read: false,
+      type: "lead",
+    };
+    setNotifications((prev) => dedupeById([optimisticNotif, ...prev]));
+
+    const [created, notif] = await Promise.all([
+      createLead(user.id, newLead),
+      createNotification(user.id, {
+        title: "New lead registered",
+        description: `${newLead.name} (${newLead.company}) scored ${newLead.score}/100.`,
+        time: "Just now",
+        createdAt: nowIso,
+        read: false,
+        type: "lead",
+      }),
+    ]);
+
     if (created) {
       setLeads((prev) => {
         const hasExisting = prev.some((l) => l.id === created.id || l.id === newLead.id);
@@ -394,16 +437,10 @@ export default function DashboardPage() {
       });
     }
 
-    const notif = await createNotification(user.id, {
-      title: "New lead registered",
-      description: `${newLead.name} (${newLead.company}) scored ${newLead.score}/100.`,
-      time: "Just now",
-      read: false,
-      type: "lead",
-    });
-
     if (notif) {
-      setNotifications((prev) => dedupeById([notif, ...prev]));
+      setNotifications((prev) =>
+        dedupeById(prev.map((n) => (n.id === tempNotifId ? notif : n)))
+      );
     }
   };
 
@@ -417,7 +454,31 @@ export default function DashboardPage() {
       description: `${newCustomer.company} added to client directory.`,
     });
 
-    const created = await createCustomer(user.id, newCustomer);
+    const nowIso = new Date().toISOString();
+    const tempNotifId = `temp-notif-${Date.now()}`;
+    const optimisticNotif: CRMNotification = {
+      id: tempNotifId,
+      title: "New customer added",
+      description: `${newCustomer.company} added with ${newCustomer.formattedLtv} initial LTV.`,
+      time: "Just now",
+      createdAt: nowIso,
+      read: false,
+      type: "customer",
+    };
+    setNotifications((prev) => dedupeById([optimisticNotif, ...prev]));
+
+    const [created, notif] = await Promise.all([
+      createCustomer(user.id, newCustomer),
+      createNotification(user.id, {
+        title: "New customer added",
+        description: `${newCustomer.company} added with ${newCustomer.formattedLtv} initial LTV.`,
+        time: "Just now",
+        createdAt: nowIso,
+        read: false,
+        type: "customer",
+      }),
+    ]);
+
     if (created) {
       setCustomers((prev) => {
         const hasExisting = prev.some((c) => c.id === created.id || c.id === newCustomer.id);
@@ -426,16 +487,10 @@ export default function DashboardPage() {
       });
     }
 
-    const notif = await createNotification(user.id, {
-      title: "New customer added",
-      description: `${newCustomer.company} added with ${newCustomer.formattedLtv} initial LTV.`,
-      time: "Just now",
-      read: false,
-      type: "payment",
-    });
-
     if (notif) {
-      setNotifications((prev) => dedupeById([notif, ...prev]));
+      setNotifications((prev) =>
+        dedupeById(prev.map((n) => (n.id === tempNotifId ? notif : n)))
+      );
     }
   };
 
@@ -518,21 +573,39 @@ export default function DashboardPage() {
     // Remove from leads
     setLeads((prev) => prev.filter((l) => l.id !== lead.id));
 
-    const convertedDeal = await convertLeadToDeal(user.id, lead);
+    const nowIso = new Date().toISOString();
+    const tempNotifId = `temp-notif-${Date.now()}`;
+    const optimisticNotif: CRMNotification = {
+      id: tempNotifId,
+      title: "Lead converted to deal",
+      description: `${lead.name} (${lead.company}) converted into Qualified Opportunity.`,
+      time: "Just now",
+      createdAt: nowIso,
+      read: false,
+      type: "lead",
+    };
+    setNotifications((prev) => dedupeById([optimisticNotif, ...prev]));
+
+    const [convertedDeal, notif] = await Promise.all([
+      convertLeadToDeal(user.id, lead),
+      createNotification(user.id, {
+        title: "Lead converted to deal",
+        description: `${lead.name} (${lead.company}) converted into Qualified Opportunity.`,
+        time: "Just now",
+        createdAt: nowIso,
+        read: false,
+        type: "lead",
+      }),
+    ]);
+
     if (convertedDeal) {
       setDeals((prev) => dedupeById([convertedDeal, ...prev]));
     }
 
-    const notif = await createNotification(user.id, {
-      title: "Lead converted to deal",
-      description: `${lead.name} (${lead.company}) converted into Qualified Opportunity.`,
-      time: "Just now",
-      read: false,
-      type: "lead",
-    });
-
     if (notif) {
-      setNotifications((prev) => dedupeById([notif, ...prev]));
+      setNotifications((prev) =>
+        dedupeById(prev.map((n) => (n.id === tempNotifId ? notif : n)))
+      );
     }
 
     setActiveTab("pipeline");
@@ -625,6 +698,12 @@ export default function DashboardPage() {
     await markNotificationRead(id);
   };
 
+  const handleMarkAllNotificationsRead = async () => {
+    if (!user?.id) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await markAllNotificationsRead(user.id);
+  };
+
   if (isLoadingData) {
     return (
       <div className="min-h-screen bg-[#08080c] flex flex-col items-center justify-center text-zinc-100">
@@ -659,6 +738,7 @@ export default function DashboardPage() {
       onOpenCommandMenu={() => setCommandMenuOpen(true)}
       notifications={notifications}
       onMarkNotificationRead={handleMarkNotificationRead}
+      onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
       userProfile={userProfile}
       counts={{
         deals: deals.length,

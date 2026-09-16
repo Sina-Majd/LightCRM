@@ -10,6 +10,7 @@ import {
   INITIAL_PIPELINE_STAGES,
   getStageTheme,
 } from "@/data/dashboard-mock-data";
+import { formatNotificationTime } from "@/lib/date-utils";
 
 export interface UserProfile {
   id: string;
@@ -529,7 +530,8 @@ export async function fetchNotifications(userId: string): Promise<CRMNotificatio
     id: n.id,
     title: n.title,
     description: n.description,
-    time: n.time || "Just now",
+    time: formatNotificationTime(n.created_at, n.time),
+    createdAt: n.created_at,
     read: n.read,
     type: n.type as any,
   }));
@@ -540,32 +542,42 @@ export async function createNotification(
   notification: Omit<CRMNotification, "id">
 ): Promise<CRMNotification | null> {
   const supabase = createClient();
+  const createdAt = notification.createdAt || new Date().toISOString();
   const { data, error } = await supabase
     .from("notifications")
     .insert({
       user_id: userId,
       title: notification.title,
       description: notification.description,
-      time: notification.time,
-      read: notification.read,
+      time: notification.time || formatNotificationTime(createdAt),
+      created_at: createdAt,
+      read: notification.read ?? false,
       type: notification.type,
     })
     .select()
     .single();
 
-  if (error || !data) return null;
+  if (error || !data) {
+    if (error) console.error("Error creating notification:", error);
+    return null;
+  }
 
   return {
     id: data.id,
     title: data.title,
     description: data.description,
-    time: data.time,
+    time: formatNotificationTime(data.created_at, data.time),
+    createdAt: data.created_at,
     read: data.read,
     type: data.type as any,
   };
 }
 
 export async function markNotificationRead(notifId: string) {
+  // Guard against non-UUID IDs (such as mock items "notif-1" or temporary optimistic IDs)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(notifId);
+  if (!isUuid) return;
+
   const supabase = createClient();
   const { error } = await supabase
     .from("notifications")
@@ -573,4 +585,16 @@ export async function markNotificationRead(notifId: string) {
     .eq("id", notifId);
 
   if (error) console.error("Error marking notification read:", error);
+}
+
+export async function markAllNotificationsRead(userId: string) {
+  if (!userId) return;
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", userId)
+    .eq("read", false);
+
+  if (error) console.error("Error marking all notifications read:", error);
 }

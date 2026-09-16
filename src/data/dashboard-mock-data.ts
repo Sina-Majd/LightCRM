@@ -125,13 +125,16 @@ export interface CRMTask {
   relatedType: "deal" | "lead" | "customer";
 }
 
+export type CRMNotificationType = "deal" | "lead" | "payment" | "customer" | "system";
+
 export interface CRMNotification {
   id: string;
   title: string;
   description: string;
-  time: string;
+  time?: string;
+  createdAt?: string;
   read: boolean;
-  type: "deal" | "lead" | "payment" | "system";
+  type: CRMNotificationType;
 }
 
 export const INITIAL_PIPELINE_STAGES: PipelineStage[] = [
@@ -601,6 +604,7 @@ export const INITIAL_NOTIFICATIONS: CRMNotification[] = [
     title: "Deal stage advanced to Closed Won",
     description: "Alex Rivera moved 'Commercial Baking Automation' ($16,800) to Closed Won.",
     time: "15m ago",
+    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
     read: false,
     type: "deal",
   },
@@ -609,6 +613,7 @@ export const INITIAL_NOTIFICATIONS: CRMNotification[] = [
     title: "New high-score inbound lead",
     description: "Rachel Thorne (Vanguard Wealth Partners) requested a demo. Score: 96/100.",
     time: "1h ago",
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     read: false,
     type: "lead",
   },
@@ -617,6 +622,7 @@ export const INITIAL_NOTIFICATIONS: CRMNotification[] = [
     title: "Invoice #1084 paid in full",
     description: "Solstice Creative paid $4,800 invoice via Stripe instant bank transfer.",
     time: "3h ago",
+    createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
     read: true,
     type: "payment",
   },
@@ -625,6 +631,7 @@ export const INITIAL_NOTIFICATIONS: CRMNotification[] = [
     title: "System sync completed",
     description: "Supabase real-time listeners synchronized with 0 conflicts.",
     time: "5h ago",
+    createdAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
     read: true,
     type: "system",
   },
