@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:fast": "tsc --noEmit && eslint",
+    "check:full": "npm run check:fast && next build"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
