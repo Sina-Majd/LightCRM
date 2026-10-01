@@ -1,18 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   Users,
   Package,
   FileText,
   TrendingUp,
   Check,
-  Building2,
-  Phone,
-  Mail,
-  Calendar,
   Sparkles,
-  CreditCard,
   Send,
   Clock,
 } from "lucide-react";
@@ -176,9 +172,11 @@ export function PersonaTabs() {
                   <div className="rounded-2xl border border-white/10 bg-[#0e0e15]/90 backdrop-blur-xl p-5 sm:p-6 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)]">
                     <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
                       <div className="flex items-center gap-3">
-                        <img
+                        <Image
                           src="/solstice-logo.jpg"
                           alt="Solstice Creative"
+                          width={44}
+                          height={44}
                           className="h-11 w-11 rounded-xl object-cover border border-cyan-500/30 shadow-[0_0_15px_rgba(56,189,248,0.2)]"
                         />
                         <div>
@@ -201,9 +199,11 @@ export function PersonaTabs() {
                       <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3 text-xs">
                         <div className="text-zinc-500 text-[10px] uppercase">Primary Contact</div>
                         <div className="flex items-center gap-2.5 mt-1.5">
-                          <img
+                          <Image
                             src="/astrid-avatar.jpg"
                             alt="Astrid Lindholm"
+                            width={32}
+                            height={32}
                             className="h-8 w-8 rounded-full object-cover border border-white/15"
                           />
                           <div>

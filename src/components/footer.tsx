@@ -70,7 +70,7 @@ export function Footer() {
           {/* Column 2: Who It's For */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-white">
-              Who It's For
+              Who It&apos;s For
             </h4>
             <ul className="space-y-2 text-xs">
               <li>

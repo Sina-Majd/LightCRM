@@ -34,7 +34,7 @@ export function Hero() {
             className="shrink-0 whitespace-nowrap gap-1.5 px-2.5 py-0.5 text-[11px] sm:text-xs font-medium shadow-xs bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
           >
             <Zap className="h-3.5 w-3.5 shrink-0 text-cyan-400 fill-cyan-400/20" />
-            <span>What's new</span>
+            <span>What&apos;s new</span>
           </Badge>
           <span className="font-normal text-zinc-300 truncate text-left">
             <span className="sm:hidden">Faster invoicing & order tracking</span>

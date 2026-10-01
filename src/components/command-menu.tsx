@@ -10,9 +10,7 @@ import {
   DollarSign,
   FileText,
   Package,
-  Search,
   Download,
-  Check,
   LogIn,
   UserPlus,
 } from "lucide-react";

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   MousePointerClick,
   Smartphone,
@@ -13,14 +14,11 @@ import {
   Download,
   CheckCircle2,
   Package,
-  FileText,
   Sparkles,
   Building2,
   Share2,
   CreditCard,
   Check,
-  Receipt,
-  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -137,9 +135,11 @@ export function BentoGrid() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <img
+                          <Image
                             src="/solstice-logo.jpg"
                             alt="Solstice Creative"
+                            width={16}
+                            height={16}
                             className="h-4 w-4 rounded object-cover shrink-0"
                           />
                           <span className="text-xs font-semibold text-white truncate">Solstice Creative</span>
@@ -173,9 +173,11 @@ export function BentoGrid() {
                         <>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <img
+                              <Image
                                 src="/solstice-logo.jpg"
                                 alt="Solstice Creative"
+                                width={16}
+                                height={16}
                                 className="h-4 w-4 rounded object-cover shrink-0"
                               />
                               <span className="text-xs font-semibold text-white truncate">Solstice Creative</span>
@@ -224,17 +226,21 @@ export function BentoGrid() {
               <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0d0d12] p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2.5">
-                    <img
+                    <Image
                       src="/astrid-avatar.jpg"
                       alt="Astrid Lindholm"
+                      width={32}
+                      height={32}
                       className="h-8 w-8 rounded-full object-cover border border-cyan-500/30 shrink-0"
                     />
                     <div>
                       <span className="text-white font-semibold">Astrid Lindholm</span>
                       <div className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                        <img
+                        <Image
                           src="/solstice-logo.jpg"
                           alt="Solstice Creative"
+                          width={12}
+                          height={12}
                           className="h-3 w-3 rounded object-cover"
                         />
                         <span>Solstice Creative</span>
@@ -338,9 +344,11 @@ export function BentoGrid() {
                       </div>
                       <div className="rounded-lg bg-[#14141d] p-2.5 border border-white/[0.04] flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
+                          <Image
                             src="/astrid-avatar.jpg"
                             alt="Astrid"
+                            width={24}
+                            height={24}
                             className="h-6 w-6 rounded-full object-cover border border-white/10"
                           />
                           <div>
@@ -529,9 +537,11 @@ export function BentoGrid() {
                   <div className="lg:col-span-7 rounded-lg border border-white/[0.06] bg-[#12121a] p-4 space-y-3.5">
                     <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
                       <div className="flex items-center gap-2.5">
-                        <img
+                        <Image
                           src="/solstice-logo.jpg"
                           alt="Solstice Creative"
+                          width={28}
+                          height={28}
                           className="h-7 w-7 rounded-md object-cover border border-white/10"
                         />
                         <div>
@@ -548,9 +558,11 @@ export function BentoGrid() {
                     <div className="flex items-center justify-between text-xs bg-white/[0.02] rounded p-2 border border-white/[0.04]">
                       <span className="text-zinc-400 text-[11px]">Billed To:</span>
                       <div className="flex items-center gap-1.5 font-medium text-zinc-200">
-                        <img
+                        <Image
                           src="/astrid-avatar.jpg"
                           alt="Astrid Lindholm"
+                          width={16}
+                          height={16}
                           className="h-4 w-4 rounded-full object-cover"
                         />
                         <span>Astrid Lindholm</span>
