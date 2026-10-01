@@ -1,35 +1,34 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { useMediaQuery } from "@/lib/hooks";
 
 export function AmbientBackground() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
-  const [isPointerDevice, setIsPointerDevice] = useState(false);
+  const isPointerDevice = useMediaQuery("(pointer: fine)", false);
   const requestRef = useRef<number | null>(null);
   const targetPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
-      setIsPointerDevice(true);
+    if (!isPointerDevice) return;
 
-      const handleMouseMove = (e: MouseEvent) => {
-        targetPos.current = { x: e.clientX, y: e.clientY };
+    const handleMouseMove = (e: MouseEvent) => {
+      targetPos.current = { x: e.clientX, y: e.clientY };
 
-        if (!requestRef.current) {
-          requestRef.current = requestAnimationFrame(() => {
-            setMousePos({ x: targetPos.current.x, y: targetPos.current.y });
-            requestRef.current = null;
-          });
-        }
-      };
+      if (!requestRef.current) {
+        requestRef.current = requestAnimationFrame(() => {
+          setMousePos({ x: targetPos.current.x, y: targetPos.current.y });
+          requestRef.current = null;
+        });
+      }
+    };
 
-      window.addEventListener("mousemove", handleMouseMove, { passive: true });
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        if (requestRef.current) cancelAnimationFrame(requestRef.current);
-      };
-    }
-  }, []);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [isPointerDevice]);
 
   return (
     <div

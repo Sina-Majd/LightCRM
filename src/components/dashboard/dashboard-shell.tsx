@@ -92,6 +92,11 @@ export function DashboardShell({
   const [userStatus, setUserStatus] = useState<"Available" | "Away" | "Do Not Disturb">(
     userProfile?.status || "Available"
   );
+  const [prevProfileStatus, setPrevProfileStatus] = useState(userProfile?.status);
+  if (userProfile?.status && userProfile.status !== prevProfileStatus) {
+    setPrevProfileStatus(userProfile.status);
+    setUserStatus(userProfile.status);
+  }
   const [customWorkspace, setCustomWorkspace] = useState<string | null>(null);
 
   // Live ticker to refresh relative time strings every 30 seconds

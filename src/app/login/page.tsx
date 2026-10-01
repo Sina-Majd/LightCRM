@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -44,7 +45,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -75,11 +76,12 @@ export default function LoginPage() {
       });
       router.push("/dashboard");
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsLoading(false);
-      setErrorMessage(err.message || "An unexpected error occurred.");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setErrorMessage(message);
       toast.error("Sign In Error", {
-        description: err.message || "An unexpected error occurred.",
+        description: message,
       });
     }
   };
@@ -161,9 +163,11 @@ export default function LoginPage() {
                 &ldquo;LightCRM cut our invoice turnaround from 14 days down to 24 hours. The interface is lightning fast and our entire team uses it without any training.&rdquo;
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <img
+                <Image
                   src="/astrid-avatar.jpg"
                   alt="Astrid Lindholm"
+                  width={36}
+                  height={36}
                   className="h-9 w-9 rounded-full object-cover border border-white/20 shadow-md shrink-0"
                 />
                 <div>

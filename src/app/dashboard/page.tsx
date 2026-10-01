@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DashboardShell,
@@ -35,6 +35,7 @@ import {
 } from "@/data/dashboard-mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import {
   UserProfile,
   fetchUserProfile,
@@ -60,7 +61,6 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/lib/supabase/crm-service";
-import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 // Helper to guarantee unique IDs in arrays across optimistic and realtime updates
@@ -140,7 +140,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Supabase User & Profile
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -279,7 +279,7 @@ export default function DashboardPage() {
         },
         async () => {
           const freshLeads = await fetchLeads(user.id);
-          setLeads((prev) => dedupeById(freshLeads));
+          setLeads(dedupeById(freshLeads));
         }
       )
       .on(
@@ -292,7 +292,7 @@ export default function DashboardPage() {
         },
         async () => {
           const freshCustomers = await fetchCustomers(user.id);
-          setCustomers((prev) => dedupeById(freshCustomers));
+          setCustomers(dedupeById(freshCustomers));
         }
       )
       .on(
@@ -305,7 +305,7 @@ export default function DashboardPage() {
         },
         async () => {
           const freshTasks = await fetchTasks(user.id);
-          setTasks((prev) => dedupeById(freshTasks));
+          setTasks(dedupeById(freshTasks));
         }
       )
       .on(
@@ -318,7 +318,7 @@ export default function DashboardPage() {
         },
         async () => {
           const freshNotifs = await fetchNotifications(user.id);
-          setNotifications((prev) => dedupeById(freshNotifs));
+          setNotifications(dedupeById(freshNotifs));
         }
       )
       .subscribe();
@@ -788,7 +788,7 @@ export default function DashboardPage() {
               searchQuery={searchQuery}
               onOpenNewCustomerModal={() => handleOpenCreateRecord("customer")}
               onDeleteCustomer={handleDeleteCustomer}
-              onAddOpportunityForCustomer={(cust) =>
+              onAddOpportunityForCustomer={() =>
                 handleOpenCreateRecord("deal")
               }
               onSelectCustomer={(cust) => {

@@ -1,24 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   TrendingUp,
-  DollarSign,
   Building2,
-  CheckCircle2,
   Clock,
-  FileText,
   Users,
   Package,
-  Activity,
-  ArrowUpRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   INITIAL_ORDERS_DATA,
   MONTHLY_REVENUE_DATA,
   BUSINESS_DASHBOARD_STATS,
-  BusinessOrder,
 } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,6 +22,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useIsClient } from "@/lib/hooks";
 
 const chartConfig = {
   received: {
@@ -41,13 +36,9 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function HeroMockup() {
+  const isMounted = useIsClient();
   const [ordersData] = useState(INITIAL_ORDERS_DATA);
   const [activeOrderId, setActiveOrderId] = useState<string>("order-101");
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   return (
     <section id="pipeline" className="relative px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
@@ -104,7 +95,7 @@ export function HeroMockup() {
           {/* Quick Business KPI Metric Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/[0.06] border-b border-white/[0.06] bg-[#0e0e14]/70">
             <div className="p-3 sm:px-5">
-              <div className="text-[10px] font-mono text-zinc-500 uppercase">This Month's Revenue</div>
+              <div className="text-[10px] font-mono text-zinc-500 uppercase">This Month&apos;s Revenue</div>
               <div className="font-mono text-base font-bold text-white mt-0.5">
                 {BUSINESS_DASHBOARD_STATS.monthlyRevenue}
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -46,11 +46,13 @@ function RegisterContent() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [prevInitialEmail, setPrevInitialEmail] = useState(initialEmail);
+  if (initialEmail !== prevInitialEmail) {
+    setPrevInitialEmail(initialEmail);
     if (initialEmail) {
       setEmail(initialEmail);
     }
-  }, [initialEmail]);
+  }
 
   // Calculate password strength score (0 to 4)
   const getPasswordStrength = (pass: string) => {
@@ -127,11 +129,12 @@ function RegisterContent() {
         );
         setIsLoading(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsLoading(false);
-      setErrorMessage(err.message || "Failed to register account.");
+      const message = err instanceof Error ? err.message : "Failed to register account.";
+      setErrorMessage(message);
       toast.error("Registration Error", {
-        description: err.message || "Failed to register account.",
+        description: message,
       });
     }
   };
