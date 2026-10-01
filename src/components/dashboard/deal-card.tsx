@@ -23,6 +23,7 @@ import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useIsDesktop } from "@/lib/hooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,17 +69,6 @@ const priorityConfig = {
     dot: "bg-zinc-500",
   },
 };
-
-function useIsDesktop(): boolean {
-  return React.useSyncExternalStore(
-    (callback) => {
-      window.addEventListener("resize", callback);
-      return () => window.removeEventListener("resize", callback);
-    },
-    () => (typeof window !== "undefined" ? window.innerWidth >= 768 : true),
-    () => true
-  );
-}
 
 export function DealCard({
   deal,
@@ -234,7 +224,7 @@ export function DealCard({
                     size="sm"
                     variant="ghost"
                     type="button"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       onMoveToStage?.(deal.id, nextStage.id);
                     }}
@@ -258,8 +248,8 @@ export function DealCard({
                       size="sm"
                       variant="ghost"
                       type="button"
-                      onClick={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
                       className="h-7 w-7 p-0 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                     >
                       <MoreHorizontal className="h-3.5 w-3.5" />
@@ -268,7 +258,7 @@ export function DealCard({
                   <DropdownMenuContent
                     align="end"
                     className="w-56 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl"
-                    onCloseAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e: Event) => e.preventDefault()}
                   >
                     <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
                       Opportunity Actions

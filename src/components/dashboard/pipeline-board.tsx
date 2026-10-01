@@ -17,6 +17,7 @@ import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsDesktop } from "@/lib/hooks";
 
 // Static dot styles to guarantee Tailwind CSS compiler includes all color variations
 const STAGE_DOT_CLASSES: Record<string, string> = {
@@ -46,17 +47,6 @@ interface PipelineBoardProps {
   onOpenNewDealModal: (stageId?: string) => void;
   onDeleteDeal?: (dealId: string) => void;
   searchQuery: string;
-}
-
-function useIsDesktop(): boolean {
-  return React.useSyncExternalStore(
-    (callback) => {
-      window.addEventListener("resize", callback);
-      return () => window.removeEventListener("resize", callback);
-    },
-    () => window.innerWidth >= 768,
-    () => true
-  );
 }
 
 export function PipelineBoard({
