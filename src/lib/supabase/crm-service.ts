@@ -3,7 +3,10 @@ import {
   Deal,
   Lead,
   LeadStatus,
+  LeadSource,
   Customer,
+  CustomerTier,
+  CustomerHealth,
   CRMTask,
   CRMNotification,
   PipelineStage,
@@ -42,7 +45,7 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile | nu
     companyName: data.company_name || "Acme Global",
     email: data.email || "",
     role: data.role || "Head of Sales",
-    status: (data.status as any) || "Available",
+    status: (data.status as UserProfile["status"]) || "Available",
     plan: data.plan || "business",
   };
 }
@@ -232,7 +235,7 @@ export async function fetchLeads(userId: string): Promise<Lead[]> {
       title: l.title || "",
       score: l.score || 50,
       status: l.status as LeadStatus,
-      source: l.source as any,
+      source: l.source as LeadSource,
       estimatedValue: val,
       formattedValue: `$${val.toLocaleString()}`,
       createdDate: new Date(l.created_at).toLocaleDateString("en-US", {
@@ -281,7 +284,7 @@ export async function createLead(userId: string, lead: Lead): Promise<Lead | nul
     title: data.title || "",
     score: data.score,
     status: data.status as LeadStatus,
-    source: data.source as any,
+    source: data.source as LeadSource,
     estimatedValue: val,
     formattedValue: `$${val.toLocaleString()}`,
     createdDate: "Just now",
@@ -307,8 +310,6 @@ export async function deleteLead(leadId: string) {
 }
 
 export async function convertLeadToDeal(userId: string, lead: Lead): Promise<Deal | null> {
-  const supabase = createClient();
-
   // Create new Deal
   const dealResult = await createDeal(userId, {
     id: "",
@@ -366,8 +367,8 @@ export async function fetchCustomers(userId: string): Promise<Customer[]> {
       formattedLtv: `$${ltvVal.toLocaleString()}`,
       activeDealsCount: c.active_deals_count || 1,
       healthScore: c.health_score || 90,
-      healthStatus: c.health_status as any,
-      tier: c.tier as any,
+      healthStatus: c.health_status as CustomerHealth,
+      tier: c.tier as CustomerTier,
       renewalDate: c.renewal_date || "In 12 Months",
       lastTouch: c.last_touch || "Just now",
       location: c.location || "Global",
@@ -415,8 +416,8 @@ export async function createCustomer(userId: string, cust: Customer): Promise<Cu
     formattedLtv: `$${ltvVal.toLocaleString()}`,
     activeDealsCount: data.active_deals_count,
     healthScore: data.health_score,
-    healthStatus: data.health_status as any,
-    tier: data.tier as any,
+    healthStatus: data.health_status as CustomerHealth,
+    tier: data.tier as CustomerTier,
     renewalDate: data.renewal_date,
     lastTouch: data.last_touch,
     location: data.location,
@@ -447,13 +448,13 @@ export async function fetchTasks(userId: string): Promise<CRMTask[]> {
   return data.map((t) => ({
     id: t.id,
     title: t.title,
-    type: t.type as any,
+    type: t.type as CRMTask["type"],
     dueDate: t.due_date,
-    dueCategory: t.due_category as any,
-    priority: t.priority as any,
+    dueCategory: t.due_category as CRMTask["dueCategory"],
+    priority: t.priority as CRMTask["priority"],
     completed: t.completed,
     relatedTo: t.related_to || "",
-    relatedType: t.related_type as any,
+    relatedType: t.related_type as CRMTask["relatedType"],
   }));
 }
 
@@ -483,13 +484,13 @@ export async function createTask(userId: string, task: CRMTask): Promise<CRMTask
   return {
     id: data.id,
     title: data.title,
-    type: data.type as any,
+    type: data.type as CRMTask["type"],
     dueDate: data.due_date,
-    dueCategory: data.due_category as any,
-    priority: data.priority as any,
+    dueCategory: data.due_category as CRMTask["dueCategory"],
+    priority: data.priority as CRMTask["priority"],
     completed: data.completed,
     relatedTo: data.related_to || "",
-    relatedType: data.related_type as any,
+    relatedType: data.related_type as CRMTask["relatedType"],
   };
 }
 
@@ -533,7 +534,7 @@ export async function fetchNotifications(userId: string): Promise<CRMNotificatio
     time: formatNotificationTime(n.created_at, n.time),
     createdAt: n.created_at,
     read: n.read,
-    type: n.type as any,
+    type: n.type as CRMNotification["type"],
   }));
 }
 
@@ -569,7 +570,7 @@ export async function createNotification(
     time: formatNotificationTime(data.created_at, data.time),
     createdAt: data.created_at,
     read: data.read,
-    type: data.type as any,
+    type: data.type as CRMNotification["type"],
   };
 }
 

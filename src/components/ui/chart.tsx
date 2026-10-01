@@ -92,16 +92,27 @@ const ChartTooltip = RechartsPrimitive.Tooltip;
 export interface ChartTooltipContentProps
   extends React.ComponentProps<"div"> {
   active?: boolean;
-  payload?: any[];
-  label?: any;
-  labelFormatter?: (label: any, payload: any[]) => React.ReactNode;
+  payload?: Array<{
+    value?: number | string | null;
+    name?: string | number;
+    dataKey?: string | number;
+    color?: string;
+    payload?: Record<string, unknown>;
+    fill?: string;
+    [key: string]: unknown;
+  }>;
+  label?: React.ReactNode;
+  labelFormatter?: (
+    label: unknown,
+    payload: Array<Record<string, unknown>>
+  ) => React.ReactNode;
   labelClassName?: string;
   formatter?: (
-    value: any,
-    name: any,
-    item: any,
+    value: unknown,
+    name: unknown,
+    item: unknown,
     index: number,
-    payload: any
+    payload: unknown
   ) => React.ReactNode;
   color?: string;
   hideLabel?: boolean;
@@ -173,6 +184,7 @@ const ChartTooltipContent = React.forwardRef<
     return (
       <div
         ref={ref}
+        {...props}
         className={cn(
           "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-white/15 bg-[#12121a]/95 px-2.5 py-1.5 text-xs shadow-xl backdrop-blur-md",
           className
@@ -183,7 +195,10 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor =
+              color ||
+              (item.payload && "fill" in item.payload ? String(item.payload.fill) : undefined) ||
+              item.color;
 
             return (
               <div
@@ -233,9 +248,11 @@ const ChartTooltipContent = React.forwardRef<
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
-                      {item.value !== undefined && (
+                      {item.value !== undefined && item.value !== null && (
                         <span className="font-mono font-medium tabular-nums text-zinc-100 ml-3">
-                          {item.value.toLocaleString()}
+                          {typeof item.value === "number"
+                            ? item.value.toLocaleString()
+                            : String(item.value)}
                         </span>
                       )}
                     </div>

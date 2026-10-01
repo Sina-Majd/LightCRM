@@ -189,8 +189,8 @@ export const GENERAL_CRM_STATS = [
 // Aliases for compatibility
 export const CLIENT_LOGOS = BUSINESS_CLIENT_LOGOS;
 export const CRM_STATS = GENERAL_CRM_STATS;
-export const INITIAL_PIPELINE_DATA = INITIAL_ORDERS_DATA as any;
-export const REVENUE_CHART_DATA = MONTHLY_REVENUE_DATA as any;
+export const INITIAL_PIPELINE_DATA = INITIAL_ORDERS_DATA;
+export const REVENUE_CHART_DATA = MONTHLY_REVENUE_DATA;
 export const PIPELINE_REVENUE_METRICS = {
   onTimeRate: 96.5,
   monthlyRevenue: "$48,200",
