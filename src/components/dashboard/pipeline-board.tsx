@@ -1,51 +1,40 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  DropResult,
-} from "@hello-pangea/dnd";
-import {
-  Plus,
-  Trophy,
-} from "lucide-react";
+import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { Plus, Trophy, Wallet, Target, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
+import { formatTomanCompact, faDigits } from "@/lib/fa";
 import { DealCard } from "./deal-card";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsDesktop } from "@/lib/hooks";
 
-// Static dot styles to guarantee Tailwind CSS compiler includes all color variations
-const STAGE_DOT_CLASSES: Record<string, string> = {
-  "stage-new": "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]",
-  "stage-qualified": "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]",
-  "stage-proposal": "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]",
-  "stage-negotiation": "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]",
-  "stage-won": "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]",
-};
+/** Stage accent — one hue per stage, used as a hairline not a block of colour. */
+const STAGE_ACCENT = [
+  { dot: "bg-sky-500", text: "text-sky-700" },
+  { dot: "bg-brand-600", text: "text-brand-700" },
+  { dot: "bg-indigo-500", text: "text-indigo-700" },
+  { dot: "bg-amber-500", text: "text-amber-700" },
+  { dot: "bg-emerald-500", text: "text-emerald-700" },
+];
 
-function getStageDotClass(stageId: string, stageColor: string): string {
-  if (STAGE_DOT_CLASSES[stageId]) return STAGE_DOT_CLASSES[stageId];
-  if (stageColor.includes("blue")) return "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]";
-  if (stageColor.includes("cyan")) return "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]";
-  if (stageColor.includes("indigo")) return "bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]";
-  if (stageColor.includes("amber")) return "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]";
-  if (stageColor.includes("emerald") || stageColor.includes("green")) return "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]";
-  if (stageColor.includes("purple")) return "bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.6)]";
-  return "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]";
-}
+const PRIORITY_FILTERS = [
+  { v: "all", label: "همه" },
+  { v: "urgent", label: "فوری" },
+  { v: "high", label: "مهم" },
+  { v: "medium", label: "عادی" },
+];
 
-interface PipelineBoardProps {
+interface Props {
   stages: PipelineStage[];
   deals: Deal[];
-  onDealsChange: (updatedDeals: Deal[]) => void;
+  onDealsChange: (d: Deal[]) => void;
   onSelectDeal: (deal: Deal) => void;
   onOpenNewDealModal: (stageId?: string) => void;
   onDeleteDeal?: (dealId: string) => void;
+  onOpenQuickCall?: (deal: Deal) => void;
   searchQuery: string;
 }
 
@@ -56,544 +45,417 @@ export function PipelineBoard({
   onSelectDeal,
   onOpenNewDealModal,
   onDeleteDeal,
+  onOpenQuickCall,
   searchQuery,
-}: PipelineBoardProps) {
+}: Props) {
   const isDesktop = useIsDesktop();
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
-  const [activeMobileStage, setActiveMobileStage] = useState<string>(
-    stages[0]?.id || "stage-new"
-  );
+  const [filter, setFilter] = useState("all");
+  const [toDelete, setToDelete] = useState<Deal | null>(null);
+  const [mobileStage, setMobileStage] = useState(stages[0]?.id || "");
 
-  // Filter deals based on search term & priority with guaranteed unique IDs
-  const filteredDeals = React.useMemo(() => {
-    if (!Array.isArray(deals)) return [];
+  const filtered = React.useMemo(() => {
     const seen = new Set<string>();
     const q = (searchQuery || "").trim().toLowerCase();
-
-    return deals.filter((deal) => {
-      if (!deal || !deal.id || seen.has(deal.id)) return false;
-      seen.add(deal.id);
-
-      const title = (deal.title || "").toLowerCase();
-      const company = (deal.company || "").toLowerCase();
-      const contact = (deal.contact || "").toLowerCase();
-
-      const matchesSearch =
+    return deals.filter((d) => {
+      if (!d?.id || seen.has(d.id)) return false;
+      seen.add(d.id);
+      const okQ =
         !q ||
-        title.includes(q) ||
-        company.includes(q) ||
-        contact.includes(q);
-
-      const matchesPriority =
-        !priorityFilter ||
-        priorityFilter === "all" ||
-        deal.priority === priorityFilter;
-
-      return matchesSearch && matchesPriority;
+        (d.title + (d.company || "") + (d.contact || "")).toLowerCase().includes(q);
+      const okP = filter === "all" || d.priority === filter;
+      return okQ && okP;
     });
-  }, [deals, searchQuery, priorityFilter]);
+  }, [deals, searchQuery, filter]);
 
-  // Calculate overall metrics
-  const totalPipelineValue = deals
-    .filter((d) => d.stageId !== "stage-won")
-    .reduce((sum, d) => sum + d.value, 0);
+  const activeDeals = deals.filter((d) => d.stageId !== "stage-won");
+  const wonDeals = deals.filter((d) => d.stageId === "stage-won");
+  const activeValue = activeDeals.reduce((s, d) => s + d.value, 0);
+  const wonValue = wonDeals.reduce((s, d) => s + d.value, 0);
+  const winRate =
+    deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0;
+  const weighted = activeDeals.reduce((s, d) => s + d.value * (d.probability / 100), 0);
 
-  const totalWonValue = deals
-    .filter((d) => d.stageId === "stage-won")
-    .reduce((sum, d) => sum + d.value, 0);
+  const inStage = (d: Deal, id: string) =>
+    d.stageId === id || (!d.stageId && id === stages[0]?.id);
 
-  const isDealInStage = (deal: Deal, stageId: string) => {
-    return deal.stageId === stageId || (!deal.stageId && stageId === "stage-new");
+  const getStageColor = (stage: PipelineStage, index: number) => {
+    if (stage.id === "stage-won" || stage.title.includes("موفق"))
+      return STAGE_ACCENT[4];
+    if (stage.id === "stage-negotiation" || stage.title.includes("مذاکره"))
+      return STAGE_ACCENT[3];
+    if (stage.id === "stage-proposal" || stage.title.includes("پیش‌فاکتور"))
+      return STAGE_ACCENT[2];
+    if (stage.id === "stage-qualified" || stage.title.includes("ارزیابی"))
+      return STAGE_ACCENT[1];
+    return STAGE_ACCENT[index % STAGE_ACCENT.length];
   };
 
-  const handleMoveDealToStage = (dealId: string, targetStageId: string) => {
+  const probabilityFor = (target: string) => {
+    const s = stages.find((x) => x.id === target);
+    if (target === "stage-won" || s?.title.includes("موفق")) return 100;
+    if (target === "stage-negotiation" || s?.title.includes("مذاکره")) return 85;
+    if (target === "stage-proposal" || s?.title.includes("پیش‌فاکتور")) return 70;
+    if (target === "stage-qualified" || s?.title.includes("ارزیابی")) return 50;
+    return 30;
+  };
+
+  const isWonStage = (target: string) => {
+    const s = stages.find((x) => x.id === target);
+    return target === "stage-won" || !!s?.title.includes("موفق");
+  };
+
+  const move = (dealId: string, target: string) => {
     const deal = deals.find((d) => d.id === dealId);
-    if (!deal || deal.stageId === targetStageId) return;
-    const targetStage = stages.find((s) => s.id === targetStageId);
+    if (!deal || deal.stageId === target) return;
+    const targetStage = stages.find((s) => s.id === target);
 
-    const prob =
-      targetStageId === "stage-won"
-        ? 100
-        : targetStageId === "stage-negotiation"
-        ? 85
-        : targetStageId === "stage-proposal"
-        ? 70
-        : targetStageId === "stage-qualified"
-        ? 50
-        : 30;
-
-    const prevDeals = deals;
-    const updated = deals.map((d) =>
-      d.id === dealId
-        ? {
-            ...d,
-            stageId: targetStageId,
-            probability: prob,
-            lastActivity: "Just now",
-          }
-        : d
+    const prev = deals;
+    onDealsChange(
+      deals.map((d) =>
+        d.id === dealId
+          ? {
+              ...d,
+              stageId: target,
+              daysInStage: 0,
+              lastActivity: "همین حالا",
+              probability: probabilityFor(target),
+            }
+          : d
+      )
     );
-
-    onDealsChange(updated);
-
-    if (targetStageId === "stage-won") {
-      toast.success(`${deal.company} moved to Closed Won`, {
-        description: `${deal.title} (${deal.formattedValue}) successfully closed.`,
-        action: {
-          label: "Undo",
-          onClick: () => onDealsChange(prevDeals),
-        },
-        duration: 5000,
-      });
-    } else {
-      toast(`${deal.company} stage updated`, {
-        description: `Moved to ${targetStage?.title || "new stage"}.`,
-        action: {
-          label: "Undo",
-          onClick: () => onDealsChange(prevDeals),
-        },
-        duration: 5000,
-      });
-    }
-  };
-
-  const scrollToStage = (stageId: string) => {
-    setActiveMobileStage(stageId);
-    if (typeof document !== "undefined") {
-      const el = document.getElementById(`pipeline-col-${stageId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    toast(
+      isWonStage(target) ? "معامله برده شد 🎉" : "مرحله معامله به‌روزرسانی شد",
+      {
+        description: `${deal.company} → ${targetStage?.title || target}`,
+        action: { label: "بازگردانی", onClick: () => onDealsChange(prev) },
       }
-    }
+    );
   };
 
-  const handleDragEnd = (result: DropResult) => {
-    const { source, destination, draggableId } = result;
-
-    // Dropped outside a valid drop target
+  const onDragEnd = (r: DropResult) => {
+    const { source, destination, draggableId } = r;
     if (!destination) return;
-
-    // Dropped in exact same position in the same column
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
-    ) {
+    )
       return;
-    }
 
-    const sourceStageId = source.droppableId;
-    const destStageId = destination.droppableId;
+    const moved = deals.find((d) => d.id === draggableId);
+    if (!moved) return;
 
-    const movedDeal = deals.find((d) => d.id === draggableId);
-    if (!movedDeal) return;
+    const dest = destination.droppableId;
 
-    // Update the stage attributes if moved to another column
-    const updatedDeal: Deal = {
-      ...movedDeal,
-      stageId: destStageId,
-      daysInStage: sourceStageId === destStageId ? movedDeal.daysInStage : 0,
-      lastActivity: "Just now",
-      probability:
-        destStageId === "stage-won"
-          ? 100
-          : destStageId === "stage-negotiation"
-          ? 85
-          : destStageId === "stage-proposal"
-          ? 70
-          : destStageId === "stage-qualified"
-          ? 50
-          : 30,
+    const updated: Deal = {
+      ...moved,
+      stageId: dest,
+      daysInStage: source.droppableId === dest ? moved.daysInStage : 0,
+      lastActivity: "همین حالا",
+      probability: probabilityFor(dest),
     };
 
-    // Notify stage change via toast with Undo action
-    if (destStageId === "stage-won" && sourceStageId !== "stage-won") {
-      toast.success(`${updatedDeal.company} moved to Closed Won`, {
-        description: `${updatedDeal.title} (${updatedDeal.formattedValue}) successfully closed.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            onDealsChange(deals);
-          },
-        },
-        duration: 5000,
-      });
-    } else if (destStageId !== sourceStageId) {
-      const targetStage = stages.find((s) => s.id === destStageId);
-      toast(`${updatedDeal.company} stage updated`, {
-        description: `Moved to ${targetStage?.title || "new stage"}.`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            onDealsChange(deals);
-          },
-        },
-        duration: 5000,
+    const others = deals.filter((d) => d.id !== draggableId);
+    const destList = others.filter((d) => inStage(d, dest));
+    destList.splice(Math.min(destination.index, destList.length), 0, updated);
+
+    const next: Deal[] = [];
+    for (const st of stages) {
+      if (st.id === dest) next.push(...destList);
+      else next.push(...others.filter((d) => inStage(d, st.id)));
+    }
+    const ids = new Set(next.map((d) => d.id));
+    for (const d of others) if (!ids.has(d.id)) next.push(d);
+    onDealsChange(next);
+
+    if (isWonStage(dest)) {
+      toast.success("معامله با موفقیت برده شد 🎉", {
+        description: `${moved.company} نهایی شد.`,
       });
     }
-
-    // Get the destination column's deals currently visible on screen (respecting filters)
-    const visibleDestDeals = filteredDeals.filter(
-      (d) => d.id !== draggableId && isDealInStage(d, destStageId)
-    );
-
-    // Get all deals belonging to destStageId from the complete unfiltered list
-    const allDestDeals = deals.filter(
-      (d) => d.id !== draggableId && isDealInStage(d, destStageId)
-    );
-
-    // Calculate exact insertion index preserving top/bottom/middle placement
-    let insertIndex: number;
-    if (destination.index <= 0 || visibleDestDeals.length === 0) {
-      insertIndex = 0;
-    } else if (destination.index >= visibleDestDeals.length) {
-      insertIndex = allDestDeals.length;
-    } else {
-      const targetDeal = visibleDestDeals[destination.index];
-      const foundIdx = allDestDeals.findIndex((d) => d.id === targetDeal?.id);
-      insertIndex = foundIdx !== -1 ? foundIdx : destination.index;
-    }
-
-    // Insert the updated deal at the exact target location
-    allDestDeals.splice(insertIndex, 0, updatedDeal);
-
-    // Build the new unified deals array stage-by-stage to keep stable organization
-    const nextDeals: Deal[] = [];
-    for (const stage of stages) {
-      if (stage.id === destStageId) {
-        nextDeals.push(...allDestDeals);
-      } else {
-        nextDeals.push(
-          ...deals.filter(
-            (d) => d.id !== draggableId && isDealInStage(d, stage.id)
-          )
-        );
-      }
-    }
-
-    // Include any edge-case deals not in the active stages list
-    const includedIds = new Set(nextDeals.map((d) => d.id));
-    for (const d of deals) {
-      if (!includedIds.has(d.id) && d.id !== draggableId) {
-        nextDeals.push(d);
-      }
-    }
-
-    onDealsChange(nextDeals);
   };
 
-  return (
-    <div className="flex flex-col h-full space-y-4">
-      {/* Top Controls & Stage Value Ticker */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#111117] border border-white/[0.08] rounded-xl p-3 sm:px-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400 font-medium">Active Pipeline:</span>
-            <span className="font-mono text-sm font-bold text-cyan-300">
-              ${totalPipelineValue.toLocaleString()}
+  const column = (stage: PipelineStage, index: number, mobile = false) => {
+    const list = filtered.filter((d) => inStage(d, stage.id));
+    const sum = list.reduce((s, d) => s + d.value, 0);
+    const color = getStageColor(stage, index);
+    const share = activeValue > 0 ? (sum / activeValue) * 100 : 0;
+
+    return (
+      <div
+        key={stage.id}
+        id={`pipeline-col-${stage.id}`}
+        className={`flex flex-col rounded-2xl border border-slate-200 bg-slate-100/60 ${
+          mobile ? "min-w-[84vw] snap-center sm:min-w-[320px]" : ""
+        }`}
+      >
+        {/* Stage header */}
+        <div className="border-b border-slate-200 px-4 pb-3.5 pt-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className={`size-2.5 shrink-0 rounded-full ${color.dot}`} />
+              <span className="truncate text-[13.5px] font-black text-slate-900">
+                {stage.title}
+              </span>
+            </span>
+            <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-black tabular-nums text-slate-600 ring-1 ring-slate-200">
+              {faDigits(list.length)}
             </span>
           </div>
 
-          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+          <div className="mt-2.5 flex items-baseline justify-between gap-2">
+            <span className="text-[11.5px] font-bold text-slate-500">جمع مرحله</span>
+            <span className={`text-[12.5px] font-black tabular-nums ${color.text}`}>
+              {formatTomanCompact(sum)}
+            </span>
+          </div>
 
-          <div className="flex items-center gap-2">
-            <Trophy className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-xs text-zinc-400 font-medium">Won Revenue:</span>
-            <span className="font-mono text-sm font-bold text-emerald-400">
-              ${totalWonValue.toLocaleString()}
+          {/* Share of active pipeline */}
+          <div className="mt-2.5 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className={`h-full rounded-full ${color.dot}`}
+                style={{ width: `${Math.min(100, share)}%` }}
+              />
+            </div>
+            <span className="shrink-0 text-[10.5px] font-black tabular-nums text-slate-500">
+              {faDigits(Math.round(share))}٪
             </span>
           </div>
         </div>
 
-        {/* Priority Filter via Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
-          <span className="text-[11px] font-mono uppercase text-zinc-500 mr-1 hidden sm:inline">
-            Priority:
-          </span>
-          <Tabs
-            value={priorityFilter}
-            onValueChange={setPriorityFilter}
-            className="w-auto"
-          >
-            <TabsList className="h-8 bg-black/40 border border-white/10 p-0.5">
-              <TabsTrigger value="all" className="text-xs px-2.5 py-1">
-                All
-              </TabsTrigger>
-              <TabsTrigger value="urgent" className="text-xs px-2.5 py-1 text-rose-400">
-                Urgent
-              </TabsTrigger>
-              <TabsTrigger value="high" className="text-xs px-2.5 py-1 text-amber-400">
-                High
-              </TabsTrigger>
-              <TabsTrigger value="medium" className="text-xs px-2.5 py-1 text-cyan-400">
-                Medium
-              </TabsTrigger>
-              <TabsTrigger value="low" className="text-xs px-2.5 py-1 text-zinc-400">
-                Low
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        {/* Droppable stack */}
+        {isDesktop && !mobile ? (
+          <Droppable droppableId={stage.id}>
+            {(provided, snap) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className={`flex flex-1 flex-col gap-2 p-2 transition-colors ${
+                  snap.isDraggingOver ? "bg-brand-50" : ""
+                }`}
+              >
+                {list.map((deal, idx) => (
+                  <DealCard
+                    key={deal.id}
+                    deal={deal}
+                    index={idx}
+                    stages={stages}
+                    isDraggable
+                    onSelect={onSelectDeal}
+                    onDeleteDeal={() => setToDelete(deal)}
+                    onMoveToStage={move}
+                    onOpenQuickCall={onOpenQuickCall}
+                  />
+                ))}
+                {provided.placeholder}
+                {list.length === 0 && !snap.isDraggingOver && (
+                  <button
+                    onClick={() => onOpenNewDealModal(stage.id)}
+                    className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 bg-white text-[12px] font-bold text-slate-500 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                  >
+                    <Plus className="size-4" />
+                    ایجاد معامله در این مرحله
+                  </button>
+                )}
+              </div>
+            )}
+          </Droppable>
+        ) : (
+          <div className="flex flex-1 flex-col gap-2 p-2">
+            {list.map((deal, idx) => (
+              <DealCard
+                key={deal.id}
+                deal={deal}
+                index={idx}
+                stages={stages}
+                isDraggable={false}
+                showNextStageButton
+                onSelect={onSelectDeal}
+                onDeleteDeal={() => setToDelete(deal)}
+                onMoveToStage={move}
+                onOpenQuickCall={onOpenQuickCall}
+              />
+            ))}
+            {list.length === 0 && (
+              <div className="flex h-24 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-[11.5px] text-slate-400">
+                معامله‌ای در این مرحله نیست
+              </div>
+            )}
+          </div>
+        )}
 
+        {/* Quick add */}
+        <div className="border-t border-slate-200 p-2">
+          <button
+            onClick={() => onOpenNewDealModal(stage.id)}
+            className="flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11.5px] font-bold text-slate-500 transition-colors hover:bg-white hover:text-brand-800"
+          >
+            <Plus className="size-3.5" />
+            افزودن
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      {/* ===== KPI row — one figure per cell, evenly weighted ===== */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            icon: Wallet,
+            label: "پایپ‌لاین فعال",
+            value: formatTomanCompact(activeValue),
+            meta: `${faDigits(activeDeals.length)} معامله در جریان`,
+            valueClass: "text-slate-900",
+            iconClass: "text-brand-700 bg-brand-50",
+          },
+          {
+            icon: Target,
+            label: "ارزش وزنی",
+            value: formatTomanCompact(weighted),
+            meta: "محاسبه‌شده با احتمالات",
+            valueClass: "text-slate-900",
+            iconClass: "text-indigo-700 bg-indigo-50",
+          },
+          {
+            icon: Trophy,
+            label: "برنده و بسته‌شده",
+            value: formatTomanCompact(wonValue),
+            meta: `${faDigits(wonDeals.length)} قرارداد منعقد`,
+            valueClass: "text-emerald-700",
+            iconClass: "text-emerald-700 bg-emerald-50",
+          },
+          {
+            icon: TrendingUp,
+            label: "نرخ برد",
+            value: `${faDigits(winRate)}٪`,
+            meta: `${faDigits(wonDeals.length)} از ${faDigits(deals.length)} معامله`,
+            valueClass: "text-brand-800",
+            iconClass: "text-brand-700 bg-brand-50",
+            // Win rate is the only ratio here — show it as one.
+            meter: winRate,
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-slate-200 bg-white p-4"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${s.iconClass}`}
+              >
+                <s.icon className="size-4" />
+              </span>
+              <span className="text-[12px] font-bold text-slate-500">{s.label}</span>
+            </div>
+            <div
+              className={`mt-2.5 text-[19px] font-black tabular-nums leading-tight ${s.valueClass}`}
+            >
+              {s.value}
+            </div>
+            {s.meter !== undefined ? (
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-brand-600"
+                  style={{ width: `${s.meter}%` }}
+                />
+              </div>
+            ) : (
+              <div className="mt-1 text-[11px] font-medium text-slate-500">{s.meta}</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ===== Toolbar — filter + primary action, on their own row ===== */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-bold text-slate-500">فیلتر اولویت</span>
+          <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+            {PRIORITY_FILTERS.map((f) => (
+              <button
+                key={f.v}
+                onClick={() => setFilter(f.v)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-[11.5px] font-bold transition ${
+                  filter === f.v
+                    ? "bg-white text-brand-800 shadow-sm ring-1 ring-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {filtered.length !== deals.length && (
+            <span className="text-[11.5px] font-bold text-slate-500">
+              {faDigits(filtered.length)} از {faDigits(deals.length)} معامله
+            </span>
+          )}
           <Button
             size="sm"
             onClick={() => onOpenNewDealModal()}
-            className="hidden sm:flex ml-2 h-8 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-sm cursor-pointer shrink-0"
+            className="h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-brand-700 px-4 text-xs font-black text-white hover:bg-brand-800"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            <span>New Opportunity</span>
+            <Plus className="size-4" />
+            معامله جدید
           </Button>
         </div>
       </div>
 
-      {/* Senior Dev Mobile Stage Pill Bar (Fast thumb navigation across pipeline stages) */}
-      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-        {stages.map((stage) => {
-          const count = filteredDeals.filter((d) => isDealInStage(d, stage.id)).length;
-          const isSelected = activeMobileStage === stage.id;
-
+      {/* Mobile stage selector */}
+      <div className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+        {stages.map((s, idx) => {
+          const color = getStageColor(s, idx);
           return (
             <button
-              key={stage.id}
-              type="button"
-              onClick={() => scrollToStage(stage.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm"
-                  : "bg-[#111118] text-zinc-400 border border-white/[0.08] hover:text-white"
+              key={s.id}
+              onClick={() => {
+                setMobileStage(s.id);
+                document
+                  .getElementById(`pipeline-col-${s.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", inline: "center" });
+              }}
+              className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11.5px] font-bold transition ${
+                mobileStage === s.id
+                  ? "border-brand-600 bg-brand-50 text-brand-900"
+                  : "border-slate-200 bg-white text-slate-600"
               }`}
             >
-              <span className={`h-2 w-2 rounded-full shrink-0 ${getStageDotClass(stage.id, stage.color)}`} />
-              <span>{stage.title}</span>
-              <span className="font-mono text-[10px] bg-white/[0.08] px-1.5 py-0.2 rounded text-zinc-300">
-                {count}
-              </span>
+              <span className={`size-1.5 rounded-full ${color.dot}`} />
+              {s.title}
             </button>
           );
         })}
       </div>
 
-      {/* Desktop Drag and Drop Grid (No nested scroll containers, full-card drag & drop, 0 Next Stage buttons) */}
+      {/* Columns */}
       {isDesktop ? (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-3.5 items-start pb-6">
-            {stages.map((stage) => {
-              const stageDeals = filteredDeals.filter(
-                (deal) => deal.stageId === stage.id || (!deal.stageId && stage.id === "stage-new")
-              );
-              const stageTotalValue = stageDeals.reduce(
-                (acc, d) => acc + d.value,
-                0
-              );
-
-              return (
-                <div
-                  key={stage.id}
-                  id={`pipeline-col-${stage.id}`}
-                  className="flex flex-col rounded-2xl border border-white/[0.08] bg-[#0f0f16] overflow-hidden min-h-[520px] shadow-sm"
-                >
-                  {/* Stage Header */}
-                  <div className={`p-3.5 border-b border-white/[0.06] bg-gradient-to-b ${stage.bgGradient}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStageDotClass(stage.id, stage.color)}`} />
-                        <h3 className="text-xs font-bold text-white tracking-tight">
-                          {stage.title}
-                        </h3>
-                      </div>
-
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-mono py-0 px-1.5 bg-white/[0.05] border-white/10 text-zinc-300"
-                      >
-                        {stageDeals.length}
-                      </Badge>
-                    </div>
-
-                    {/* Stage Value Metric */}
-                    <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-zinc-500">Stage Sum</span>
-                      <span className={`font-semibold ${stage.color}`}>
-                        ${stageTotalValue.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Droppable Stage Column Body */}
-                  <Droppable droppableId={stage.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`flex-1 p-2.5 sm:p-3 space-y-2.5 min-h-[420px] transition-colors ${
-                          snapshot.isDraggingOver
-                            ? "bg-cyan-500/[0.07] ring-1 ring-inset ring-cyan-500/40 rounded-b-2xl"
-                            : ""
-                        }`}
-                      >
-                        {stageDeals.map((deal, idx) => (
-                          <DealCard
-                            key={deal.id}
-                            deal={deal}
-                            index={idx}
-                            stages={stages}
-                            isDraggable={true}
-                            showNextStageButton={false}
-                            onSelect={onSelectDeal}
-                            onDeleteDeal={() => setDealToDelete(deal)}
-                            onMoveToStage={handleMoveDealToStage}
-                          />
-                        ))}
-
-                        {provided.placeholder}
-
-                        {/* Empty Column State */}
-                        {stageDeals.length === 0 && !snapshot.isDraggingOver && (
-                          <div className="h-40 rounded-xl border border-dashed border-white/[0.08] flex flex-col items-center justify-center p-4 text-center">
-                            <p className="text-xs text-zinc-500">
-                              No deals in {stage.title}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onOpenNewDealModal(stage.id)}
-                              className="mt-2 h-7 text-[11px] text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add deal
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Droppable>
-
-                  {/* Quick Add Button at bottom of column */}
-                  <div className="p-2.5 border-t border-white/[0.04] bg-[#0c0c12]/60">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onOpenNewDealModal(stage.id)}
-                      className="w-full h-8 text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      <span>Add Deal</span>
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid items-start gap-3 md:grid-cols-3 xl:grid-cols-5">
+            {stages.map((s, idx) => column(s, idx))}
           </div>
         </DragDropContext>
       ) : (
-        /* Mobile Horizontal Snap Carousel (No Droppable overhead, smooth native touch gestures) */
-        <div className="flex gap-3.5 items-start pb-6 overflow-x-auto snap-x snap-mandatory no-scrollbar">
-          {stages.map((stage) => {
-            const stageDeals = filteredDeals.filter(
-              (deal) => deal.stageId === stage.id || (!deal.stageId && stage.id === "stage-new")
-            );
-            const stageTotalValue = stageDeals.reduce(
-              (acc, d) => acc + d.value,
-              0
-            );
-
-            return (
-              <div
-                key={stage.id}
-                id={`pipeline-col-${stage.id}`}
-                className="flex flex-col rounded-2xl border border-white/[0.08] bg-[#0f0f16] overflow-hidden min-h-[520px] shadow-sm min-w-[84vw] sm:min-w-[320px] snap-center shrink-0"
-              >
-                {/* Stage Header */}
-                <div className={`p-3.5 border-b border-white/[0.06] bg-gradient-to-b ${stage.bgGradient}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStageDotClass(stage.id, stage.color)}`} />
-                      <h3 className="text-xs font-bold text-white tracking-tight">
-                        {stage.title}
-                      </h3>
-                    </div>
-
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-mono py-0 px-1.5 bg-white/[0.05] border-white/10 text-zinc-300"
-                    >
-                      {stageDeals.length}
-                    </Badge>
-                  </div>
-
-                  {/* Stage Value Metric */}
-                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-zinc-500">Stage Sum</span>
-                    <span className={`font-semibold ${stage.color}`}>
-                      ${stageTotalValue.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mobile Stage Column Body (Native touch container) */}
-                <div className="flex-1 p-2.5 sm:p-3 space-y-2.5 min-h-[420px]">
-                  {stageDeals.map((deal, idx) => (
-                    <DealCard
-                      key={deal.id}
-                      deal={deal}
-                      index={idx}
-                      stages={stages}
-                      isDraggable={false}
-                      showNextStageButton={true}
-                      onSelect={onSelectDeal}
-                      onDeleteDeal={() => setDealToDelete(deal)}
-                      onMoveToStage={handleMoveDealToStage}
-                    />
-                  ))}
-
-                  {/* Empty Column State */}
-                  {stageDeals.length === 0 && (
-                    <div className="h-40 rounded-xl border border-dashed border-white/[0.08] flex flex-col items-center justify-center p-4 text-center">
-                      <p className="text-xs text-zinc-500">
-                        No deals in {stage.title}
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onOpenNewDealModal(stage.id)}
-                        className="mt-2 h-7 text-[11px] text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add deal
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Add Button at bottom of column */}
-                <div className="p-2.5 border-t border-white/[0.04] bg-[#0c0c12]/60">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onOpenNewDealModal(stage.id)}
-                    className="w-full h-8 text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    <span>Add Deal</span>
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex snap-x gap-3 overflow-x-auto pb-4">
+          {stages.map((s, idx) => column(s, idx, true))}
         </div>
       )}
-      {/* Confirmation Dialog for Pipeline Deal Deletion */}
+
       <ConfirmDeleteDialog
-        open={!!dealToDelete}
-        onOpenChange={(open) => !open && setDealToDelete(null)}
-        title="Delete Opportunity"
-        itemName={dealToDelete ? `${dealToDelete.title} (${dealToDelete.company})` : undefined}
-        description="Are you sure you want to remove this opportunity from your pipeline? This action cannot be undone."
-        confirmLabel="Delete Opportunity"
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="حذف معامله"
+        itemName={toDelete ? `${toDelete.title} (${toDelete.company})` : undefined}
+        description="این معامله از پایپ‌لاین حذف می‌شود و پرونده آن بسته خواهد شد."
+        confirmLabel="حذف معامله"
         onConfirm={() => {
-          if (dealToDelete) {
-            onDeleteDeal?.(dealToDelete.id);
-            setDealToDelete(null);
-          }
+          if (toDelete) onDeleteDeal?.(toDelete.id);
+          setToDelete(null);
         }}
       />
     </div>

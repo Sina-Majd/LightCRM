@@ -4,36 +4,76 @@ import React, { useState } from "react";
 import {
   Sheet,
   SheetContent,
+  SheetClose,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Building2,
   Mail,
   Phone,
   CheckCircle2,
   Send,
-  MessageSquare,
   FileText,
   User,
   Trash2,
+  CalendarCheck,
+  AlertCircle,
+  PhoneCall,
+  Clock,
+  X,
 } from "lucide-react";
 import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
+import {
+  getDealNextActionState,
+  CallResult,
+  CALL_RESULT_MAP,
+  faDigits,
+} from "@/lib/fa";
+import { toast } from "sonner";
 
-interface DealDetailSheetProps {
+interface Props {
   deal: Deal | null;
   isOpen: boolean;
   onClose: () => void;
   stages: PipelineStage[];
   onStageChange?: (dealId: string, newStageId: string) => void;
   onDeleteDeal?: (dealId: string) => void;
+  onUpdateNextAction?: (
+    dealId: string,
+    title: string | null,
+    due: string | null
+  ) => void;
+  onLogCall?: (dealId: string, result: CallResult, note: string) => void;
 }
 
+/** Call outcomes — one segmented row, dots carry the status. */
+const CALL_OUTCOMES: { id: CallResult; label: string; dot: string }[] = [
+  { id: "connected", label: "صحبت شد", dot: "bg-emerald-500" },
+  { id: "busy", label: "اشغال بود", dot: "bg-amber-500" },
+  { id: "no_answer", label: "بی‌پاسخ", dot: "bg-rose-500" },
+  { id: "follow_up_scheduled", label: "پیگیری بعدی", dot: "bg-brand-600" },
+];
+
+/**
+ * Design rules for this panel:
+ *   - RTL throughout: spacing uses logical properties (ps/pe/ms/me) so the
+ *     panel mirrors correctly, and "forward" chevrons point left.
+ *   - Solid colours only. Reduced opacity thins the strokes of Persian glyphs.
+ *   - One radius scale: surfaces rounded-2xl, interactive rounded-xl, pills full.
+ *   - Colour signals state; type carries hierarchy.
+ */
 export function DealDetailSheet({
   deal,
   isOpen,
@@ -41,298 +81,405 @@ export function DealDetailSheet({
   stages,
   onStageChange,
   onDeleteDeal,
-}: DealDetailSheetProps) {
-  const [newNote, setNewNote] = useState("");
-  const [notesList, setNotesList] = useState<
-    Array<{ text: string; author: string; time: string }>
-  >([]);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  onUpdateNextAction,
+  onLogCall,
+}: Props) {
+  const [note, setNote] = useState("");
+  const [notes, setNotes] = useState<string[]>([]);
+  const [confirm, setConfirm] = useState(false);
+
+  const [nextActionTitle, setNextActionTitle] = useState("");
+  const [nextActionHours, setNextActionHours] = useState("24");
+  const [isEditingAction, setIsEditingAction] = useState(false);
 
   if (!deal) return null;
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const nextActionState = getDealNextActionState(
+    deal.nextActionDue,
+    deal.nextActionTitle
+  );
+  const isStale = nextActionState.isStale;
+  const stageIdx = stages.findIndex((s) => s.id === deal.stageId);
+  const stage = stages[stageIdx];
+
+  const handleSaveNextAction = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNote.trim()) return;
-    setNotesList([
-      {
-        text: newNote.trim(),
-        author: "You",
-        time: "Just now",
-      },
-      ...notesList,
-    ]);
-    setNewNote("");
+    if (!nextActionTitle.trim()) {
+      toast.error("عنوان اقدام بعدی نمی‌تواند خالی باشد.");
+      return;
+    }
+    const hours = parseInt(nextActionHours, 10) || 24;
+    const dueDate = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+    onUpdateNextAction?.(deal.id, nextActionTitle.trim(), dueDate);
+    toast.success("اقدام بعدی ثبت شد.");
+    setIsEditingAction(false);
+    setNextActionTitle("");
   };
 
+  const handleCallResult = (res: CallResult) => {
+    onLogCall?.(deal.id, res, `تماس ثبت‌شده برای ${deal.title}`);
+    toast.success(`نتیجه تماس: ${CALL_RESULT_MAP[res].label}`);
+    if (res === "follow_up_scheduled" || res === "connected") {
+      setIsEditingAction(true);
+      setNextActionTitle(`پیگیری مذاکره با ${deal.contact}`);
+    }
+  };
+
+  const cleanPhone = (deal.phone || "").replace(/[^0-9]/g, "");
+  const waNumber = cleanPhone.startsWith("0")
+    ? `98${cleanPhone.slice(1)}`
+    : cleanPhone;
+
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
-        side="right"
-        className="w-full sm:max-w-xl bg-[#0d0d14]/98 border-white/10 text-zinc-100 p-0 flex flex-col overflow-hidden"
+        side="left"
+        showCloseButton={false}
+        dir="rtl"
+        className="flex w-full flex-col gap-0 overflow-y-auto border-0 bg-white p-0 text-right sm:max-w-2xl"
       >
-        {/* Header Strip */}
-        <div className="p-4 sm:p-6 pr-12 sm:pr-14 border-b border-white/[0.08] bg-[#11111a]/80">
-          <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-            <span className="text-xs font-mono uppercase tracking-wider text-cyan-400">
-              Deal Details
+        {/* ===== Dark identity header. Own close button so it stays legible
+                on the dark surface instead of floating over it. ===== */}
+        <div className="sticky top-0 z-10 bg-brand-900 px-4 pb-5 pt-4 text-white sm:px-5">
+          {/* Row 1 — eyebrow alone on the start side, close button alone in
+              the outer corner so it never crowds the title. */}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10.5px] font-bold text-brand-300">
+              پرونده جامع معامله
             </span>
-            <span className="text-zinc-600">·</span>
-            <Badge
-              variant="outline"
-              className="font-mono text-[10px] border-emerald-500/30 text-emerald-300 bg-emerald-950/40 px-2 py-0.5"
+            <SheetClose
+              aria-label="بستن"
+              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-brand-700 bg-brand-800 text-brand-200 transition-colors hover:bg-brand-700 hover:text-white"
             >
-              Active Opportunity
-            </Badge>
+              <X className="size-4" />
+            </SheetClose>
           </div>
 
-          <SheetTitle className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
+          <SheetTitle className="mt-2 text-[17px] font-black leading-7 text-white">
             {deal.title}
           </SheetTitle>
-          <SheetDescription className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-            <span className="text-zinc-300 font-semibold">{deal.company}</span>
-            <span className="text-zinc-600">·</span>
-            <span>Created 14 days ago</span>
+
+          <SheetDescription className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11.5px] font-bold text-brand-200">
+            <span className="flex items-center gap-1.5">
+              <Building2 className="size-3.5 shrink-0 text-brand-300" />
+              <span className="text-white">{deal.company}</span>
+            </span>
+            <span className="text-brand-500">·</span>
+            <span>{deal.contact}</span>
+            {stage && (
+              <span className="flex items-center gap-1.5 rounded-full border border-brand-700 bg-brand-800 px-2 py-0.5 text-[10px] font-black text-white">
+                <span className="tabular-nums text-brand-300">
+                  {faDigits(Math.max(1, stageIdx + 1))}/{faDigits(stages.length)}
+                </span>
+                {stage.title}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 rounded-full border border-brand-700 bg-brand-800 px-2 py-0.5 text-[10px] font-black text-white">
+              <Clock className="size-3 text-brand-300" />
+              {faDigits(deal.daysInStage)} روز در این مرحله
+            </span>
           </SheetDescription>
 
-          {/* Deal Value Hero Callout */}
-          <div className="mt-3.5 flex items-center justify-between rounded-xl border border-white/[0.08] bg-black/40 p-3.5 sm:p-4">
+          {/* Three figures on one row, each with its own label */}
+          <dl className="mt-4 grid grid-cols-2 gap-3">
             <div>
-              <div className="text-[10px] font-mono uppercase text-zinc-500">
-                Total Deal Value
-              </div>
-              <div className="font-mono text-xl sm:text-2xl font-black text-emerald-400 mt-0.5">
+              <dt className="text-[10.5px] font-bold text-brand-300">ارزش معامله</dt>
+              <dd className="mt-0.5 text-[16px] font-black tabular-nums text-glow sm:text-[19px]">
                 {deal.formattedValue}
-              </div>
+              </dd>
             </div>
-            <div className="text-right">
-              <div className="text-[10px] font-mono uppercase text-zinc-500">
-                Win Probability
-              </div>
-              <div className="font-mono text-sm sm:text-base font-bold text-cyan-300 mt-0.5">
-                {deal.probability}%
-              </div>
+            <div>
+              <dt className="text-[10.5px] font-bold text-brand-300">احتمال موفقیت</dt>
+              <dd className="mt-0.5 text-[16px] font-black tabular-nums text-white sm:text-[19px]">
+                {faDigits(deal.probability)}٪
+              </dd>
             </div>
+          </dl>
+
+          {/* Probability bar — spans the header, one glance */}
+          <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-brand-800">
+            <div
+              className="h-full rounded-full bg-glow"
+              style={{ width: `${deal.probability}%` }}
+            />
           </div>
         </div>
 
-        {/* Scrollable Body Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
-          {/* Stage Progression Selector */}
-          <div>
-            <label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider block mb-2 font-mono">
-              Pipeline Stage
-            </label>
-            <div className="flex sm:grid sm:grid-cols-5 gap-1 rounded-xl bg-black/40 border border-white/[0.08] p-1.5 overflow-x-auto no-scrollbar">
-              {stages.map((stage) => {
-                const isSelected = stage.id === deal.stageId;
-                return (
-                  <Button
-                    key={stage.id}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (isSelected) return;
-                      onStageChange?.(deal.id, stage.id);
-                    }}
-                    className={`rounded-lg py-1.5 sm:py-2 px-2.5 sm:px-1 h-auto text-center transition-all text-[11px] sm:text-[10px] font-medium leading-tight shrink-0 sm:shrink ${
-                      isSelected
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm cursor-default"
-                        : "text-zinc-400 hover:text-white hover:bg-white/[0.05] cursor-pointer"
+        {/* ===== Scrollable body ===== */}
+        <div className="flex-1 space-y-4 p-5">
+          {/* ---- Primary zone: next action + call logging ---- */}
+          <section
+            className={`rounded-2xl border-2 p-4 ${
+              isStale ? "border-rose-200 bg-rose-50" : "border-brand-200 bg-brand-50"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                    isStale ? "bg-rose-100 text-rose-700" : "bg-brand-100 text-brand-700"
+                  }`}
+                >
+                  {isStale ? (
+                    <AlertCircle className="size-5" />
+                  ) : (
+                    <CalendarCheck className="size-5" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-black text-slate-900">اقدام بعدی</h3>
+                  <p
+                    className={`mt-0.5 text-[11.5px] font-bold ${
+                      isStale ? "text-rose-700" : "text-brand-800"
                     }`}
                   >
-                    {stage.title.split(" ")[0]}
+                    {nextActionState.label}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEditingAction(!isEditingAction)}
+                className="h-8 shrink-0 cursor-pointer rounded-xl border-slate-300 bg-white px-3 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+              >
+                {isEditingAction ? "انصراف" : "تعیین / تغییر"}
+              </Button>
+            </div>
+
+            {isEditingAction && (
+              <form
+                onSubmit={handleSaveNextAction}
+                className="mt-3 space-y-2 border-t border-brand-200 pt-3"
+              >
+                <Input
+                  value={nextActionTitle}
+                  onChange={(e) => setNextActionTitle(e.target.value)}
+                  placeholder="مثال: تماس تلفنی جهت تایید پیش‌فاکتور…"
+                  className="h-10 rounded-xl border-slate-200 bg-white text-xs"
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Select value={nextActionHours} onValueChange={setNextActionHours}>
+                      <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-200 bg-white">
+                        <SelectItem value="2">۲ ساعت بعد</SelectItem>
+                        <SelectItem value="24">فردا (۲۴ ساعت)</SelectItem>
+                        <SelectItem value="48">۲ روز بعد</SelectItem>
+                        <SelectItem value="72">۳ روز بعد</SelectItem>
+                        <SelectItem value="168">هفته آینده</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-10 shrink-0 cursor-pointer rounded-xl bg-brand-700 px-4 text-xs font-black text-white hover:bg-brand-800"
+                  >
+                    ذخیره
                   </Button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              </form>
+            )}
 
-          <Separator />
-
-          {/* Contact Information Card */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#12121c] p-4">
-            <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono mb-3 flex items-center gap-2">
-              <User className="h-3.5 w-3.5 text-cyan-400" />
-              Primary Contact
-            </h4>
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Name</span>
-                <span className="font-semibold text-white">{deal.contact}</span>
+            <div className="mt-3 border-t border-brand-200 pt-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11.5px] font-black text-slate-800">
+                <PhoneCall className="size-3.5 text-brand-700" />
+                ثبت نتیجه تماس
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Email</span>
-                <a
-                  href={`mailto:${deal.email}`}
-                  className="font-mono text-cyan-400 hover:underline flex items-center gap-1"
-                >
-                  <Mail className="h-3 w-3" />
-                  {deal.email}
-                </a>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Phone</span>
-                <a
-                  href={`tel:${deal.phone}`}
-                  className="font-mono text-zinc-300 hover:text-white flex items-center gap-1"
-                >
-                  <Phone className="h-3 w-3" />
-                  {deal.phone}
-                </a>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Owner</span>
-                <span className="text-zinc-200 flex items-center gap-1.5 font-medium">
-                  <User className="h-3.5 w-3.5 text-cyan-400" />
-                  {deal.assignee.name}
-                </span>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {CALL_OUTCOMES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleCallResult(c.id)}
+                    className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                  >
+                    <span className={`size-1.5 rounded-full ${c.dot}`} />
+                    {c.label}
+                  </button>
+                ))}
               </div>
             </div>
+          </section>
+
+          {/* ---- Supporting panels ---- */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Stage selector */}
+            <section className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-[12.5px] font-black text-slate-900">مرحله پایپ‌لاین</h3>
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {stages.map((s) => {
+                  const sel = s.id === deal.stageId;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => !sel && onStageChange?.(deal.id, s.id)}
+                      className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                        sel
+                          ? "border-brand-700 bg-brand-700 text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                      }`}
+                    >
+                      {s.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Contact */}
+            <section className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="flex items-center gap-1.5 text-[12.5px] font-black text-slate-900">
+                <User className="size-3.5 text-brand-700" />
+                ارتباط با مخاطب
+              </h3>
+              <dl className="mt-2.5 space-y-2 text-[11.5px]">
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="shrink-0 font-bold text-slate-500">تلفن</dt>
+                  <dd className="flex min-w-0 items-center gap-1.5">
+                    <a
+                      href={`tel:${deal.phone}`}
+                      className="flex items-center gap-1 font-black text-brand-700 hover:underline"
+                    >
+                      <Phone className="size-3 shrink-0" />
+                      {/* bdi isolates the number from the RTL bidi algorithm
+                          so "+1 (555) 000-0000" does not get reordered. */}
+                      <bdi>{deal.phone}</bdi>
+                    </a>
+                    {waNumber && (
+                      <a
+                        href={`https://wa.me/${waNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"
+                      >
+                        واتساپ
+                      </a>
+                    )}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="shrink-0 font-bold text-slate-500">ایمیل</dt>
+                  <dd className="min-w-0">
+                    <a
+                      href={`mailto:${deal.email}`}
+                      className="flex items-center gap-1 font-bold text-slate-700 hover:underline"
+                    >
+                      <Mail className="size-3 shrink-0" />
+                      <bdi className="min-w-0 truncate">{deal.email}</bdi>
+                    </a>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="shrink-0 font-bold text-slate-500">آخرین فعالیت</dt>
+                  <dd className="font-black text-slate-700">
+                    {/* lastActivity is already a human-readable Persian
+                        phrase (e.g. "۲ ساعت پیش"), not a date string —
+                        running it through a date formatter yields "—". */}
+                    {deal.lastActivity || "—"}
+                  </dd>
+                </div>
+              </dl>
+            </section>
           </div>
 
-          {/* Notes and Context */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#12121c] p-4">
-            <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono mb-2 flex items-center gap-2">
-              <FileText className="h-3.5 w-3.5 text-indigo-400" />
-              Executive Summary & Scope
-            </h4>
-            <p className="text-xs text-zinc-300 leading-relaxed bg-black/30 p-3 rounded-lg border border-white/[0.04]">
-              {deal.notes}
+          {/* ---- Notes ---- */}
+          <section className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="flex items-center gap-1.5 text-[12.5px] font-black text-slate-900">
+              <FileText className="size-3.5 text-brand-600" />
+              یادداشت‌های مذاکره
+            </h3>
+
+            <p className="mt-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[12px] leading-6 text-slate-700">
+              {deal.notes?.trim() || "توضیحاتی ثبت نشده است."}
             </p>
-          </div>
 
-          <Separator />
-
-          {/* Activity Log / Notes Stream */}
-          <div>
-            <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono mb-3 flex items-center gap-2">
-              <MessageSquare className="h-3.5 w-3.5 text-purple-400" />
-              Activity Stream & Notes
-            </h4>
-
-            {/* Quick Note Input */}
-            <form onSubmit={handleAddNote} className="flex gap-2 mb-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!note.trim()) return;
+                setNotes([note.trim(), ...notes]);
+                setNote("");
+                toast.success("یادداشت اضافه شد.");
+              }}
+              className="mt-2.5 flex gap-2"
+            >
               <Input
-                placeholder="Log a client note or call update..."
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="h-9 text-xs bg-black/40 border-white/10"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="یادداشت تماس یا توافقات مذاکره…"
+                className="h-10 rounded-xl border-slate-200 bg-white text-xs"
               />
               <Button
                 type="submit"
-                size="sm"
-                className="h-9 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+                aria-label="ثبت یادداشت"
+                className="size-10 shrink-0 cursor-pointer rounded-xl bg-brand-700 text-white hover:bg-brand-800"
               >
-                <Send className="h-3.5 w-3.5" />
+                <Send className="size-4" />
               </Button>
             </form>
 
-            <div className="space-y-3">
-              {notesList.map((note, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.04] p-3 text-xs"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 mb-1">
-                    <span>{note.author}</span>
-                    <span>{note.time}</span>
-                  </div>
-                  <p className="text-zinc-200">{note.text}</p>
-                </div>
-              ))}
-
-              {/* Mock history item */}
-              <div className="rounded-lg border border-white/[0.06] bg-black/30 p-3 text-xs">
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                  <span>{deal.assignee.name}</span>
-                  <span>{deal.lastActivity}</span>
-                </div>
-                <p className="text-zinc-300">
-                  Updated opportunity stage and scheduled executive demo presentation.
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-white/[0.06] bg-black/30 p-3 text-xs">
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                  <span>System Workflow</span>
-                  <span>3 days ago</span>
-                </div>
-                <p className="text-zinc-300">
-                  Calculated win probability raised to {deal.probability}% based on engagement velocity.
-                </p>
-              </div>
-            </div>
-          </div>
+            {notes.length > 0 && (
+              <ul className="mt-2.5 space-y-1.5">
+                {notes.map((n, i) => (
+                  <li
+                    key={i}
+                    className="rounded-xl border border-brand-200 bg-brand-50 p-2.5 text-[11.5px] font-bold leading-6 text-slate-800"
+                  >
+                    {n}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-3.5 sm:p-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] sm:pb-4 border-t border-white/[0.08] bg-[#11111a] flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            {onDeleteDeal && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="h-8 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                <span className="hidden sm:inline">Delete Opportunity</span>
-                <span className="sm:hidden">Delete</span>
-              </Button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* ===== Footer ===== */}
+        <div className="sticky bottom-0 flex items-center justify-between gap-2 border-t border-slate-200 bg-white px-5 py-3">
+          {onDeleteDeal ? (
             <Button
-              type="button"
               variant="outline"
-              asChild
-              className="h-8 text-xs border-white/10 text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-500/10 cursor-pointer"
+              onClick={() => setConfirm(true)}
+              className="h-9 cursor-pointer items-center gap-1.5 rounded-xl border-slate-200 px-3 text-[11px] font-bold text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
             >
-              <a href={`mailto:${deal.email}`}>
-                <Mail className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">Quick Email</span>
-              </a>
+              <Trash2 className="size-3.5" />
+              حذف
             </Button>
-            {deal.stageId !== "stage-won" ? (
-              <Button
-                type="button"
-                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/40 cursor-pointer"
-                onClick={() => onStageChange?.(deal.id, "stage-won")}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                <span>Mark Won</span>
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="h-8 text-xs bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 cursor-default"
-                onClick={(e) => e.preventDefault()}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" />
-                <span>Won</span>
-              </Button>
-            )}
-          </div>
+          ) : (
+            <span />
+          )}
+
+          {deal.stageId !== "stage-won" ? (
+            <Button
+              onClick={() => onStageChange?.(deal.id, "stage-won")}
+              className="h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-[11.5px] font-black text-white hover:bg-emerald-700"
+            >
+              <CheckCircle2 className="size-4" />
+              موفق و بسته شد
+            </Button>
+          ) : (
+            <Badge className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 font-black text-emerald-700">
+              موفق و بسته شد ✓
+            </Badge>
+          )}
         </div>
       </SheetContent>
 
-      {/* Confirmation Dialog for Opportunity Deletion */}
       <ConfirmDeleteDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        title="Delete Opportunity"
-        itemName={`${deal.title} (${deal.company})`}
-        description="Are you sure you want to remove this opportunity from your pipeline? This action cannot be undone."
-        confirmLabel="Delete Opportunity"
+        open={confirm}
+        onOpenChange={setConfirm}
         onConfirm={() => {
           onDeleteDeal?.(deal.id);
-          setIsDeleteDialogOpen(false);
+          setConfirm(false);
           onClose();
         }}
+        title="حذف معامله"
+        description={`آیا از حذف معامله «${deal.title}» مطمئن هستید؟`}
       />
     </Sheet>
   );

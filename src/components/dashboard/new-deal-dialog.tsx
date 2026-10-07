@@ -21,13 +21,14 @@ import {
 } from "@/components/ui/select";
 import {
   Building2,
-  DollarSign,
+  Wallet,
   User,
   Mail,
   Sparkles,
   PlusCircle,
 } from "lucide-react";
 import { Deal, DealPriority, PipelineStage } from "@/data/dashboard-mock-data";
+import { formatToman } from "@/lib/fa";
 
 interface NewDealDialogProps {
   isOpen: boolean;
@@ -49,7 +50,9 @@ export function NewDealDialog({
   const [contact, setContact] = useState("");
   const [email, setEmail] = useState("");
   const [value, setValue] = useState("");
-  const [stageId, setStageId] = useState(defaultStageId || stages[0]?.id || "stage-new");
+  const [stageId, setStageId] = useState(
+    defaultStageId || stages[0]?.id || "stage-new"
+  );
   const [priority, setPriority] = useState<DealPriority>("high");
   const [notes, setNotes] = useState("");
 
@@ -57,26 +60,34 @@ export function NewDealDialog({
     e.preventDefault();
     if (!title || !company || !value) return;
 
-    const numericValue = parseFloat(value.replace(/[^0-9.]/g, "")) || 10000;
+    const numericValue =
+      parseFloat(value.replace(/[^0-9.]/g, "")) || 150000000;
 
     const deal: Deal = {
       id: `deal-${Date.now()}`,
       title,
       company,
-      contact: contact || "Primary Lead",
-      email: email || "contact@company.com",
-      phone: "+1 (555) 000-0000",
+      contact: contact || "مخاطب اصلی",
+      email: email || "contact@company.ir",
+      phone: "۰۲۱۸۸۰۰۰۰۰۰",
       value: numericValue,
-      formattedValue: `$${numericValue.toLocaleString()}`,
+      formattedValue: formatToman(numericValue),
       stageId: stageId || defaultStageId || stages[0]?.id,
       priority,
-      probability: stageId === "stage-won" ? 100 : stageId === "stage-negotiation" ? 85 : 50,
-      tags: ["New Opportunity"],
-      notes: notes || "Added via quick pipeline creator.",
+      probability:
+        stageId === "stage-won"
+          ? 100
+          : stageId === "stage-negotiation"
+          ? 85
+          : 50,
+      tags: ["معامله جدید"],
+      notes: notes || "ثبت‌شده از طریق پایپ‌لاین سریع.",
       daysInStage: 0,
-      lastActivity: "Just now",
+      lastActivity: "همین حالا",
+      nextActionTitle: "پیگیری اولیه و تماس با رابط مشتری",
+      nextActionDue: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
       assignee: {
-        name: "You",
+        name: "شما",
         avatar: "",
       },
     };
@@ -95,107 +106,103 @@ export function NewDealDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-[#0d0d14] border-white/10 text-zinc-100 p-6 shadow-2xl">
+      <DialogContent className="sm:max-w-lg rounded-3xl border border-brand-100 bg-white p-6 shadow-2xl text-right" dir="rtl">
         <DialogHeader>
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono uppercase tracking-wider mb-1">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Create Opportunity</span>
+          <div className="flex items-center gap-2 text-brand-700 text-xs font-black mb-1">
+            <Sparkles className="h-4 w-4" />
+            <span>ایجاد معامله جدید</span>
           </div>
-          <DialogTitle className="text-xl font-bold text-white">
-            Add New Deal to Pipeline
+          <DialogTitle className="text-xl font-black text-slate-900">
+            افزودن معامله به پایپ‌لاین فروش
           </DialogTitle>
-          <DialogDescription className="text-xs text-zinc-400">
-            Create an opportunity card to track through your sales stages.
+          <DialogDescription className="text-xs text-slate-500 font-bold">
+            کارت پرونده معامله را برای پیگیری مراحل فروش ثبت کنید.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Opportunity Title */}
           <div className="space-y-1.5">
             <Label htmlFor="title" requiredIndicator>
-              Opportunity / Deal Title
+              عنوان معامله
             </Label>
             <Input
               id="title"
               required
-              placeholder="e.g. Enterprise Cloud License"
+              placeholder="مثلاً: توسعه نرم‌افزار سازمانی"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="h-10 text-xs bg-black/40 border-white/10"
+              className="h-10 text-xs rounded-xl border-brand-100 bg-white"
             />
           </div>
 
-          {/* Company & Deal Value Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="company" requiredIndicator>
-                Company Name
+                نام شرکت
               </Label>
               <Input
                 id="company"
                 required
-                placeholder="e.g. Acme Corp"
+                placeholder="نام شرکت طرف حساب"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 icon={<Building2 className="h-3.5 w-3.5" />}
-                className="h-10 text-xs bg-black/40 border-white/10"
+                className="h-10 text-xs rounded-xl border-brand-100 bg-white"
               />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="value" requiredIndicator>
-                Deal Value ($)
+                ارزش تخمینی (تومان)
               </Label>
               <Input
                 id="value"
                 required
                 type="number"
-                placeholder="25000"
+                placeholder="150000000"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                icon={<DollarSign className="h-3.5 w-3.5 text-emerald-400" />}
-                className="h-10 text-xs bg-black/40 border-white/10 font-mono"
+                icon={<Wallet className="h-3.5 w-3.5 text-emerald-600" />}
+                className="h-10 text-xs rounded-xl border-brand-100 bg-white font-bold"
               />
             </div>
           </div>
 
-          {/* Contact Person & Email */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="contact">Primary Contact</Label>
+              <Label htmlFor="contact">رابط اصلی</Label>
               <Input
                 id="contact"
-                placeholder="e.g. Sarah Connor"
+                placeholder="نام رابط تصمیم‌گیرنده"
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
                 icon={<User className="h-3.5 w-3.5" />}
-                className="h-10 text-xs bg-black/40 border-white/10"
+                className="h-10 text-xs rounded-xl border-brand-100 bg-white"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">ایمیل کاری</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="sarah@acme.com"
+                placeholder="contact@company.ir"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 icon={<Mail className="h-3.5 w-3.5" />}
-                className="h-10 text-xs bg-black/40 border-white/10"
+                className="h-10 text-xs rounded-xl border-brand-100 bg-white"
               />
             </div>
           </div>
 
-          {/* Stage & Priority Shadcn Selectors */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="stage-select">Initial Stage</Label>
+              <Label htmlFor="stage-select">مرحله اولیه</Label>
               <Select value={stageId} onValueChange={setStageId}>
-                <SelectTrigger id="stage-select" className="h-10">
-                  <SelectValue placeholder="Select stage" />
+                <SelectTrigger id="stage-select" className="h-10 rounded-xl border-brand-100 bg-white">
+                  <SelectValue placeholder="انتخاب مرحله" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-2xl border-brand-100 bg-white">
                   {stages.map((stage) => (
                     <SelectItem key={stage.id} value={stage.id}>
                       {stage.title}
@@ -206,51 +213,50 @@ export function NewDealDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="priority-select">Priority</Label>
+              <Label htmlFor="priority-select">اولویت</Label>
               <Select
                 value={priority}
                 onValueChange={(val) => setPriority(val as DealPriority)}
               >
-                <SelectTrigger id="priority-select" className="h-10">
-                  <SelectValue placeholder="Select priority" />
+                <SelectTrigger id="priority-select" className="h-10 rounded-xl border-brand-100 bg-white">
+                  <SelectValue placeholder="انتخاب اولویت" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
+                <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                  <SelectItem value="urgent">فوری</SelectItem>
+                  <SelectItem value="high">مهم</SelectItem>
+                  <SelectItem value="medium">عادی</SelectItem>
+                  <SelectItem value="low">کم</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Notes */}
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes & Key Deliverables</Label>
+            <Label htmlFor="notes">یادداشت و توافقات اولیه</Label>
             <Input
               id="notes"
-              placeholder="Key project requirements or scope highlights..."
+              placeholder="نکات کلیدی یا نیازمندی‌های مطرح‌شده…"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="h-10 text-xs bg-black/40 border-white/10"
+              className="h-10 text-xs rounded-xl border-brand-100 bg-white"
             />
           </div>
 
-          <DialogFooter className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2">
+          <DialogFooter className="pt-3 border-t border-brand-100 flex items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="text-xs border-white/10 hover:bg-white/[0.06]"
+              className="text-xs rounded-xl border-brand-200 hover:bg-brand-50 font-bold"
             >
-              Cancel
+              انصراف
             </Button>
             <Button
               type="submit"
-              className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-950/40 cursor-pointer"
+              className="gap-1.5 rounded-xl text-xs bg-brand-700 hover:bg-brand-800 text-white shadow-sm shadow-brand-700/20 font-black cursor-pointer"
             >
-              <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-              Create Opportunity
+              <PlusCircle className="h-4 w-4" />
+              ثبت معامله
             </Button>
           </DialogFooter>
         </form>
