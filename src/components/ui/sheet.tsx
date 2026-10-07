@@ -31,14 +31,14 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-[#0c0c10]/98 border-white/10 p-6 shadow-2xl backdrop-blur-2xl will-change-transform",
+  "fixed z-50 gap-4 bg-white border-zinc-200 text-zinc-950 p-6 shadow-xl will-change-transform",
   {
     variants: {
       side: {
         top: "inset-x-0 top-0 border-b",
         bottom: "inset-x-0 bottom-0 border-t",
-        left: "inset-y-0 left-0 h-full w-4/5 max-w-sm border-r border-white/10",
-        right: "inset-y-0 right-0 h-full w-4/5 max-w-sm border-l border-white/10",
+        left: "inset-y-0 left-0 h-full w-4/5 max-w-sm border-r border-zinc-200",
+        right: "inset-y-0 right-0 h-full w-4/5 max-w-sm border-l border-zinc-200",
       },
     },
     defaultVariants: {
@@ -49,29 +49,53 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  /** Set false when the panel renders its own close button (e.g. on a dark header). */
+  showCloseButton?: boolean;
+  /** Extra classes for the built-in close button, for theming its contrast. */
+  closeButtonClassName?: string;
+}
 
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      data-slot="sheet-content"
-      data-side={side}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 opacity-70 transition-opacity hover:opacity-100 hover:bg-white/5 focus:outline-none disabled:pointer-events-none cursor-pointer">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-      {children}
-    </SheetPrimitive.Content>
-  </SheetPortal>
-));
+>(
+  (
+    {
+      side = "right",
+      className,
+      children,
+      showCloseButton = true,
+      closeButtonClassName,
+      ...props
+    },
+    ref
+  ) => (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        data-slot="sheet-content"
+        data-side={side}
+        className={cn(sheetVariants({ side }), className)}
+        {...props}
+      >
+        {showCloseButton && (
+          <SheetPrimitive.Close
+            className={cn(
+              "absolute end-4 top-4 z-20 cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none disabled:pointer-events-none",
+              closeButtonClassName
+            )}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">بستن</span>
+          </SheetPrimitive.Close>
+        )}
+        {children}
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  )
+);
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({
@@ -80,7 +104,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left",
+      "flex flex-col space-y-2 text-center sm:text-right",
       className
     )}
     {...props}
@@ -108,7 +132,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold text-white", className)}
+    className={cn("text-lg font-semibold text-zinc-950", className)}
     {...props}
   />
 ));
@@ -120,7 +144,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-zinc-400 leading-relaxed", className)}
+    className={cn("text-sm text-zinc-500 leading-relaxed", className)}
     {...props}
   />
 ));
@@ -138,3 +162,4 @@ export {
   SheetTitle,
   SheetDescription,
 };
+export type { SheetContentProps };

@@ -28,24 +28,23 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     };
 
     return (
-      <div className="relative inline-flex items-center justify-center">
+      <div className={cn("relative inline-flex h-4 w-4 shrink-0 items-center justify-center", className)}>
         <input
           type="checkbox"
           ref={ref}
           checked={isChecked}
           onChange={handleChange}
           className={cn(
-            "peer h-4 w-4 shrink-0 appearance-none rounded-md border border-white/20 bg-white/[0.04] transition-all cursor-pointer",
-            "checked:border-cyan-500 checked:bg-cyan-500 checked:text-white",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            className
+            "peer h-full w-full appearance-none rounded-md border border-zinc-300 bg-white transition-all cursor-pointer",
+            "checked:border-blue-700 checked:bg-blue-700 checked:text-white",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+            "disabled:cursor-not-allowed disabled:opacity-50"
           )}
           {...props}
         />
         <Check
           className={cn(
-            "pointer-events-none absolute h-3 w-3 text-zinc-950 stroke-[3] transition-transform duration-150 scale-0 peer-checked:scale-100"
+            "pointer-events-none absolute inset-0 m-auto h-3 w-3 text-white stroke-[3] transition-transform duration-150 scale-0 peer-checked:scale-100"
           )}
         />
       </div>

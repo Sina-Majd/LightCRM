@@ -66,14 +66,14 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       <div
         onClick={() => inputRef.current?.focus()}
         className={cn(
-          "relative flex h-10 w-full items-center rounded-xl border border-white/10 bg-black/40 px-3 transition-colors duration-100 cursor-text",
-          "focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/30 group",
-          disabled && "opacity-50 cursor-not-allowed",
+          "relative flex h-10 w-full items-center rounded-xl border border-brand-100 bg-white px-3 transition hover:border-brand-200 cursor-text",
+          "focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-600/20 group",
+          disabled && "opacity-50 cursor-not-allowed bg-slate-50",
           className
         )}
       >
         {icon && (
-          <div className="mr-2.5 shrink-0 text-zinc-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none flex items-center justify-center">
+          <div className="ml-2.5 shrink-0 text-slate-400 group-focus-within:text-brand-700 transition-colors pointer-events-none flex items-center justify-center">
             {icon}
           </div>
         )}
@@ -88,12 +88,12 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
           max={max}
           step={step}
           placeholder={placeholder}
-          className="h-full w-full bg-transparent text-xs font-mono text-white placeholder:text-zinc-500 focus:outline-none disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="h-full w-full bg-transparent text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           {...props}
         />
 
         {showSteppers && (
-          <div className="ml-2 flex flex-col items-center justify-center border-l border-white/[0.08] pl-1.5 shrink-0">
+          <div className="mr-2 flex flex-col items-center justify-center border-r border-slate-100 pr-1.5 shrink-0">
             <button
               type="button"
               tabIndex={-1}
@@ -102,8 +102,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
                 e.stopPropagation();
                 handleIncrement();
               }}
-              className="flex h-3.5 w-4.5 items-center justify-center rounded text-zinc-400 hover:text-cyan-300 hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer disabled:opacity-30"
-              aria-label="Increment"
+              className="flex h-3.5 w-4 items-center justify-center rounded text-slate-400 hover:text-brand-700 hover:bg-brand-50 active:scale-95 transition-all cursor-pointer disabled:opacity-30"
+              aria-label="افزایش"
             >
               <ChevronUp className="h-3 w-3" />
             </button>
@@ -115,8 +115,8 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
                 e.stopPropagation();
                 handleDecrement();
               }}
-              className="flex h-3.5 w-4.5 items-center justify-center rounded text-zinc-400 hover:text-cyan-300 hover:bg-white/[0.08] active:scale-95 transition-all cursor-pointer disabled:opacity-30"
-              aria-label="Decrement"
+              className="flex h-3.5 w-4 items-center justify-center rounded text-slate-400 hover:text-brand-700 hover:bg-brand-50 active:scale-95 transition-all cursor-pointer disabled:opacity-30"
+              aria-label="کاهش"
             >
               <ChevronDown className="h-3 w-3" />
             </button>

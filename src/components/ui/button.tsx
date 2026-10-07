@@ -9,19 +9,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-white text-zinc-950 font-semibold shadow-xl shadow-white/10 hover:bg-zinc-100 hover:shadow-white/20",
+          "bg-blue-700 text-white font-semibold shadow-lg shadow-blue-700/20 hover:bg-blue-800",
         destructive:
-          "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20",
+          "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100",
         outline:
-          "border border-white/10 bg-white/[0.04] text-zinc-200 backdrop-blur-md hover:bg-white/[0.08] hover:border-white/20",
+          "border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 hover:border-zinc-400",
         secondary:
-          "bg-zinc-800/80 text-zinc-200 border border-white/[0.06] hover:bg-zinc-700/80 hover:text-white",
+          "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200",
         ghost:
-          "text-zinc-300 hover:bg-white/[0.06] hover:text-white",
+          "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950",
         link:
-          "text-indigo-400 underline-offset-4 hover:underline",
+          "text-blue-700 underline-offset-4 hover:underline",
         glow:
-          "bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:brightness-110",
+          "bg-blue-700 text-white font-semibold shadow-lg shadow-blue-700/25 hover:bg-blue-800",
       },
       size: {
         default: "h-10 px-4 py-2",

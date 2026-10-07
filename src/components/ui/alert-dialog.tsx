@@ -32,7 +32,7 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border border-white/10 bg-[#0e0e16] p-6 shadow-2xl backdrop-blur-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl max-h-[calc(100vh-4rem)] overflow-y-auto",
+        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border border-slate-200 bg-white p-6 shadow-xl duration-200 rounded-2xl max-h-[calc(100vh-4rem)] overflow-y-auto",
         className
       )}
       {...props}
@@ -47,7 +47,7 @@ const AlertDialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-left",
+      "flex flex-col space-y-2 text-right",
       className
     )}
     {...props}
@@ -76,7 +76,7 @@ const AlertDialogTitle = React.forwardRef<
   <AlertDialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-base sm:text-lg font-semibold text-white tracking-tight break-words [overflow-wrap:anywhere]",
+      "text-base sm:text-lg font-black text-slate-950 break-words [overflow-wrap:anywhere]",
       className
     )}
     {...props}
@@ -91,7 +91,7 @@ const AlertDialogDescription = React.forwardRef<
   <AlertDialogPrimitive.Description
     ref={ref}
     className={cn(
-      "text-sm text-zinc-400 leading-relaxed break-words [overflow-wrap:anywhere]",
+      "text-sm text-slate-500 leading-7 break-words [overflow-wrap:anywhere]",
       className
     )}
     {...props}
@@ -122,7 +122,7 @@ const AlertDialogCancel = React.forwardRef<
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center rounded-lg text-xs font-medium px-4 py-2 transition-colors border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08] hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex items-center justify-center rounded-xl text-[13px] font-bold px-4 py-2.5 transition-colors border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}
