@@ -2,16 +2,11 @@
 
 import React from "react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-interface ConfirmDeleteDialogProps {
+
+interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -21,15 +16,7 @@ interface ConfirmDeleteDialogProps {
   onConfirm: () => void;
 }
 
-export function ConfirmDeleteDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  itemName,
-  confirmLabel = "Delete",
-  onConfirm,
-}: ConfirmDeleteDialogProps) {
+export function ConfirmDeleteDialog({ open, onOpenChange, title, description, itemName, confirmLabel = "حذف", onConfirm }: Props) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -37,22 +24,14 @@ export function ConfirmDeleteDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
             {itemName ? (
-              <>
-                Are you sure you want to delete{" "}
-                <span className="font-medium text-zinc-100 break-words [overflow-wrap:anywhere]">
-                  &ldquo;{itemName}&rdquo;
-                </span>
-                ? This action cannot be undone.
-              </>
+              <>آیا از حذف <b className="text-slate-900">«{itemName}»</b> مطمئن هستید؟ این کار قابل بازگشت نیست.</>
             ) : (
-              description ||
-              "This action cannot be undone. This record will be permanently deleted."
+              description || "این رکورد برای همیشه حذف می‌شود."
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
-
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>انصراف</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();

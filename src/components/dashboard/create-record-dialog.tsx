@@ -7,13 +7,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -23,17 +21,14 @@ import {
 } from "@/components/ui/select";
 import {
   Building2,
-  DollarSign,
+  Wallet,
   User,
   Mail,
   Phone,
-  Briefcase,
-  MapPin,
-  Flame,
-  PlusCircle,
-  Kanban,
+  KanbanSquare,
   Users,
   UserCheck,
+  PlusCircle,
 } from "lucide-react";
 import {
   Deal,
@@ -46,10 +41,11 @@ import {
   CustomerHealth,
   PipelineStage,
 } from "@/data/dashboard-mock-data";
+import { formatToman } from "@/lib/fa";
 
 export type RecordType = "deal" | "lead" | "customer";
 
-interface CreateRecordDialogProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   defaultType?: RecordType;
@@ -60,6 +56,14 @@ interface CreateRecordDialogProps {
   onCreateCustomer: (customer: Customer) => void;
 }
 
+const STAGE_FA: Record<string, string> = {
+  "stage-new": "سرنخ‌های ورودی",
+  "stage-qualified": "ارزیابی و تایید نیاز",
+  "stage-proposal": "ارسال پیش‌فاکتور و دمو",
+  "stage-negotiation": "مذاکره و توافق نهایی",
+  "stage-won": "موفق و بسته شد",
+};
+
 export function CreateRecordDialog({
   isOpen,
   onClose,
@@ -69,678 +73,446 @@ export function CreateRecordDialog({
   onCreateDeal,
   onCreateLead,
   onCreateCustomer,
-}: CreateRecordDialogProps) {
-  const [activeTab, setActiveTab] = useState<RecordType>(defaultType);
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-  const [prevDefaultType, setPrevDefaultType] = useState(defaultType);
-
-  if (isOpen !== prevIsOpen || defaultType !== prevDefaultType) {
-    setPrevIsOpen(isOpen);
-    setPrevDefaultType(defaultType);
-    if (isOpen) {
-      setActiveTab(defaultType);
-    }
+}: Props) {
+  const [tab, setTab] = useState<RecordType>(defaultType);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  const [prevType, setPrevType] = useState(defaultType);
+  if (isOpen !== prevOpen || defaultType !== prevType) {
+    setPrevOpen(isOpen);
+    setPrevType(defaultType);
+    if (isOpen) setTab(defaultType);
   }
 
-  // Deal Form State
   const [dealTitle, setDealTitle] = useState("");
   const [dealCompany, setDealCompany] = useState("");
   const [dealContact, setDealContact] = useState("");
   const [dealEmail, setDealEmail] = useState("");
-  const [dealValue, setDealValue] = useState<number | string>(25000);
-  const [dealStageId, setDealStageId] = useState(defaultStageId || stages[0]?.id || "stage-new");
+  const [dealValue, setDealValue] = useState<number | string>(150000000);
+  const [dealStageId, setDealStageId] = useState(
+    defaultStageId || stages[0]?.id || "stage-new"
+  );
   const [dealPriority, setDealPriority] = useState<DealPriority>("high");
-  const [dealNotes, setDealNotes] = useState("");
 
-  // Lead Form State
   const [leadName, setLeadName] = useState("");
   const [leadCompany, setLeadCompany] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
-  const [leadTitle, setLeadTitle] = useState("");
   const [leadScore, setLeadScore] = useState<number | string>(85);
   const [leadStatus, setLeadStatus] = useState<LeadStatus>("hot");
-  const [leadSource, setLeadSource] = useState<LeadSource>("Website");
-  const [leadValue, setLeadValue] = useState<number | string>(18000);
-  const [leadNotes, setLeadNotes] = useState("");
 
-  // Customer Form State
   const [custCompany, setCustCompany] = useState("");
   const [custName, setCustName] = useState("");
   const [custEmail, setCustEmail] = useState("");
   const [custPhone, setCustPhone] = useState("");
-  const [custTier, setCustTier] = useState<CustomerTier>("Growth");
-  const [custHealth, setCustHealth] = useState<CustomerHealth>("excellent");
-  const [custLtv, setCustLtv] = useState<number | string>(45000);
-  const [custIndustry, setCustIndustry] = useState("");
-  const [custLocation, setCustLocation] = useState("");
+  const [custTier, setCustTier] = useState<CustomerTier>("سازمانی");
+  const [custLtv, setCustLtv] = useState<number | string>(350000000);
 
-  // Reset helper
-  const handleClose = () => {
-    onClose();
-  };
+  const close = () => onClose();
 
-  // Submit Handlers
-  const handleSubmitDeal = (e: React.FormEvent) => {
+  const submitDeal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!dealTitle || !dealCompany) return;
-
-    const numeric = typeof dealValue === "number" ? dealValue : parseFloat(dealValue) || 10000;
-
-    const newDeal: Deal = {
+    const numeric =
+      typeof dealValue === "number"
+        ? dealValue
+        : parseFloat(dealValue as string) || 150000000;
+    onCreateDeal({
       id: `deal-${Date.now()}`,
       title: dealTitle,
       company: dealCompany,
-      contact: dealContact || "Primary Contact",
-      email: dealEmail || "contact@company.com",
-      phone: "+1 (555) 000-0000",
+      contact: dealContact || "مخاطب اصلی",
+      email: dealEmail || "contact@company.ir",
+      phone: "۰۲۱۸۸۰۰۰۰۰۰",
       value: numeric,
-      formattedValue: `$${numeric.toLocaleString()}`,
+      formattedValue: formatToman(numeric),
       stageId: dealStageId || stages[0]?.id,
       priority: dealPriority,
-      probability: dealStageId === "stage-won" ? 100 : dealStageId === "stage-negotiation" ? 85 : 50,
-      tags: ["Direct Inbound"],
-      notes: dealNotes || "Added via quick opportunity creator.",
+      probability:
+        dealStageId === "stage-won"
+          ? 100
+          : dealStageId === "stage-negotiation"
+          ? 85
+          : 50,
+      tags: ["معامله جدید"],
+      notes: "ثبت سریع در پایپ‌لاین",
       daysInStage: 0,
-      lastActivity: "Just now",
-      assignee: {
-        name: "You",
-        avatar: "",
-      },
-    };
-
-    onCreateDeal(newDeal);
-    handleClose();
+      lastActivity: "همین حالا",
+      nextActionTitle: "برقراری تماس اولیه و بررسی نیازها",
+      nextActionDue: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      assignee: { name: "شما", avatar: "" },
+    });
+    close();
     setDealTitle("");
     setDealCompany("");
     setDealContact("");
     setDealEmail("");
-    setDealNotes("");
   };
 
-  const handleSubmitLead = (e: React.FormEvent) => {
+  const submitLead = (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadName || !leadCompany) return;
-
-    const numericVal = typeof leadValue === "number" ? leadValue : parseFloat(leadValue) || 12000;
-    const numericScore = typeof leadScore === "number" ? leadScore : parseInt(leadScore as string) || 80;
-
-    const newLead: Lead = {
+    const score = Math.min(
+      100,
+      Math.max(
+        1,
+        typeof leadScore === "number"
+          ? leadScore
+          : parseInt(leadScore as string) || 80
+      )
+    );
+    onCreateLead({
       id: `lead-${Date.now()}`,
       name: leadName,
       company: leadCompany,
-      email: leadEmail || "lead@company.com",
-      phone: leadPhone || "+1 (555) 123-4567",
-      title: leadTitle || "Operations Manager",
-      score: Math.min(100, Math.max(1, numericScore)),
+      email: leadEmail || "lead@company.ir",
+      phone: leadPhone || "۰۹۱۲۰۰۰۰۰۰۰",
+      title: "مدیر توسعه بازار",
+      score,
       status: leadStatus,
-      source: leadSource,
-      estimatedValue: numericVal,
-      formattedValue: `$${numericVal.toLocaleString()}`,
-      createdDate: "Just now",
-      notes: leadNotes || "Inbound lead inquiry.",
-      assignedTo: "You",
-    };
-
-    onCreateLead(newLead);
-    handleClose();
+      source: "وبسایت",
+      estimatedValue: 120000000,
+      formattedValue: formatToman(120000000),
+      createdDate: "همین حالا",
+      notes: "",
+      assignedTo: "شما",
+    });
+    close();
     setLeadName("");
     setLeadCompany("");
     setLeadEmail("");
     setLeadPhone("");
-    setLeadTitle("");
-    setLeadNotes("");
   };
 
-  const handleSubmitCustomer = (e: React.FormEvent) => {
+  const submitCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!custCompany || !custName) return;
-
-    const numericLtv = typeof custLtv === "number" ? custLtv : parseFloat(custLtv) || 35000;
-    const healthScore = custHealth === "excellent" ? 95 : custHealth === "good" ? 88 : 72;
-
-    const newCust: Customer = {
+    const numeric =
+      typeof custLtv === "number"
+        ? custLtv
+        : parseFloat(custLtv as string) || 350000000;
+    onCreateCustomer({
       id: `cust-${Date.now()}`,
       name: custName,
       company: custCompany,
-      email: custEmail || "info@company.com",
-      phone: custPhone || "+1 (555) 987-6543",
-      ltv: numericLtv,
-      formattedLtv: `$${numericLtv.toLocaleString()}`,
+      email: custEmail || "info@company.ir",
+      phone: custPhone || "۰۲۱۸۸۰۰۰۰۰۰",
+      customerType: "company",
+      segment: "customer",
+      ltv: numeric,
+      formattedLtv: formatToman(numeric),
       activeDealsCount: 1,
-      healthScore,
-      healthStatus: custHealth,
+      healthScore: 90,
+      healthStatus: "good",
       tier: custTier,
-      renewalDate: "In 12 Months",
-      lastTouch: "Just now",
-      location: custLocation || "Global",
-      industry: custIndustry || "Technology & Services",
-    };
-
-    onCreateCustomer(newCust);
-    handleClose();
+      renewalDate: "۱۲ ماه بعد",
+      lastTouch: "همین حالا",
+      location: "تهران",
+      industry: "فناوری اطلاعات و خدمات",
+    });
+    close();
     setCustCompany("");
     setCustName("");
     setCustEmail("");
     setCustPhone("");
-    setCustIndustry("");
-    setCustLocation("");
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-xl bg-[#0d0d14] border-white/10 text-zinc-100 p-6 shadow-2xl">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-            <PlusCircle className="h-5 w-5 text-cyan-400" />
-            <span>Create CRM Record</span>
-          </DialogTitle>
-          <DialogDescription className="text-xs text-zinc-400">
-            Add a new Opportunity, Lead, or Customer directly into your workspace.
-          </DialogDescription>
+  const field = "space-y-1.5";
 
-          {/* Unified Record Type Selector Tabs */}
-          <div className="pt-3">
-            <Tabs
-              value={activeTab}
-              onValueChange={(val) => setActiveTab(val as RecordType)}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-3 w-full h-10 p-1 bg-black/60 rounded-xl border border-white/10 overflow-hidden">
-                <TabsTrigger
-                  value="deal"
-                  className="flex items-center justify-center gap-1.5 h-full rounded-lg"
-                >
-                  <Kanban className="h-3.5 w-3.5" />
-                  <span>Opportunity</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="lead"
-                  className="flex items-center justify-center gap-1.5 h-full rounded-lg"
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  <span>New Lead</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="customer"
-                  className="flex items-center justify-center gap-1.5 h-full rounded-lg"
-                >
-                  <UserCheck className="h-3.5 w-3.5" />
-                  <span>Customer 360°</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+  return (
+    <Dialog open={isOpen} onOpenChange={(o) => !o && close()}>
+      <DialogContent className="rounded-3xl border border-brand-100 bg-white p-6 sm:max-w-xl text-right shadow-2xl max-h-[92vh] overflow-y-auto" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900">
+            <PlusCircle className="h-5 w-5 text-brand-700" /> ایجاد رکورد جدید
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-500 font-bold">
+            معامله، سرنخ یا مشتری را مستقیم وارد فضای کاری لایت کنید.
+          </DialogDescription>
+          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-brand-100 bg-brand-50/40 p-1.5 pt-2 mt-3">
+            {(
+              [
+                ["deal", "معامله فروش", KanbanSquare],
+                ["lead", "سرنخ بازاریابی", Users],
+                ["customer", "پرونده مشتری", UserCheck],
+              ] as const
+            ).map(([v, l, Icon]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setTab(v)}
+                className={`flex h-10 items-center justify-center gap-1.5 rounded-xl text-[12.5px] font-black cursor-pointer transition-all ${
+                  tab === v
+                    ? "bg-brand-950 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {l}
+              </button>
+            ))}
           </div>
         </DialogHeader>
 
-        {/* 1. OPPORTUNITY / DEAL TAB */}
-        {activeTab === "deal" && (
-          <form onSubmit={handleSubmitDeal} className="space-y-4 pt-1">
-            <div className="space-y-1.5">
-              <Label htmlFor="deal-title" requiredIndicator>
-                Deal / Scope Title
-              </Label>
+        {tab === "deal" && (
+          <form onSubmit={submitDeal} className="space-y-3.5 pt-2">
+            <div className={field}>
+              <Label requiredIndicator>عنوان معامله</Label>
               <Input
-                id="deal-title"
                 required
-                placeholder="e.g. Enterprise Cloud License"
                 value={dealTitle}
                 onChange={(e) => setDealTitle(e.target.value)}
-                className="h-10 text-xs"
+                placeholder="مثلاً: سامانه مدیریت دانش سازمانی"
+                className="h-10 rounded-xl border-brand-100 bg-white"
               />
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-company" requiredIndicator>
-                  Company Name
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>شرکت طرف حساب</Label>
                 <Input
-                  id="deal-company"
                   required
-                  placeholder="e.g. Apex Global"
                   value={dealCompany}
                   onChange={(e) => setDealCompany(e.target.value)}
+                  placeholder="نام شرکت یا برند"
                   icon={<Building2 className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-value" requiredIndicator>
-                  Contract Value ($)
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>ارزش تخمینی (تومان)</Label>
                 <NumberInput
-                  id="deal-value"
                   value={dealValue}
                   onChange={setDealValue}
-                  step={1000}
+                  step={10000000}
                   min={0}
-                  icon={<DollarSign className="h-3.5 w-3.5 text-emerald-400" />}
+                  icon={<Wallet className="h-3.5 w-3.5 text-emerald-600" />}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-contact">Primary Contact</Label>
+              <div className={field}>
+                <Label>مخاطب اصلی</Label>
                 <Input
-                  id="deal-contact"
-                  placeholder="e.g. Marcus Chen"
                   value={dealContact}
                   onChange={(e) => setDealContact(e.target.value)}
+                  placeholder="نام رابط تصمیم‌گیرنده"
                   icon={<User className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-email">Email Address</Label>
+              <div className={field}>
+                <Label>ایمیل کاری</Label>
                 <Input
-                  id="deal-email"
                   type="email"
-                  placeholder="marcus@apex.io"
                   value={dealEmail}
                   onChange={(e) => setDealEmail(e.target.value)}
+                  placeholder="contact@company.ir"
                   icon={<Mail className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-stage">Pipeline Stage</Label>
+              <div className={field}>
+                <Label>مرحله در پایپ‌لاین</Label>
                 <Select value={dealStageId} onValueChange={setDealStageId}>
-                  <SelectTrigger id="deal-stage" className="h-10">
-                    <SelectValue placeholder="Select stage" />
+                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((stage) => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        {stage.title}
+                  <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                    {stages.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {STAGE_FA[s.id] || s.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="deal-priority">Priority</Label>
+              <div className={field}>
+                <Label>سطح فوریت</Label>
                 <Select
                   value={dealPriority}
-                  onValueChange={(val) => setDealPriority(val as DealPriority)}
+                  onValueChange={(v) => setDealPriority(v as DealPriority)}
                 >
-                  <SelectTrigger id="deal-priority" className="h-10">
-                    <SelectValue placeholder="Select priority" />
+                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                  <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                    <SelectItem value="urgent">فوری</SelectItem>
+                    <SelectItem value="high">مهم</SelectItem>
+                    <SelectItem value="medium">عادی</SelectItem>
+                    <SelectItem value="low">کم</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="deal-notes">Notes & Deliverables</Label>
-              <Input
-                id="deal-notes"
-                placeholder="Key scope requirements or client preferences..."
-                value={dealNotes}
-                onChange={(e) => setDealNotes(e.target.value)}
-                className="h-10 text-xs"
-              />
-            </div>
-
-            <DialogFooter className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="text-xs border-white/10 hover:bg-white/[0.06]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md cursor-pointer"
-              >
-                <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-                Add Opportunity
-              </Button>
-            </DialogFooter>
+            <Button
+              type="submit"
+              className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
+            >
+              ثبت معامله در پایپ‌لاین
+            </Button>
           </form>
         )}
 
-        {/* 2. NEW LEAD TAB */}
-        {activeTab === "lead" && (
-          <form onSubmit={handleSubmitLead} className="space-y-4 pt-1">
+        {tab === "lead" && (
+          <form onSubmit={submitLead} className="space-y-3.5 pt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-name" requiredIndicator>
-                  Full Name
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>نام و نام‌خانوادگی</Label>
                 <Input
-                  id="lead-name"
                   required
-                  placeholder="e.g. Rachel Thorne"
                   value={leadName}
                   onChange={(e) => setLeadName(e.target.value)}
-                  icon={<User className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
+                  placeholder="نام سرنخ"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-company" requiredIndicator>
-                  Company Name
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>شرکت</Label>
                 <Input
-                  id="lead-company"
                   required
-                  placeholder="e.g. Vanguard Partners"
                   value={leadCompany}
                   onChange={(e) => setLeadCompany(e.target.value)}
-                  icon={<Building2 className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
+                  placeholder="شرکت یا سازمان"
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-email">Email Address</Label>
+              <div className={field}>
+                <Label>ایمیل</Label>
                 <Input
-                  id="lead-email"
-                  type="email"
-                  placeholder="rachel@vanguard.co"
                   value={leadEmail}
                   onChange={(e) => setLeadEmail(e.target.value)}
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                   icon={<Mail className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-phone">Phone Number</Label>
+              <div className={field}>
+                <Label>تلفن همراه</Label>
                 <Input
-                  id="lead-phone"
-                  placeholder="+1 (555) 000-0000"
                   value={leadPhone}
                   onChange={(e) => setLeadPhone(e.target.value)}
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                   icon={<Phone className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-title">Job Title</Label>
-                <Input
-                  id="lead-title"
-                  placeholder="VP Operations"
-                  value={leadTitle}
-                  onChange={(e) => setLeadTitle(e.target.value)}
-                  className="h-10 text-xs"
-                />
+            <div className="grid grid-cols-2 gap-3">
+              <div className={field}>
+                <Label>وضعیت حرارت</Label>
+                <Select
+                  value={leadStatus}
+                  onValueChange={(v) => setLeadStatus(v as LeadStatus)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                    <SelectItem value="hot">داغ</SelectItem>
+                    <SelectItem value="warm">گرم</SelectItem>
+                    <SelectItem value="qualified">واجد شرایط</SelectItem>
+                    <SelectItem value="cold">سرد</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-score">Lead Score (1-100)</Label>
+              <div className={field}>
+                <Label>امتیاز کیفی (۱ تا ۱۰۰)</Label>
                 <NumberInput
-                  id="lead-score"
                   value={leadScore}
                   onChange={setLeadScore}
                   min={1}
                   max={100}
-                  step={5}
-                  icon={<Flame className="h-3.5 w-3.5 text-rose-400" />}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-est-value">Est. Value ($)</Label>
-                <NumberInput
-                  id="lead-est-value"
-                  value={leadValue}
-                  onChange={setLeadValue}
-                  step={1000}
-                  min={0}
-                  icon={<DollarSign className="h-3.5 w-3.5 text-emerald-400" />}
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-source">Lead Source</Label>
-                <Select
-                  value={leadSource}
-                  onValueChange={(val) => setLeadSource(val as LeadSource)}
-                >
-                  <SelectTrigger id="lead-source" className="h-10">
-                    <SelectValue placeholder="Select Source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                    <SelectItem value="Referral">Referral</SelectItem>
-                    <SelectItem value="Outbound">Outbound</SelectItem>
-                    <SelectItem value="Product Hunt">Product Hunt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="lead-status">Status</Label>
-                <Select
-                  value={leadStatus}
-                  onValueChange={(val) => setLeadStatus(val as LeadStatus)}
-                >
-                  <SelectTrigger id="lead-status" className="h-10">
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hot">Hot (High Intent)</SelectItem>
-                    <SelectItem value="warm">Warm</SelectItem>
-                    <SelectItem value="qualified">Qualified</SelectItem>
-                    <SelectItem value="cold">Cold</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="lead-notes">Background & Inquiry Details</Label>
-              <Input
-                id="lead-notes"
-                placeholder="Product interest, discovery notes, or follow-up needs..."
-                value={leadNotes}
-                onChange={(e) => setLeadNotes(e.target.value)}
-                className="h-10 text-xs"
-              />
-            </div>
-
-            <DialogFooter className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="text-xs border-white/10 hover:bg-white/[0.06]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md cursor-pointer"
-              >
-                <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-                Add Lead
-              </Button>
-            </DialogFooter>
+            <Button
+              type="submit"
+              className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
+            >
+              ثبت سرنخ جدید
+            </Button>
           </form>
         )}
 
-        {/* 3. NEW CUSTOMER TAB */}
-        {activeTab === "customer" && (
-          <form onSubmit={handleSubmitCustomer} className="space-y-4 pt-1">
+        {tab === "customer" && (
+          <form onSubmit={submitCustomer} className="space-y-3.5 pt-2">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-company" requiredIndicator>
-                  Account / Company
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>شرکت / سازمان</Label>
                 <Input
-                  id="cust-company"
                   required
-                  placeholder="e.g. Beacon Tech Labs"
                   value={custCompany}
                   onChange={(e) => setCustCompany(e.target.value)}
-                  icon={<Building2 className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-name" requiredIndicator>
-                  Primary Decision Maker
-                </Label>
+              <div className={field}>
+                <Label requiredIndicator>مخاطب اصلی</Label>
                 <Input
-                  id="cust-name"
                   required
-                  placeholder="e.g. Astrid Lindholm"
                   value={custName}
                   onChange={(e) => setCustName(e.target.value)}
-                  icon={<User className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-email">Billing / Contact Email</Label>
+              <div className={field}>
+                <Label>ایمیل</Label>
                 <Input
-                  id="cust-email"
-                  type="email"
-                  placeholder="finance@company.com"
                   value={custEmail}
                   onChange={(e) => setCustEmail(e.target.value)}
-                  icon={<Mail className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-phone">Direct Phone</Label>
+              <div className={field}>
+                <Label>تلفن</Label>
                 <Input
-                  id="cust-phone"
-                  placeholder="+1 (555) 000-0000"
                   value={custPhone}
                   onChange={(e) => setCustPhone(e.target.value)}
-                  icon={<Phone className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
+                  className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-tier">Account Tier</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className={field}>
+                <Label>سطح مشتری</Label>
                 <Select
                   value={custTier}
-                  onValueChange={(val) => setCustTier(val as CustomerTier)}
+                  onValueChange={(v) => setCustTier(v as CustomerTier)}
                 >
-                  <SelectTrigger id="cust-tier" className="h-10">
-                    <SelectValue placeholder="Tier" />
+                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Enterprise">Enterprise</SelectItem>
-                    <SelectItem value="Growth">Growth</SelectItem>
-                    <SelectItem value="Startup">Startup</SelectItem>
+                  <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                    <SelectItem value="سازمانی">سازمانی (Enterprise)</SelectItem>
+                    <SelectItem value="رشد">رشد (Growth)</SelectItem>
+                    <SelectItem value="استارتاپ">استارتاپ (Startup)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-health">Account Standing</Label>
-                <Select
-                  value={custHealth}
-                  onValueChange={(val) => setCustHealth(val as CustomerHealth)}
-                >
-                  <SelectTrigger id="cust-health" className="h-10">
-                    <SelectValue placeholder="Health" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="excellent">Excellent (Prime)</SelectItem>
-                    <SelectItem value="good">Good (Stable)</SelectItem>
-                    <SelectItem value="warning">Needs Attention</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-ltv">Initial / Total LTV ($)</Label>
+              <div className={field}>
+                <Label>ارزش چرخه حیات تقریبی (تومان)</Label>
                 <NumberInput
-                  id="cust-ltv"
                   value={custLtv}
                   onChange={setCustLtv}
-                  step={2500}
+                  step={10000000}
                   min={0}
-                  icon={<DollarSign className="h-3.5 w-3.5 text-emerald-400" />}
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-industry">Industry Sector</Label>
-                <Input
-                  id="cust-industry"
-                  placeholder="e.g. FinTech / SaaS"
-                  value={custIndustry}
-                  onChange={(e) => setCustIndustry(e.target.value)}
-                  icon={<Briefcase className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="cust-location">Headquarters Location</Label>
-                <Input
-                  id="cust-location"
-                  placeholder="e.g. San Francisco, CA"
-                  value={custLocation}
-                  onChange={(e) => setCustLocation(e.target.value)}
-                  icon={<MapPin className="h-3.5 w-3.5" />}
-                  className="h-10 text-xs"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-3 border-t border-white/[0.08] flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="text-xs border-white/10 hover:bg-white/[0.06]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-md cursor-pointer"
-              >
-                <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-                Add Customer
-              </Button>
-            </DialogFooter>
+            <Button
+              type="submit"
+              className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
+            >
+              ثبت پرونده مشتری
+            </Button>
           </form>
         )}
       </DialogContent>
     </Dialog>
   );
 }
+
+export type { CustomerHealth };

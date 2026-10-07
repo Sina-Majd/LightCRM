@@ -6,15 +6,11 @@ import {
   UserPlus,
   Mail,
   Phone,
-  ArrowRightLeft,
+  ChevronLeft,
   Building2,
   Download,
-  CheckSquare,
-  MoreHorizontal,
   Trash2,
-  Calendar,
-  PhoneCall,
-  CheckCircle2,
+  MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Lead, LeadStatus } from "@/data/dashboard-mock-data";
@@ -22,14 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -42,12 +30,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { faDigits } from "@/lib/fa";
 
-interface LeadsViewProps {
+interface Props {
   leads: Lead[];
   onConvertToDeal: (lead: Lead) => void;
   onOpenNewLeadModal: () => void;
@@ -56,27 +43,11 @@ interface LeadsViewProps {
   searchQuery: string;
 }
 
-const statusConfig: Record<
-  LeadStatus,
-  { label: string; badge: string; icon?: boolean }
-> = {
-  hot: {
-    label: "Hot",
-    badge: "border-rose-500/40 text-rose-300 bg-rose-500/10 shadow-[0_0_10px_rgba(244,63,94,0.15)]",
-    icon: true,
-  },
-  warm: {
-    label: "Warm",
-    badge: "border-amber-500/40 text-amber-300 bg-amber-500/10",
-  },
-  qualified: {
-    label: "Qualified",
-    badge: "border-cyan-500/30 text-cyan-300 bg-cyan-500/10",
-  },
-  cold: {
-    label: "Cold",
-    badge: "border-zinc-700 text-zinc-400 bg-zinc-800/40",
-  },
+const STATUS_FA: Record<LeadStatus, { fa: string; cls: string }> = {
+  hot: { fa: "داغ", cls: "bg-rose-50 text-rose-800 border-rose-200 font-black" },
+  warm: { fa: "گرم", cls: "bg-amber-50 text-amber-900 border-amber-200 font-black" },
+  qualified: { fa: "واجد شرایط", cls: "bg-brand-50 text-brand-900 border-brand-200 font-black" },
+  cold: { fa: "سرد", cls: "bg-slate-100 text-slate-700 border-slate-200 font-black" },
 };
 
 export function LeadsView({
@@ -86,438 +57,253 @@ export function LeadsView({
   onDeleteLead,
   onUpdateLeadStatus,
   searchQuery,
-}: LeadsViewProps) {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
-  const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
+}: Props) {
+  const [statusF, setStatusF] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [toDelete, setToDelete] = useState<Lead | null>(null);
 
-
-  // Filter leads with guaranteed unique IDs
-  const filteredLeads = React.useMemo(() => {
+  const filtered = React.useMemo(() => {
     const seen = new Set<string>();
-    return leads.filter((lead) => {
-      if (!lead || !lead.id || seen.has(lead.id)) return false;
-      seen.add(lead.id);
-
-      const matchesSearch =
-        lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.title.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" || lead.status === statusFilter;
-
-      const matchesSource =
-        sourceFilter === "all" || lead.source === sourceFilter;
-
-      return matchesSearch && matchesStatus && matchesSource;
+    return leads.filter((l) => {
+      if (!l?.id || seen.has(l.id)) return false;
+      seen.add(l.id);
+      const q = searchQuery.trim().toLowerCase();
+      const okQ =
+        !q || (l.name + l.company + l.email + l.title).toLowerCase().includes(q);
+      const okS = statusF === "all" || l.status === statusF;
+      return okQ && okS;
     });
-  }, [leads, searchQuery, statusFilter, sourceFilter]);
+  }, [leads, searchQuery, statusF]);
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedLeadIds(filteredLeads.map((l) => l.id));
-    } else {
-      setSelectedLeadIds([]);
-    }
-  };
-
-  const handleToggleLead = (id: string) => {
-    setSelectedLeadIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleConvert = (lead: Lead) => {
+  const convert = (lead: Lead) => {
     onConvertToDeal(lead);
-    toast.success("Lead Converted", {
-      description: `${lead.name} (${lead.company}) converted into an active pipeline opportunity.`,
-      icon: <ArrowRightLeft className="h-4 w-4 text-cyan-400" />,
+    toast.success("تبدیل با موفقیت انجام شد", {
+      description: `${lead.name} به پایپ‌لاین فروش منتقل شد.`,
     });
   };
 
-  const handleDeleteSingle = (lead: Lead) => {
-    onDeleteLead?.(lead.id);
-    setSelectedLeadIds((prev) => prev.filter((id) => id !== lead.id));
-    toast.info("Lead Removed", {
-      description: `${lead.name} removed from your database.`,
-    });
-  };
-
-  const handleBatchDelete = () => {
-    selectedLeadIds.forEach((id) => onDeleteLead?.(id));
-    toast.info("Batch Delete Complete", {
-      description: `Removed ${selectedLeadIds.length} leads.`,
-    });
-    setSelectedLeadIds([]);
-  };
+  const toggle = (id: string) =>
+    setSelected((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
 
   return (
-    <div className="space-y-4">
-
-      {/* Top Filter and Controls Bar using Shadcn Tabs and Select */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#111117] p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Status Tabs */}
-          <Tabs
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-            className="w-auto"
-          >
-            <TabsList className="h-9">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="hot" className="text-rose-400">
-                Hot
-              </TabsTrigger>
-              <TabsTrigger value="warm" className="text-amber-400">
-                Warm
-              </TabsTrigger>
-              <TabsTrigger value="qualified" className="text-cyan-400">
-                Qualified
-              </TabsTrigger>
-              <TabsTrigger value="cold" className="text-zinc-400">
-                Cold
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Source Shadcn Select */}
-          <div className="w-40">
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="All Sources" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                <SelectItem value="Website">Website</SelectItem>
-                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                <SelectItem value="Referral">Referral</SelectItem>
-                <SelectItem value="Outbound">Outbound</SelectItem>
-                <SelectItem value="Product Hunt">Product Hunt</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-4" dir="rtl">
+      {/* Filter and Action Bar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-brand-100/80 bg-white p-3 sm:flex-row sm:items-center sm:justify-between shadow-sm">
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            ["all", "همه"],
+            ["hot", "داغ"],
+            ["warm", "گرم"],
+            ["qualified", "واجد شرایط"],
+            ["cold", "سرد"],
+          ].map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => setStatusF(v)}
+              className={`rounded-xl px-3.5 py-2 text-[12px] font-black cursor-pointer transition-all ${
+                statusF === v
+                  ? "bg-brand-950 text-white shadow-sm"
+                  : "bg-brand-50/50 text-slate-600 hover:bg-brand-100/60"
+              }`}
+            >
+              {l}
+            </button>
+          ))}
         </div>
-
-        {/* Action Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <span className="text-[12px] font-bold text-slate-400">
+            {faDigits(filtered.length)} سرنخ
+          </span>
           <Button
             size="sm"
             onClick={onOpenNewLeadModal}
-            className="h-9 px-3.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+            className="h-9 gap-1.5 rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20"
           >
-            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-            <span>Add Lead</span>
+            <UserPlus className="h-4 w-4" />
+            سرنخ جدید
           </Button>
         </div>
       </div>
 
-      {/* Bulk Action Bar (when items selected) */}
-      {selectedLeadIds.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-4 py-2.5 text-xs">
-          <div className="flex items-center gap-2 text-cyan-300 font-medium">
-            <CheckSquare className="h-4 w-4 text-cyan-400" />
-            <span>{selectedLeadIds.length} leads selected</span>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Bulk actions bar */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-[12.5px]">
+          <b className="text-brand-900 font-black">
+            {faDigits(selected.length)} رکورد انتخاب شده
+          </b>
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-[11px] border-rose-500/30 text-rose-300 hover:bg-rose-500/10 cursor-pointer"
-              onClick={() => {
-                selectedLeadIds.forEach((id) => onUpdateLeadStatus?.(id, "hot"));
-                toast.success("Leads Updated", {
-                  description: `Marked ${selectedLeadIds.length} leads as Hot.`,
-                  icon: <Flame className="h-4 w-4 text-rose-400" />,
-                });
-              }}
+              className="h-8 gap-1 rounded-xl bg-white text-xs font-bold"
+              onClick={() => toast.success("خروجی با موفقیت تهیه شد")}
             >
-              <Flame className="h-3 w-3 mr-1 text-rose-400" />
-              Mark Hot
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
-              onClick={() => {
-                selectedLeadIds.forEach((id) => onUpdateLeadStatus?.(id, "qualified"));
-                toast.success("Leads Updated", {
-                  description: `Marked ${selectedLeadIds.length} leads as Qualified.`,
-                  icon: <CheckCircle2 className="h-4 w-4 text-cyan-400" />,
-                });
-              }}
-            >
-              <CheckCircle2 className="h-3 w-3 mr-1 text-cyan-400" />
-              Mark Qualified
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] border-white/10 text-zinc-300 hover:bg-white/[0.06] cursor-pointer"
-              onClick={() =>
-                toast.success("CSV Export Complete", {
-                  description: `Exported ${selectedLeadIds.length} leads to CSV.`,
-                  icon: <Download className="h-3 w-3 text-zinc-300" />,
-                })
-              }
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Export CSV
+              <Download className="h-3.5 w-3.5" />
+              خروجی اکسل
             </Button>
             <Button
               size="sm"
               variant="destructive"
-              className="h-7 text-[11px] bg-red-600 hover:bg-red-500 text-white cursor-pointer"
-              onClick={() => setIsBatchDeleteOpen(true)}
+              className="h-8 gap-1 rounded-xl text-xs font-bold"
+              onClick={() => {
+                selected.forEach((id) => onDeleteLead?.(id));
+                setSelected([]);
+              }}
             >
-              <Trash2 className="h-3 w-3 mr-1" />
-              Delete ({selectedLeadIds.length})
+              <Trash2 className="h-3.5 w-3.5" />
+              حذف
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-[11px] text-zinc-400 hover:text-white"
-              onClick={() => setSelectedLeadIds([])}
+            <button
+              onClick={() => setSelected([])}
+              className="text-[12px] font-bold text-slate-500 cursor-pointer px-2"
             >
-              Clear
-            </Button>
+              انصراف
+            </button>
           </div>
         </div>
       )}
 
-      {/* Leads Table for Desktop Screens */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0f0f16] overflow-hidden shadow-xl hidden md:block">
+      {/* Desktop Table */}
+      <div className="hidden overflow-hidden rounded-3xl border border-brand-100/80 bg-white shadow-sm md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-white/[0.08] hover:bg-transparent">
+            <TableRow className="bg-brand-50/50 border-b border-brand-100 text-slate-700 font-black">
               <TableHead className="w-10">
                 <Checkbox
                   checked={
-                    filteredLeads.length > 0 &&
-                    selectedLeadIds.length === filteredLeads.length
+                    filtered.length > 0 && selected.length === filtered.length
                   }
-                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                  onCheckedChange={(c) =>
+                    setSelected(c ? filtered.map((l) => l.id) : [])
+                  }
                 />
               </TableHead>
-              <TableHead>Contact & Company</TableHead>
-              <TableHead>Lead Score</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Estimated Value</TableHead>
-              <TableHead>Assigned To</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>مخاطب و شرکت</TableHead>
+              <TableHead>امتیاز کیفی</TableHead>
+              <TableHead>وضعیت</TableHead>
+              <TableHead>ارزش تقریبی</TableHead>
+              <TableHead>اقدام</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.map((lead) => {
-              const status = statusConfig[lead.status];
-              const isSelected = selectedLeadIds.includes(lead.id);
-
+            {filtered.map((lead) => {
+              const st = STATUS_FA[lead.status];
+              const sel = selected.includes(lead.id);
               return (
                 <TableRow
                   key={lead.id}
-                  className={`group transition-colors ${
-                    isSelected ? "bg-cyan-500/[0.07]" : ""
+                  className={`hover:bg-brand-50/30 transition ${
+                    sel ? "bg-brand-50/60" : ""
                   }`}
                 >
-                  {/* Checkbox */}
                   <TableCell>
                     <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => handleToggleLead(lead.id)}
+                      checked={sel}
+                      onCheckedChange={() => toggle(lead.id)}
                     />
                   </TableCell>
-
-                  {/* Contact Person & Company */}
                   <TableCell>
-                    <div>
-                      <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
-                        {lead.name}
-                      </div>
-                      <div className="text-[11px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
-                        <Building2 className="h-3 w-3 text-zinc-500" />
-                        <span>{lead.company}</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-zinc-400">{lead.title}</span>
-                      </div>
+                    <div className="font-black text-slate-900">{lead.name}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-slate-500 font-bold">
+                      <Building2 className="h-3 w-3 text-slate-400" />
+                      {lead.company} · {lead.title}
                     </div>
                   </TableCell>
-
-                  {/* Lead Score Flame Bar */}
-                  <TableCell className="font-mono">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`font-bold flex items-center gap-0.5 ${
+                  <TableCell>
+                    <span className="flex items-center gap-2">
+                      {lead.score >= 85 && (
+                        <Flame className="h-4 w-4 fill-rose-500 text-rose-500" />
+                      )}
+                      <b
+                        className={
                           lead.score >= 85
-                            ? "text-rose-400"
+                            ? "text-rose-600 font-black"
                             : lead.score >= 70
-                            ? "text-amber-400"
-                            : "text-zinc-400"
-                        }`}
+                            ? "text-amber-600 font-black"
+                            : "text-slate-500 font-bold"
+                        }
                       >
-                        {lead.score >= 85 && (
-                          <Flame className="h-3.5 w-3.5 fill-rose-500 text-rose-500 animate-pulse" />
-                        )}
-                        {lead.score}
-                      </span>
-                      <div className="h-1.5 w-16 rounded-full bg-white/[0.08] overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            lead.score >= 85
-                              ? "bg-rose-500"
-                              : lead.score >= 70
-                              ? "bg-amber-400"
-                              : "bg-cyan-500"
-                          }`}
+                        {faDigits(lead.score)}
+                      </b>
+                      <span className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-100">
+                        <span
+                          className="block h-full rounded-full bg-brand-600"
                           style={{ width: `${lead.score}%` }}
                         />
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Status Badge */}
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] font-mono py-0.5 px-2 capitalize ${status.badge}`}
-                    >
-                      {status.label}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Source */}
-                  <TableCell>
-                    <span className="rounded-md bg-white/[0.05] border border-white/[0.08] px-2 py-0.5 text-[11px] text-zinc-300 font-mono">
-                      {lead.source}
+                      </span>
                     </span>
                   </TableCell>
-
-                  {/* Estimated Value */}
-                  <TableCell className="font-mono font-semibold text-emerald-400">
-                    {lead.formattedValue}
+                  <TableCell>
+                    <Badge
+                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black ${st.cls}`}
+                    >
+                      {st.fa}
+                    </Badge>
                   </TableCell>
-
-                  {/* Assigned Owner */}
-                  <TableCell className="text-zinc-300 text-[11px]">
-                    {lead.assignedTo}
+                  <TableCell>
+                    <b className="font-black text-emerald-700 tracking-tight">
+                      {lead.formattedValue}
+                    </b>
                   </TableCell>
-
-                  {/* Primary Convert CTA and Three-Dots Menu */}
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {/* Convert Action with ArrowRightLeft Icon */}
+                  <TableCell>
+                    <span className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleConvert(lead)}
-                        className="h-7 px-2.5 text-[11px] font-medium bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-white rounded-lg transition-all cursor-pointer shadow-xs"
+                        onClick={() => convert(lead)}
+                        className="h-8 gap-1 rounded-xl bg-brand-50 text-brand-800 border border-brand-200 hover:bg-brand-700 hover:text-white font-black text-xs"
                       >
-                        <ArrowRightLeft className="h-3 w-3 mr-1.5 text-cyan-400" />
-                        <span>Convert</span>
+                        تبدیل به معامله <ChevronLeft className="h-3.5 w-3.5" />
                       </Button>
-
-                      {/* Full Actions Dropdown Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
-                            size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer transition-colors"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
-                          className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl"
+                          className="w-48 rounded-2xl border border-brand-100 bg-white p-1.5 shadow-xl text-right"
                         >
-                          <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
-                            Lead Actions
-                          </DropdownMenuLabel>
                           <DropdownMenuItem
-                            onClick={() => handleConvert(lead)}
-                            className="text-xs cursor-pointer flex items-center gap-2 text-cyan-300"
-                          >
-                            <ArrowRightLeft className="h-3.5 w-3.5 text-cyan-400" />
-                            <span>Convert to Opportunity</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => (window.location.href = `mailto:${lead.email}`)}
-                            className="text-xs cursor-pointer flex items-center gap-2"
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                            <span>Compose Email</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toast.success("Call Logged", {
-                                description: `Call recorded with ${lead.name}.`,
-                                icon: <PhoneCall className="h-3.5 w-3.5 text-cyan-400" />,
-                              })
-                            }
-                            className="text-xs cursor-pointer flex items-center gap-2"
-                          >
-                            <PhoneCall className="h-3.5 w-3.5" />
-                            <span>Log Phone Call</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toast.success("Meeting Scheduled", {
-                                description: `Meeting invite generated for ${lead.name}.`,
-                                icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
-                              })
-                            }
-                            className="text-xs cursor-pointer flex items-center gap-2"
-                          >
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>Schedule Meeting</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuSeparator className="bg-white/10" />
-
-                          <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
-                            Change Status
-                          </DropdownMenuLabel>
-                          <DropdownMenuItem
+                            className="cursor-pointer text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
                             onClick={() => onUpdateLeadStatus?.(lead.id, "hot")}
-                            className="text-xs cursor-pointer flex items-center gap-2 text-rose-400"
                           >
-                            <Flame className="h-3.5 w-3.5" />
-                            <span>Mark as Hot</span>
+                            تغییر به سرنخ داغ
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => onUpdateLeadStatus?.(lead.id, "qualified")}
-                            className="text-xs cursor-pointer flex items-center gap-2 text-cyan-400"
+                            className="cursor-pointer text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
+                            onClick={() =>
+                              onUpdateLeadStatus?.(lead.id, "qualified")
+                            }
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            <span>Mark as Qualified</span>
+                            تغییر به واجد شرایط
                           </DropdownMenuItem>
-
-                          <DropdownMenuSeparator className="bg-white/10" />
-
-                          {/* Delete Lead */}
                           <DropdownMenuItem
-                            onClick={() => setLeadToDelete(lead)}
-                            className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                            className="cursor-pointer text-rose-600 text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-rose-50"
+                            onClick={() => setToDelete(lead)}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete Lead</span>
+                            حذف سرنخ
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>
+                    </span>
                   </TableCell>
                 </TableRow>
               );
             })}
-
-            {filteredLeads.length === 0 && (
+            {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center text-zinc-500">
-                  No leads found matching current search or filters.
+                <TableCell
+                  colSpan={6}
+                  className="py-12 text-center text-slate-400 font-bold"
+                >
+                  سرنخی با این مشخصات یافت نشد.
                 </TableCell>
               </TableRow>
             )}
@@ -525,202 +311,73 @@ export function LeadsView({
         </Table>
       </div>
 
-      {/* Mobile Card List View (Senior Developer Responsive Architecture) */}
-      <div className="md:hidden space-y-3">
-        {filteredLeads.map((lead) => {
-          const status = statusConfig[lead.status];
-          const isSelected = selectedLeadIds.includes(lead.id);
-
+      {/* Mobile Card Stack */}
+      <div className="grid gap-3 md:hidden">
+        {filtered.map((lead) => {
+          const st = STATUS_FA[lead.status];
           return (
             <div
               key={lead.id}
-              className={`rounded-xl border p-3.5 bg-[#0f0f16] transition-all ${
-                isSelected
-                  ? "border-cyan-500/50 bg-cyan-950/20"
-                  : "border-white/[0.08] hover:border-white/20"
-              }`}
+              className="rounded-3xl border border-brand-100/80 bg-white p-4 shadow-sm"
             >
-              {/* Header: Checkbox + Name & Company + Status */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div className="pt-0.5">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => handleToggleLead(lead.id)}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-semibold text-white text-sm truncate">
-                      {lead.name}
-                    </div>
-                    <div className="text-xs text-zinc-400 flex items-center gap-1.5 mt-0.5 truncate">
-                      <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
-                      <span className="truncate">{lead.company}</span>
-                      <span className="text-zinc-600">·</span>
-                      <span className="text-zinc-400 truncate">{lead.title}</span>
-                    </div>
+                <div>
+                  <div className="font-black text-slate-900">{lead.name}</div>
+                  <div className="mt-0.5 text-[12px] text-slate-500 font-bold">
+                    {lead.company}
                   </div>
                 </div>
-
                 <Badge
-                  variant="outline"
-                  className={`text-[10px] font-mono py-0.5 px-2 shrink-0 ${status.badge}`}
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black ${st.cls}`}
                 >
-                  {status.label}
+                  {st.fa}
                 </Badge>
               </div>
-
-              {/* Metrics Row: Score Flame & Value */}
-              <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-zinc-500 font-mono">Score:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`font-bold font-mono flex items-center gap-0.5 ${
-                        lead.score >= 85
-                          ? "text-rose-400"
-                          : lead.score >= 70
-                          ? "text-amber-400"
-                          : "text-zinc-400"
-                      }`}
-                    >
-                      {lead.score >= 85 && (
-                        <Flame className="h-3 w-3 fill-rose-500 text-rose-500 animate-pulse" />
-                      )}
-                      {lead.score}
-                    </span>
-                    <div className="h-1.5 w-12 rounded-full bg-white/[0.08] overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          lead.score >= 85
-                            ? "bg-rose-500"
-                            : lead.score >= 70
-                            ? "bg-amber-400"
-                            : "bg-cyan-500"
-                        }`}
-                        style={{ width: `${lead.score}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="font-mono font-bold text-emerald-400">
+              <div className="mt-3 flex items-center justify-between border-t border-brand-100/60 pt-3">
+                <b className="font-black text-emerald-700 tracking-tight">
                   {lead.formattedValue}
-                </div>
-              </div>
-
-              {/* Contact info & actions */}
-              <div className="mt-3 flex items-center justify-between pt-2.5 border-t border-white/[0.06] gap-2">
-                <div className="flex items-center gap-1.5">
+                </b>
+                <span className="flex gap-1.5">
                   <a
                     href={`tel:${lead.phone}`}
-                    className="h-8 w-8 rounded-lg bg-white/[0.05] hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                    title="Call lead"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-700"
+                    aria-label="تماس"
                   >
-                    <Phone className="h-3.5 w-3.5" />
+                    <Phone className="h-4 w-4" />
                   </a>
                   <a
                     href={`mailto:${lead.email}`}
-                    className="h-8 w-8 rounded-lg bg-white/[0.05] hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                    title="Email lead"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-700"
+                    aria-label="ایمیل"
                   >
-                    <Mail className="h-3.5 w-3.5" />
+                    <Mail className="h-4 w-4" />
                   </a>
-                </div>
-
-                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={() => handleConvert(lead)}
-                    className="h-8 px-2.5 text-[11px] font-medium bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-white rounded-lg transition-all cursor-pointer shadow-xs"
+                    onClick={() => convert(lead)}
+                    className="h-9 rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800"
                   >
-                    <ArrowRightLeft className="h-3 w-3 mr-1 text-cyan-400" />
-                    <span>Convert</span>
+                    تبدیل
                   </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl">
-                      <DropdownMenuItem
-                        onClick={() => handleConvert(lead)}
-                        className="text-xs cursor-pointer flex items-center gap-2 text-cyan-300"
-                      >
-                        <ArrowRightLeft className="h-3.5 w-3.5" />
-                        <span>Convert to Opportunity</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onUpdateLeadStatus?.(lead.id, "hot")}
-                        className="text-xs cursor-pointer flex items-center gap-2 text-rose-400"
-                      >
-                        <Flame className="h-3.5 w-3.5" />
-                        <span>Mark as Hot</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onUpdateLeadStatus?.(lead.id, "qualified")}
-                        className="text-xs cursor-pointer flex items-center gap-2 text-cyan-400"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>Mark as Qualified</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      <DropdownMenuItem
-                        onClick={() => setLeadToDelete(lead)}
-                        className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        <span>Delete Lead</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                </span>
               </div>
             </div>
           );
         })}
-
-        {filteredLeads.length === 0 && (
-          <div className="py-10 text-center text-zinc-500 rounded-xl border border-dashed border-white/[0.08]">
-            No leads found matching current search or filters.
-          </div>
-        )}
       </div>
 
-
-      {/* Confirmation Dialog for Single Lead Deletion */}
       <ConfirmDeleteDialog
-        open={!!leadToDelete}
-        onOpenChange={(open) => !open && setLeadToDelete(null)}
-        title="Delete Lead"
-        itemName={leadToDelete ? `${leadToDelete.name} (${leadToDelete.company})` : undefined}
-        description="Are you sure you want to delete this lead? This action cannot be undone and will permanently remove this record from your CRM."
-        confirmLabel="Delete Lead"
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="حذف سرنخ"
+        itemName={toDelete ? `${toDelete.name}` : undefined}
+        description="این سرنخ برای همیشه از لیست خارج می‌شود."
+        confirmLabel="حذف سرنخ"
         onConfirm={() => {
-          if (leadToDelete) {
-            handleDeleteSingle(leadToDelete);
-            setLeadToDelete(null);
+          if (toDelete) {
+            onDeleteLead?.(toDelete.id);
+            setToDelete(null);
           }
-        }}
-      />
-
-      {/* Confirmation Dialog for Batch Leads Deletion */}
-      <ConfirmDeleteDialog
-        open={isBatchDeleteOpen}
-        onOpenChange={setIsBatchDeleteOpen}
-        title="Delete Multiple Leads"
-        description={`Are you sure you want to permanently delete these ${selectedLeadIds.length} selected leads? This action cannot be undone.`}
-        confirmLabel={`Delete ${selectedLeadIds.length} Leads`}
-        onConfirm={() => {
-          handleBatchDelete();
-          setIsBatchDeleteOpen(false);
         }}
       />
     </div>
