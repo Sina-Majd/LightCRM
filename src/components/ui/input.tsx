@@ -18,26 +18,26 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           onClick={() => inputRef.current?.focus()}
           className={cn(
-            "flex h-11 w-full items-center rounded-xl border border-white/10 bg-white/[0.03] px-3.5 transition-colors duration-100 cursor-text",
-            "focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/30 group",
+            "flex h-10 w-full items-center rounded-xl border border-brand-100 bg-white px-3 transition hover:border-brand-200 cursor-text",
+            "focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-600/20 group",
             className
           )}
         >
           {icon && (
-            <div className="mr-3 shrink-0 text-zinc-300 group-focus-within:text-cyan-400 transition-colors duration-75 pointer-events-none flex items-center justify-center">
+            <div className="me-2.5 shrink-0 text-slate-400 group-focus-within:text-brand-700 transition-colors pointer-events-none flex items-center justify-center">
               {icon}
             </div>
           )}
           <input
             type={type}
             ref={inputRef}
-            className="h-full w-full bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="h-full w-full bg-transparent text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-start [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             {...props}
           />
           {rightElement && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="ml-2.5 shrink-0 flex items-center justify-center cursor-default"
+              className="ms-2 shrink-0 flex items-center justify-center cursor-default"
             >
               {rightElement}
             </div>
@@ -49,11 +49,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={type}
+        ref={inputRef}
         className={cn(
-          "flex h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white backdrop-blur-md placeholder:text-zinc-500 focus-visible:border-indigo-400/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-50 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          "flex h-10 w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:cursor-not-allowed disabled:opacity-50 transition hover:border-brand-200 text-start [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
           className
         )}
-        ref={ref}
         {...props}
       />
     );
@@ -62,4 +62,3 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input";
 
 export { Input };
-
