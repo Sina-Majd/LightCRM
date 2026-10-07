@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Vazirmatn, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const vazirmatn = Vazirmatn({
+  variable: "--font-fa",
+  subsets: ["arabic", "latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -14,21 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LightCRM — The Simple CRM for Every Business",
+  title: "لایت CRM — CRM ساده برای هر کسب‌وکار",
   description:
-    "Manage companies, customers, orders, invoices, and reports in one clean, easy-to-use CRM built for every business.",
+    "مشتریان، سفارش‌ها، فاکتورها و گزارش‌ها را در یک CRM تمیز و ساده مدیریت کنید.",
   keywords: [
-    "simple crm",
-    "customer management",
-    "order tracking",
-    "invoicing software",
-    "small business crm",
-    "freelancer crm",
-    "agency crm",
-    "business reports",
+    "CRM فارسی",
+    "مدیریت مشتری",
+    "پیگیری سفارش",
+    "فاکتور",
+    "CRM کسب‌وکار",
   ],
   icons: {
-    icon: "/lightcrm-emblem.svg",
+    icon: "/light-logo.png",
   },
 };
 
@@ -39,16 +37,17 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="fa"
+      dir="rtl"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased bg-[#09090b] text-zinc-100 selection:bg-cyan-500/30 selection:text-white`}
+      className={`${vazirmatn.variable} ${geistMono.variable} h-full antialiased bg-white text-zinc-950 selection:bg-blue-600/15 selection:text-blue-950`}
     >
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-[#09090b] text-zinc-100 overflow-x-hidden"
+        className="flex min-h-screen flex-col bg-white text-zinc-950"
       >
         {children}
-        <Toaster position="bottom-right" closeButton />
+        <Toaster position="bottom-left" closeButton dir="rtl" />
       </body>
     </html>
   );

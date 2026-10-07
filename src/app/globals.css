@@ -1,31 +1,105 @@
+/* Hallmark · pre-emit critique: P5 H4 E5 S4 R5 V5 */
+/* Hallmark · macrostructure: Marquee Hero · theme: custom (paper oklch(97.8% 0.006 95) · accent oklch(47% 0.17 28) lacquer · Vazirmatn + Vazirmatn) · nav: N5 · footer: Ft1 · enrichment: marquee strip + compact 3D figure, no chrome · audience: CRM buyers at companies · use: sign up · tone: technical/utilitarian */
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-paper: oklch(0.978 0.006 95);
+  --color-paper-2: oklch(0.945 0.01 90);
+  --color-ink: oklch(0.24 0.014 60);
+  --color-ink-2: oklch(0.46 0.018 65);
+  --color-ink-3: oklch(0.64 0.018 75);
+  --color-line: oklch(0.885 0.014 90);
+  --color-accent: oklch(0.47 0.17 28);
+  --color-accent-ink: oklch(0.41 0.165 28);
+  --color-accent-soft: oklch(0.945 0.035 30);
+  --color-ok: oklch(0.52 0.13 165);
+  --color-ok-soft: oklch(0.94 0.03 165);
+  --color-void: #ffffff;
+  --font-display: var(--font-fa);
+  --font-body: var(--font-fa);
+  --font-sans: var(--font-fa), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-fa), -apple-system, BlinkMacSystemFont, monospace;
+
+  /* Landing page brand scale (derived from the Light CRM logo) */
+  --color-brand-50: #f3f6fe;
+  --color-brand-100: #e4ebfc;
+  --color-brand-200: #c9d8f9;
+  --color-brand-300: #9db7f3;
+  --color-brand-400: #6f93f0;
+  --color-brand-500: #3b6be0;
+  --color-brand-600: #2149a8;
+  --color-brand-700: #1c3a8a;
+  --color-brand-800: #16275c;
+  --color-brand-900: #101c45;
+  --color-brand-950: #0a1232;
+  --color-glow: #ffc94a;
+  --color-glow-soft: #fff4d6;
+}
+
 @layer base {
   :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-    --card: #121215;
-    --card-border: rgba(255, 255, 255, 0.08);
-    --accent-glow: rgba(99, 102, 241, 0.15);
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-border: #e2e8f0;
+    --brand: #1d4ed8;
+    --brand-strong: #1e40af;
+    --brand-soft: #eff6ff;
+    --color-paper: oklch(0.978 0.006 95);
+    --color-paper-2: oklch(0.945 0.01 90);
+    --color-ink: oklch(0.24 0.014 60);
+    --color-ink-2: oklch(0.46 0.018 65);
+    --color-ink-3: oklch(0.64 0.018 75);
+    --color-line: oklch(0.885 0.014 90);
+    --color-accent: oklch(0.47 0.17 28);
+    --color-accent-ink: oklch(0.41 0.165 28);
+    --color-accent-soft: oklch(0.945 0.035 30);
+    --color-ok: oklch(0.52 0.13 165);
+    --color-ok-soft: oklch(0.94 0.03 165);
+    --color-void: #ffffff;
+  }
+
+  /* NOTE: `scrollbar-gutter: stable` must NOT be set here.
+     When a Radix dialog locks scroll it computes a gap of
+     (innerWidth - documentElement.clientWidth) and applies it as
+     body padding to keep content still. With a stable gutter that
+     width is already reserved, so the compensation is counted twice
+     and the page visibly jumps sideways when a sheet/dialog opens.
+
+     Likewise, overflow-x must NOT be set on <html> or <body>:
+     @hello-pangea/dnd cannot tell whether <body> is an independent
+     scroll container when <html> has any non-visible overflow, and
+     logs a dev warning while guessing. */
+
+  *, ::before, ::after {
+    border-color: var(--card-border);
+    font-family: var(--font-fa), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    overflow-x: hidden;
+    font-family: var(--font-fa), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Clean, seamless dark-mode autofill with matching transparent background */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Light-mode autofill */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
     -webkit-background-clip: text !important;
     background-clip: text !important;
-    -webkit-text-fill-color: #fafafa !important;
-    caret-color: #fafafa !important;
+    -webkit-text-fill-color: #09090b !important;
+    caret-color: #09090b !important;
     -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
     box-shadow: 0 0 0 1000px transparent inset !important;
     transition: background-color 5000000s ease-in-out 0s;
@@ -43,18 +117,259 @@
   }
 }
 
-/* Custom glow and grid patterns */
+/* Custom glow and grid patterns — light theme */
 .bg-grid-pattern {
-  background-image: linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
-  background-size: 56px 56px;
+  background-image: linear-gradient(to right, rgba(61, 245, 143, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(61, 245, 143, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
   background-position: center top;
 }
 
 .bg-dot-pattern {
-  background-image: radial-gradient(rgba(129, 140, 248, 0.22) 1.25px, transparent 1.25px);
-  background-size: 28px 28px;
+  background-image: radial-gradient(rgba(61, 245, 143, 0.14) 1.25px, transparent 1.25px);
+  background-size: 22px 22px;
   background-position: center top;
+}
+
+/* Hallmark Terminal enrichment — token-locked 3D */
+.stage-3d {
+  perspective: 1400px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.glow-orb {
+  background: radial-gradient(circle, var(--color-accent) 0%, transparent 65%);
+  opacity: 0.14;
+}
+
+.glow-text {
+  color: var(--color-accent);
+  text-shadow: 0 0 22px var(--color-accent);
+}
+
+.grid-floor {
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  transform: rotateX(63deg) scale(1.8);
+  transform-origin: bottom;
+  mask-image: linear-gradient(to top, black 20%, transparent 78%);
+  -webkit-mask-image: linear-gradient(to top, black 20%, transparent 78%);
+  opacity: 0.8;
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+.floaty-slow {
+  animation: floaty 8.5s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floaty,
+  .floaty-slow,
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Invoice printing.
+
+   The hard part is not hiding things — it is that the sheet lives
+   deep inside a fixed-position, scrollable, transformed dialog. Two
+   traps:
+
+   1. `visibility: hidden` hides visually but KEEPS LAYOUT SPACE, so
+      the page shell still pushes the sheet hundreds of pixels down.
+      Only the first screenful lands on page 1.
+   2. The dialog is `position: fixed` with `transform`, so a
+      `position: absolute` sheet resolves against the dialog box,
+      not the page.
+
+   So: remove every node that is neither the sheet, inside it, nor an
+   ancestor of it. `:has()` is what makes that expressible — an
+   ancestor keeps its place in flow but is neutralised to a zero box,
+   leaving the sheet at the page origin where it can paginate.
+   --------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    /* Radix locks scroll while the dialog is open; release it. */
+    overflow: visible !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide everything that is not the sheet, part of it, or an ancestor. */
+  *:not(#invoice-printable):not(#invoice-printable *):not(:has(#invoice-printable)) {
+    display: none !important;
+  }
+
+  /* Collapse the surviving ancestor chain with `display: contents`: the
+     ancestors stop contributing any box at all, but their children stay
+     in flow. The sheet therefore starts at the page origin and is free
+     to paginate. `display: contents` is used rather than zeroing
+     padding/margin because it cannot be defeated by min-height, flex or
+     gap on those ancestors. html/body are excluded — they are the root
+     formatting context, not part of the chain to flatten. */
+  :root :has(#invoice-printable):not(html):not(body) {
+    display: contents !important;
+  }
+
+  /* The sheet itself is the only box that should survive. */
+  #invoice-printable {
+    position: static !important;
+    display: block !important;
+    transform: none !important;
+    animation: none !important;
+    overflow: visible !important;
+    max-width: none !important;
+    width: 100% !important;
+    gap: 8mm !important;
+    background: #ffffff !important;
+  }
+
+  /* Keep rows and section blocks from splitting across pages. */
+  #invoice-printable tr,
+  #invoice-printable .print-keep {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #invoice-printable thead {
+    display: table-header-group;
+  }
+}
+
+/* Hallmark marquee — seamless loop, direction-agnostic fades */
+.marquee {
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 26s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+/* Signature hard-shadow primary action */
+.btn-hard {
+  background: var(--color-accent);
+  color: var(--color-void);
+  border: 2px solid var(--color-ink);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-hard:hover {
+  background: var(--color-accent-ink);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 var(--color-ink);
+}
+
+.btn-hard:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+}
+
+.btn-hard:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Hallmark surfaces — all values reference named tokens */
+.surface-card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+}
+
+.surface-soft {
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent-ink);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--color-ink-2);
+}
+
+.kicker::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.section-sub {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 2;
+  color: var(--color-ink-2);
 }
 
 .radial-mask-center {
@@ -67,41 +382,41 @@
   -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 10%, black 40%, transparent 100%);
 }
 
-/* Glassmorphism cards */
+/* Glassmorphism cards — light */
 .glass-panel {
-  background: rgba(18, 18, 22, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px -16px rgba(15, 23, 42, 0.18);
+  border-radius: 20px;
 }
 
 .glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.25s;
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-color: #bfdbfe;
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05), 0 20px 44px -18px rgba(29, 78, 216, 0.28);
 }
 
-/* Custom subtle scrollbar */
+/* Custom subtle scrollbar — light */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #f4f4f5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #d4d4d8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #a1a1aa;
 }
 
 /* Hide scrollbar for smooth carousel swipe on mobile */
@@ -243,16 +558,16 @@
   animation: particleFloat 6s ease-in-out infinite;
 }
 
-/* Luxury Grain & Blueprint utilities */
+/* Luxury Grain & Blueprint utilities — light */
 .bg-grain {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
 }
 
 .bg-circuit-grid {
   background-size: 48px 48px;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, rgba(9, 9, 11, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(9, 9, 11, 0.04) 1px, transparent 1px);
 }
 
 /* ==========================================================================
@@ -399,4 +714,262 @@
 
 [data-slot="sheet-content"][data-side="bottom"][data-state="closed"] {
   animation: sheetSlideOutBottom 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   Landing page (lp-*) — scoped utilities for the marketing site
+   ========================================================================== */
+
+.lp-hero-bg {
+  background:
+    radial-gradient(60% 55% at 50% 0%, rgba(59, 107, 224, 0.20) 0%, transparent 70%),
+    radial-gradient(40% 40% at 15% 20%, rgba(255, 201, 74, 0.16) 0%, transparent 70%),
+    radial-gradient(45% 45% at 88% 28%, rgba(111, 147, 240, 0.18) 0%, transparent 70%),
+    linear-gradient(to bottom, #ffffff 0%, var(--color-brand-50) 68%, #ffffff 100%);
+}
+
+.lp-dots {
+  background-image: radial-gradient(rgba(33, 73, 168, 0.18) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 80%);
+}
+
+.lp-dark-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 85%);
+}
+
+.lp-gradient-text {
+  background: linear-gradient(100deg, var(--color-brand-700) 0%, var(--color-brand-500) 55%, var(--color-brand-400) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lp-card {
+  background: #ffffff;
+  border: 1px solid var(--color-brand-100);
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgba(16, 28, 69, 0.04), 0 18px 40px -26px rgba(16, 28, 69, 0.22);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, border-color 0.3s;
+}
+
+.lp-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-brand-200);
+  box-shadow: 0 2px 4px rgba(16, 28, 69, 0.05), 0 28px 54px -26px rgba(33, 73, 168, 0.38);
+}
+
+.lp-btn-primary {
+  background: linear-gradient(180deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 24px -10px rgba(33, 73, 168, 0.75);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.lp-btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 16px 30px -10px rgba(33, 73, 168, 0.85);
+}
+
+.lp-btn-primary:active {
+  transform: translateY(0);
+}
+
+.lp-btn-primary:focus-visible,
+.lp-focus:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 3px;
+}
+
+@keyframes lpFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+.lp-float { animation: lpFloat 6s ease-in-out infinite; }
+.lp-float-slow { animation: lpFloat 8s ease-in-out infinite; animation-delay: -3s; }
+
+@keyframes lpPulseRing {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.lp-pulse-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: lpPulseRing 2s ease-out infinite;
+}
+
+@keyframes lpBeam {
+  0%, 100% { opacity: 0.55; transform: scaleY(1); }
+  50% { opacity: 0.95; transform: scaleY(1.08); }
+}
+
+.lp-beam {
+  background: conic-gradient(from 158deg at 50% 0%, transparent 0deg, rgba(255, 201, 74, 0.5) 22deg, transparent 44deg);
+  mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to bottom, black 10%, transparent 92%);
+  animation: lpBeam 6s ease-in-out infinite;
+}
+
+@keyframes lpBar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.lp-bar {
+  transform-origin: bottom;
+  animation: lpBar 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-float,
+  .lp-float-slow,
+  .lp-beam,
+  .lp-bar,
+  .lp-pulse-ring::after {
+    animation: none;
+  }
+}
+
+/* Hero pattern animation */
+.lp-orbit {
+  transform-box: view-box;
+  transform-origin: 720px -70px;
+  animation: lpSpin 160s linear infinite;
+}
+.lp-orbit-slow { animation-duration: 420s; }
+.lp-orbit-reverse { animation-direction: reverse; animation-duration: 220s; }
+
+@keyframes lpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.lp-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lpNode 4s ease-in-out infinite;
+}
+
+@keyframes lpNode {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.18); }
+}
+
+.lp-crosses {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M20 16v8M16 20h8' stroke='%232149a8' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  opacity: 0.35;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-orbit,
+  .lp-node {
+    animation: none;
+  }
+}
+
+/* Dashboard preview + audience showcase */
+@keyframes lpSweep {
+  0% { transform: translateX(-140%) skewX(-18deg); }
+  60%, 100% { transform: translateX(260%) skewX(-18deg); }
+}
+.lp-sweep { animation: lpSweep 8s ease-in-out 1.5s infinite; }
+
+@keyframes lpDraw {
+  to { stroke-dashoffset: 0; }
+}
+.lp-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lpDraw 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+
+@keyframes lpFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lp-fade-up { animation: lpFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.6s both; }
+
+@keyframes lpMarquee {
+  to { transform: translateX(-50%); }
+}
+.lp-marquee {
+  display: flex;
+  width: max-content;
+  animation: lpMarquee 55s linear infinite;
+}
+.lp-marquee-rev { animation-direction: reverse; animation-duration: 65s; }
+.lp-marquee-wrap:hover .lp-marquee { animation-play-state: paused; }
+.lp-marquee-mask {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-sweep,
+  .lp-draw,
+  .lp-fade-up,
+  .lp-marquee {
+    animation: none;
+  }
+  .lp-draw { stroke-dashoffset: 0; }
+}
+
+/* Chart wipe reveal (left to right) */
+@keyframes lpWipe {
+  from { clip-path: inset(-12px 100% -12px -12px); }
+  to { clip-path: inset(-12px -12px -12px -12px); }
+}
+.lp-wipe { animation: lpWipe 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-wipe { animation: none; }
+}
+
+/* Fade the hero pattern out at the bottom so it blends into the next section */
+.lp-hero-pattern {
+  mask-image: linear-gradient(to bottom, black 62%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent 100%);
+}
+
+/* Feature explorer progress bar */
+@keyframes lpProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.lp-progress {
+  transform-origin: right;
+  animation: lpProgress 6s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-progress { animation: none; transform: scaleX(1); }
+}
+
+/* CTA orbit-ring pattern */
+.lp-spin-slow { animation: lpSpin 70s linear infinite; }
+.lp-spin-rev { animation: lpSpin 50s linear infinite reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-spin-slow,
+  .lp-spin-rev {
+    animation: none;
+  }
 }
