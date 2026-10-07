@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  CheckCircle2,
   Plus,
   Clock,
   Mail,
@@ -10,20 +9,20 @@ import {
   Video,
   FileText,
   Sparkles,
-  Building2,
-  Trash2,
   MoreHorizontal,
+  Trash2,
+  CheckCircle2,
   Calendar,
+  CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";
+import { formatJalaliDate, faDigits } from "@/lib/fa";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -35,30 +34,28 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface TasksViewProps {
+interface Props {
   tasks: CRMTask[];
-  onToggleTask: (taskId: string) => void;
-  onAddTask: (newTask: CRMTask) => void;
-  onDeleteTask?: (taskId: string) => void;
+  onToggleTask: (id: string) => void;
+  onAddTask: (t: CRMTask) => void;
+  onDeleteTask?: (id: string) => void;
 }
 
-const typeIcons = {
-  call: Phone,
-  email: Mail,
-  meeting: Video,
-  review: FileText,
-};
+const TYPE_FA = {
+  call: "تماس تلفنی",
+  email: "ارسال ایمیل",
+  meeting: "جلسه کاری",
+  review: "بررسی و اقدام",
+} as const;
 
-const priorityBadges: Record<DealPriority, string> = {
-  urgent: "text-rose-300 bg-rose-500/10 border-rose-500/30",
-  high: "text-amber-300 bg-amber-500/10 border-amber-500/30",
-  medium: "text-cyan-300 bg-cyan-500/10 border-cyan-500/30",
-  low: "text-zinc-400 bg-zinc-800 border-zinc-700",
+const PRI_FA: Record<DealPriority, { fa: string; cls: string }> = {
+  urgent: { fa: "فوری", cls: "bg-rose-50 text-rose-800 border-rose-200 font-black" },
+  high: { fa: "مهم", cls: "bg-amber-50 text-amber-900 border-amber-200 font-black" },
+  medium: { fa: "عادی", cls: "bg-brand-50 text-brand-900 border-brand-200 font-black" },
+  low: { fa: "کم", cls: "bg-slate-100 text-slate-700 border-slate-200 font-black" },
 };
 
 export function TasksView({
@@ -66,334 +63,261 @@ export function TasksView({
   onToggleTask,
   onAddTask,
   onDeleteTask,
-}: TasksViewProps) {
-  const [filterTab, setFilterTab] = useState<string>("all");
-  const [newTitle, setNewTitle] = useState("");
-  const [newRelated, setNewRelated] = useState("");
-  const [newType, setNewType] = useState<"call" | "email" | "meeting" | "review">("email");
-  const [newPriority, setNewPriority] = useState<DealPriority>("high");
-  const [taskToDelete, setTaskToDelete] = useState<CRMTask | null>(null);
+}: Props) {
+  const [tab, setTab] = useState("all");
+  const [title, setTitle] = useState("");
+  const [related, setRelated] = useState("");
+  const [type, setType] = useState<"call" | "email" | "meeting" | "review">("call");
+  const [pri, setPri] = useState<DealPriority>("high");
+  const [toDelete, setToDelete] = useState<CRMTask | null>(null);
 
-
-  const handleCreateTask = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    const newTask: CRMTask = {
+    if (!title.trim()) return;
+    onAddTask({
       id: `task-${Date.now()}`,
-      title: newTitle.trim(),
-      type: newType,
-      dueDate: "Today at 5:00 PM",
+      title: title.trim(),
+      type,
+      dueDate: new Date().toISOString().split("T")[0],
       dueCategory: "today",
-      priority: newPriority,
+      priority: pri,
       completed: false,
-      relatedTo: newRelated.trim() || "General Workflow",
+      relatedTo: related.trim() || "عمومی",
       relatedType: "deal",
-    };
-
-    onAddTask(newTask);
-    toast.success("Task Created", {
-      description: `"${newTask.title}" added to agenda.`,
-      icon: <CheckCircle2 className="h-4 w-4 text-cyan-400" />,
     });
-    setNewTitle("");
-    setNewRelated("");
+    toast.success("وظیفه جدید با موفقیت ثبت شد.");
+    setTitle("");
+    setRelated("");
   };
 
-  // Filter tasks with guaranteed unique IDs
-  const filteredTasks = React.useMemo(() => {
+  const filtered = React.useMemo(() => {
     const seen = new Set<string>();
     return tasks.filter((t) => {
-      if (!t || !t.id || seen.has(t.id)) return false;
+      if (!t?.id || seen.has(t.id)) return false;
       seen.add(t.id);
-
-      if (filterTab === "pending") return !t.completed;
-      if (filterTab === "completed") return t.completed;
-      if (filterTab === "urgent") return !t.completed && (t.priority === "urgent" || t.priority === "high");
+      if (tab === "pending") return !t.completed;
+      if (tab === "completed") return t.completed;
+      if (tab === "urgent")
+        return !t.completed && (t.priority === "urgent" || t.priority === "high");
       return true;
     });
-  }, [tasks, filterTab]);
+  }, [tasks, tab]);
 
-  const pendingCount = tasks.filter((t) => !t.completed).length;
-  const completedCount = tasks.filter((t) => t.completed).length;
+  const pending = tasks.filter((t) => !t.completed).length;
+  const icons = { call: Phone, email: Mail, meeting: Video, review: FileText };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-
-      {/* Quick Add Task Strip */}
-      <Card className="bg-[#111117] border-white/[0.08] shadow-lg">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase text-cyan-400">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Quick Add Follow-Up or Action Item</span>
+    <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
+      {/* Quick Task Creator Card */}
+      <div className="rounded-3xl border border-brand-100/80 bg-white p-5 shadow-sm">
+        <div className="mb-3.5 flex items-center gap-2 text-[12.5px] font-black text-brand-800">
+          <Sparkles className="h-4 w-4 text-brand-600" />
+          <span>ثبت سریع پیگیری و وظیفه فروش</span>
+        </div>
+        <form onSubmit={submit} className="grid gap-2.5 sm:grid-cols-12">
+          <div className="sm:col-span-5">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="مثلاً: تماس با مهندس رضایی جهت تایید پیش‌فاکتور…"
+              className="h-10 rounded-xl border-brand-100 bg-white text-[13px]"
+            />
           </div>
+          <div className="sm:col-span-3">
+            <Input
+              value={related}
+              onChange={(e) => setRelated(e.target.value)}
+              placeholder="مربوط به شرکت یا معامله…"
+              className="h-10 rounded-xl border-brand-100 bg-white text-[13px]"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Select value={type} onValueChange={(v) => setType(v as never)}>
+              <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white text-xs font-bold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                <SelectItem value="call">تماس تلفنی</SelectItem>
+                <SelectItem value="email">ارسال ایمیل</SelectItem>
+                <SelectItem value="meeting">جلسه کاری</SelectItem>
+                <SelectItem value="review">بررسی و اقدام</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2 sm:col-span-2">
+            <Select
+              value={pri}
+              onValueChange={(v) => setPri(v as DealPriority)}
+            >
+              <SelectTrigger className="h-10 flex-1 rounded-xl border-brand-100 bg-white text-xs font-bold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-brand-100 bg-white">
+                <SelectItem value="urgent">فوری</SelectItem>
+                <SelectItem value="high">مهم</SelectItem>
+                <SelectItem value="medium">عادی</SelectItem>
+                <SelectItem value="low">کم</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="submit"
+              className="h-10 w-10 shrink-0 rounded-xl bg-brand-700 font-bold text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          </div>
+        </form>
+      </div>
 
-          <form onSubmit={handleCreateTask} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-            <div className="sm:col-span-4">
-              <Input
-                placeholder="e.g. Call Marcus Chen regarding Q3 pricing proposal..."
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="h-10 text-xs bg-black/40 border-white/10"
-              />
-            </div>
-
-            <div className="sm:col-span-3">
-              <Input
-                placeholder="Related Deal or Client..."
-                value={newRelated}
-                onChange={(e) => setNewRelated(e.target.value)}
-                className="h-10 text-xs bg-black/40 border-white/10"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <Select
-                value={newType}
-                onValueChange={(v) =>
-                  setNewType(v as "call" | "email" | "meeting" | "review")
-                }
-              >
-                <SelectTrigger className="h-10 text-xs">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="call">Phone Call</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
-                  <SelectItem value="review">Contract Review</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="sm:col-span-3 flex items-center gap-2">
-              <div className="flex-1">
-                <Select
-                  value={newPriority}
-                  onValueChange={(v) => setNewPriority(v as DealPriority)}
-                >
-                  <SelectTrigger className="h-10 text-xs capitalize">
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                type="submit"
-                size="sm"
-                className="h-10 px-4 text-xs bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer shrink-0"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Filter Tabs Strip using Shadcn Tabs */}
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-[#111117] p-3">
-        <Tabs value={filterTab} onValueChange={setFilterTab} className="w-auto">
-          <TabsList className="h-9">
-            <TabsTrigger value="all" className="text-xs">
-              All ({tasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="text-xs text-cyan-400">
-              Pending ({pendingCount})
-            </TabsTrigger>
-            <TabsTrigger value="urgent" className="text-xs text-rose-400">
-              Urgent & High
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs text-emerald-400">
-              Completed ({completedCount})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <span className="text-xs font-mono text-zinc-500 hidden sm:inline">
-          {pendingCount} tasks remaining
+      {/* Tabs Filter Bar */}
+      <div className="flex items-center justify-between rounded-2xl border border-brand-100/80 bg-white p-2.5 shadow-sm">
+        <div className="flex gap-1.5">
+          {[
+            ["all", `همه (${faDigits(tasks.length)})`],
+            ["pending", `در انتظار انجام (${faDigits(pending)})`],
+            ["urgent", "فوری و مهم"],
+            ["completed", "انجام‌شده"],
+          ].map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => setTab(v)}
+              className={`rounded-xl px-4 py-2 text-[12px] font-black cursor-pointer transition-all ${
+                tab === v
+                  ? "bg-brand-950 text-white shadow-sm"
+                  : "bg-brand-50/50 text-slate-600 hover:bg-brand-100/60"
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <span className="hidden text-[12px] font-bold text-slate-400 sm:block px-2">
+          {faDigits(pending)} اقدام باقی‌مانده
         </span>
       </div>
 
-      {/* Task List Section */}
-      <Card className="bg-[#0f0f16] border-white/[0.08] shadow-lg">
-        <CardHeader className="pb-3 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-cyan-400 shrink-0" />
-            <CardTitle className="text-sm font-bold text-white tracking-tight">
-              Agenda & Follow-Up Items
-            </CardTitle>
-            <Badge
-              variant="outline"
-              className="bg-cyan-500/10 border-cyan-500/20 text-[10px] font-mono text-cyan-300 py-0.5 px-2 shrink-0"
-            >
-              {filteredTasks.length} items
-            </Badge>
+      {/* Tasks List */}
+      <div className="rounded-3xl border border-brand-100/80 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-brand-100/80 bg-brand-50/40 px-5 py-3.5">
+          <div className="flex items-center gap-2 text-[13px] font-black text-slate-900">
+            <Clock className="h-4 w-4 text-brand-700" />
+            <span>برنامه پیگیری‌های امروز</span>
           </div>
-
-          <span className="text-[11px] font-mono text-zinc-500">
-            Check box to mark completed
-          </span>
-        </CardHeader>
-
-        <CardContent className="p-3.5 sm:p-5 space-y-2.5">
-          {filteredTasks.map((task) => {
-            const Icon = typeIcons[task.type] || Clock;
-            const priBadge = priorityBadges[task.priority];
-
+          <Badge
+            variant="outline"
+            className="rounded-full border-brand-200 bg-white text-xs font-black text-brand-800"
+          >
+            {faDigits(filtered.length)} مورد
+          </Badge>
+        </div>
+        <div className="space-y-2.5 p-4">
+          {filtered.map((t) => {
+            const Icon = icons[t.priority ? t.type : t.type] || Clock;
+            const p = PRI_FA[t.priority] || PRI_FA.medium;
             return (
               <div
-                key={task.id}
-                className={`group flex items-start gap-3 p-3 sm:p-3.5 rounded-xl border transition-all ${
-                  task.completed
-                    ? "border-white/[0.04] bg-black/20 text-zinc-400 opacity-60 hover:opacity-100"
-                    : "border-white/[0.06] bg-[#14141d] hover:border-cyan-500/30 hover:bg-[#181826]"
+                key={t.id}
+                className={`flex items-start gap-3 rounded-2xl border p-4 transition-all ${
+                  t.completed
+                    ? "border-slate-100 bg-slate-50/60 opacity-60"
+                    : "border-brand-100/80 bg-white hover:border-brand-300 hover:shadow-sm"
                 }`}
               >
-                {/* Left: Checkbox with touch target */}
-                <div className="pt-0.5 shrink-0">
-                  <Checkbox
-                    checked={task.completed}
-                    onCheckedChange={() => onToggleTask(task.id)}
-                    className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 cursor-pointer"
-                  />
-                </div>
-
-                {/* Type Icon (Desktop/Tablet) */}
-                <div className="h-8 w-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-zinc-400 group-hover:text-cyan-300 shrink-0 hidden sm:flex">
+                <Checkbox
+                  checked={t.completed}
+                  onCheckedChange={() => onToggleTask(t.id)}
+                  className="mt-1"
+                />
+                <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700 sm:flex">
                   <Icon className="h-4 w-4" />
-                </div>
-
-                {/* Center Content: Title + Responsive Meta */}
-                <div className="flex-1 min-w-0">
+                </span>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <div
-                      onClick={() => onToggleTask(task.id)}
-                      className={`text-xs font-medium leading-snug cursor-pointer transition-colors ${
-                        task.completed
-                          ? "line-through text-zinc-500"
-                          : "text-white group-hover:text-cyan-200"
+                    <button
+                      onClick={() => onToggleTask(t.id)}
+                      className={`text-right text-[13.5px] font-black leading-6 cursor-pointer ${
+                        t.completed
+                          ? "text-slate-400 line-through"
+                          : "text-slate-900 hover:text-brand-800"
                       }`}
                     >
-                      {task.title}
-                    </div>
-
-                    {/* Priority Badge & Action Menu */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                      {t.title}
+                    </button>
+                    <span className="flex shrink-0 items-center gap-2">
                       <Badge
-                        variant="outline"
-                        className={`text-[9px] sm:text-[10px] font-mono py-0 px-1.5 sm:px-2 capitalize shrink-0 ${priBadge}`}
+                        className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-black ${p.cls}`}
                       >
-                        {task.priority}
+                        {p.fa}
                       </Badge>
-
-                      {/* Task Context Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-white/[0.08] cursor-pointer rounded-lg shrink-0"
+                            className="h-7 w-7 p-0 text-slate-400 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
-                          className="w-48 bg-[#12121c] border-white/10 text-zinc-100 p-1 shadow-2xl"
+                          className="w-48 rounded-2xl border border-brand-100 bg-white p-1.5 shadow-xl"
                         >
-                          <DropdownMenuLabel className="text-[10px] font-mono uppercase text-zinc-500">
-                            Task Actions
-                          </DropdownMenuLabel>
                           <DropdownMenuItem
-                            onClick={() => onToggleTask(task.id)}
-                            className="text-xs cursor-pointer flex items-center gap-2"
+                            className="flex items-center gap-2 cursor-pointer text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
+                            onClick={() => onToggleTask(t.id)}
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>{task.completed ? "Mark as Pending" : "Mark as Completed"}</span>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            {t.completed ? "بازگشت به انجام نشده" : "علامت‌گذاری به عنوان انجام‌شده"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              toast.info("Task Rescheduled", {
-                                description: `"${task.title}" rescheduled for tomorrow.`,
-                                icon: <Calendar className="h-3.5 w-3.5 text-cyan-400" />,
-                              })
-                            }
-                            className="text-xs cursor-pointer flex items-center gap-2"
+                            className="flex items-center gap-2 cursor-pointer text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
+                            onClick={() => toast.success("وظیفه برای فردا موکول شد.")}
                           >
-                            <Calendar className="h-3.5 w-3.5 text-cyan-400" />
-                            <span>Reschedule Tomorrow</span>
+                            <Calendar className="h-3.5 w-3.5 text-brand-600 shrink-0" />
+                            موکول به فردا
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator className="bg-white/10" />
-                          {onDeleteTask && (
-                            <DropdownMenuItem
-                              onClick={() => setTaskToDelete(task)}
-                              className="text-xs cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Delete Task</span>
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 cursor-pointer text-rose-600 text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-rose-50"
+                            onClick={() => setToDelete(t)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                            حذف پیگیری
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>
+                    </span>
                   </div>
-
-                  {/* Metadata Row: Mobile Type indicator + Related Deal/Client + Due Date */}
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-zinc-400">
-                    <span className="sm:hidden inline-flex items-center gap-1 text-[9px] font-mono uppercase text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/20">
-                      <Icon className="h-2.5 w-2.5" />
-                      <span>{task.type}</span>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-slate-500">
+                    <span className="rounded-full bg-brand-50 border border-brand-100 px-2.5 py-0.5 text-brand-800 font-bold">
+                      {TYPE_FA[t.type]}
                     </span>
-
-                    <span className="flex items-center gap-1 text-zinc-300">
-                      <Building2 className="h-3 w-3 text-zinc-500 shrink-0" />
-                      <span className="truncate max-w-[160px] sm:max-w-none">{task.relatedTo}</span>
-                    </span>
-
-                    <span className="text-zinc-600 hidden sm:inline">·</span>
-
-                    <span className="flex items-center gap-1 text-zinc-400 font-mono text-[10px]">
-                      <Calendar className="h-3 w-3 text-zinc-500 shrink-0" />
-                      <span>{task.dueDate}</span>
-                    </span>
+                    <span className="font-bold text-slate-700">{t.relatedTo}</span>
+                    <span>·</span>
+                    <span className="font-bold">{formatJalaliDate(t.dueDate)}</span>
                   </div>
                 </div>
               </div>
             );
           })}
-
-          {filteredTasks.length === 0 && (
-            <div className="py-12 text-center text-zinc-500 text-xs">
-              No tasks found in this view.
+          {filtered.length === 0 && (
+            <div className="py-12 text-center text-[13px] font-bold text-slate-400">
+              هیچ وظیفه‌ای در این وضعیت ثبت نشده است. 🎉
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Confirmation Dialog for Task Deletion */}
       <ConfirmDeleteDialog
-        open={!!taskToDelete}
-        onOpenChange={(open) => !open && setTaskToDelete(null)}
-        title="Delete Task"
-        itemName={taskToDelete ? taskToDelete.title : undefined}
-        description="Are you sure you want to delete this task? This action cannot be undone."
-        confirmLabel="Delete Task"
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="حذف وظیفه"
+        itemName={toDelete?.title}
+        description="این وظیفه از لیست پیگیری‌های شما حذف می‌شود."
+        confirmLabel="حذف وظیفه"
         onConfirm={() => {
-          if (taskToDelete) {
-            onDeleteTask?.(taskToDelete.id);
-            toast.info("Task Removed", {
-              description: `"${taskToDelete.title}" removed from agenda.`,
-              icon: <Trash2 className="h-3.5 w-3.5 text-zinc-400" />,
-            });
-            setTaskToDelete(null);
-          }
+          if (toDelete) onDeleteTask?.(toDelete.id);
+          setToDelete(null);
         }}
       />
     </div>
