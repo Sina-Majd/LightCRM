@@ -32,6 +32,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import {
   formatToman,
   CUSTOMER_TYPE_MAP,
@@ -67,6 +68,7 @@ export function CustomersView({
 }: Props) {
   const [segmentFilter, setSegmentFilter] = useState<"all" | CustomerSegment>("all");
   const [selected360, setSelected360] = useState<Customer | null>(null);
+  const [toDeleteCustomer, setToDeleteCustomer] = useState<Customer | null>(null);
 
   const filtered = React.useMemo(() => {
     const seen = new Set<string>();
@@ -406,7 +408,7 @@ export function CustomersView({
                       <DropdownMenuSeparator className="bg-brand-100/60 my-1" />
                       <DropdownMenuItem
                         className="flex items-center gap-2 cursor-pointer text-right text-xs font-bold rounded-xl py-2 px-2.5 text-rose-600 hover:bg-rose-50"
-                        onClick={() => onDeleteCustomer?.(c.id)}
+                        onClick={() => setToDeleteCustomer(c)}
                       >
                         <Trash2 className="h-3.5 w-3.5 shrink-0" />
                         حذف مخاطب
@@ -518,10 +520,51 @@ export function CustomersView({
                   </span>
                 </div>
               </div>
+
+              {/* Danger Zone: Delete Customer */}
+              {onDeleteCustomer && (
+                <div className="pt-3 border-t border-brand-100/80 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400">
+                    حذف دائمی پرونده مخاطب
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setToDeleteCustomer(selected360)}
+                    className="h-9 cursor-pointer items-center gap-1.5 rounded-xl border-rose-200 bg-rose-50/60 px-3 text-xs font-bold text-rose-700 hover:border-rose-300 hover:bg-rose-100/80 hover:text-rose-800 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    حذف مشتری
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Confirm Delete Customer Modal */}
+      <ConfirmDeleteDialog
+        open={!!toDeleteCustomer}
+        onOpenChange={(open) => !open && setToDeleteCustomer(null)}
+        title="حذف مشتری"
+        itemName={toDeleteCustomer?.company || toDeleteCustomer?.name}
+        description={
+          toDeleteCustomer
+            ? `آیا از حذف اطلاعات «${toDeleteCustomer.company || toDeleteCustomer.name}» مطمئن هستید؟ تمامی سوابق این مخاطب برای همیشه حذف می‌شوند.`
+            : undefined
+        }
+        onConfirm={() => {
+          if (toDeleteCustomer) {
+            onDeleteCustomer?.(toDeleteCustomer.id);
+            if (selected360?.id === toDeleteCustomer.id) {
+              setSelected360(null);
+            }
+            setToDeleteCustomer(null);
+          }
+        }}
+      />
     </div>
   );
 }

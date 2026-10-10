@@ -31,8 +31,9 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
       ref={ref}
+      dir="rtl"
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border border-slate-200 bg-white p-6 shadow-xl duration-200 rounded-2xl max-h-[calc(100vh-4rem)] overflow-y-auto",
+        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 border border-slate-200 bg-white p-6 shadow-xl duration-200 rounded-2xl max-h-[calc(100vh-4rem)] overflow-y-auto text-right",
         className
       )}
       {...props}
@@ -61,7 +62,7 @@ const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-row items-center justify-end gap-2.5 mt-2",
+      "flex flex-row items-center justify-start gap-2.5 mt-2",
       className
     )}
     {...props}
@@ -107,7 +108,7 @@ const AlertDialogAction = React.forwardRef<
   <AlertDialogPrimitive.Action
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center rounded-lg text-xs font-medium px-4 py-2 transition-colors bg-red-600 hover:bg-red-500 text-white shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex h-10 items-center justify-center rounded-xl text-xs font-bold px-4 transition-colors bg-rose-600 hover:bg-rose-700 text-white shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50 disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}
@@ -122,7 +123,7 @@ const AlertDialogCancel = React.forwardRef<
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center rounded-xl text-[13px] font-bold px-4 py-2.5 transition-colors border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+      "inline-flex h-10 items-center justify-center rounded-xl text-xs font-bold px-4 transition-colors border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 cursor-pointer focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}
