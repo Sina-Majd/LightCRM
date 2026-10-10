@@ -8,7 +8,6 @@ import {
   CRMNotification,
   PipelineStage,
   Invoice,
-  InvoiceItem,
   Cheque,
   CRMActivity,
   INITIAL_PIPELINE_STAGES,
@@ -27,7 +26,6 @@ import {
   formatRelativeFa,
   RawInvoiceItem,
   calculateInvoiceTotals,
-  resolveInvoiceStatus,
   ChequeStatus,
   CallResult,
 } from "@/lib/fa";
@@ -136,7 +134,7 @@ export async function fetchDeals(workspaceId?: string): Promise<Deal[]> {
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_DEALS;
   }
 
@@ -290,7 +288,7 @@ export async function fetchCustomers(workspaceId?: string): Promise<Customer[]> 
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_CUSTOMERS;
   }
 
@@ -408,7 +406,7 @@ export async function fetchInvoices(workspaceId?: string): Promise<Invoice[]> {
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_INVOICES;
   }
 
@@ -539,7 +537,7 @@ export async function fetchCheques(workspaceId?: string): Promise<Cheque[]> {
   }
   const { data, error } = await query.order("due_date", { ascending: true });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_CHEQUES;
   }
 
@@ -622,7 +620,7 @@ export async function fetchActivities(workspaceId?: string, limit = 20): Promise
     .order("happened_at", { ascending: false })
     .limit(limit);
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_ACTIVITIES;
   }
 
@@ -684,7 +682,7 @@ export async function fetchTasks(workspaceId?: string): Promise<CRMTask[]> {
   }
   const { data, error } = await query.order("due_date", { ascending: true });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_TASKS;
   }
 
@@ -761,7 +759,7 @@ export async function fetchNotifications(workspaceId?: string): Promise<CRMNotif
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) {
+  if (error || !data) {
     return INITIAL_NOTIFICATIONS;
   }
 
@@ -821,19 +819,18 @@ export async function markAllNotificationsRead(workspaceId?: string) {
 // LEADS (COMPATIBILITY)
 // -------------------------------------------------------------
 
-export async function fetchLeads(userId?: string): Promise<Lead[]> {
+export async function fetchLeads(_userId?: string): Promise<Lead[]> {
   return INITIAL_LEADS;
 }
 
-
-export async function createLead(userId: string, lead: Partial<Lead>): Promise<Lead | null> {
+export async function createLead(_userId: string, _lead: Partial<Lead>): Promise<Lead | null> {
   return null;
 }
 
-export async function updateLeadStatus(leadId: string, status: LeadStatus) {}
+export async function updateLeadStatus(_leadId: string, _status: LeadStatus) {}
 
-export async function deleteLead(leadId: string) {}
+export async function deleteLead(_leadId: string) {}
 
-export async function convertLeadToDeal(userId: string, lead: Lead): Promise<Deal | null> {
+export async function convertLeadToDeal(_userId: string, _lead: Lead): Promise<Deal | null> {
   return null;
 }

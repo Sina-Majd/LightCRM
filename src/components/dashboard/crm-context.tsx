@@ -310,16 +310,16 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
 
         setStages(stg?.length ? dedupeById(stg) : INITIAL_PIPELINE_STAGES);
         setDeals(
-          dl?.length
+          dl !== undefined
             ? dedupeById(orderDealsBySavedOrder(dl))
             : orderDealsBySavedOrder(INITIAL_DEALS)
         );
-        setCustomers(cs?.length ? dedupeById(cs) : INITIAL_CUSTOMERS);
-        setInvoices(inv?.length ? dedupeById(inv) : INITIAL_INVOICES);
-        setCheques(chq?.length ? dedupeById(chq) : INITIAL_CHEQUES);
-        setTasks(tk?.length ? dedupeById(tk) : INITIAL_TASKS);
-        setActivities(act?.length ? dedupeById(act) : INITIAL_ACTIVITIES);
-        setNotifications(nt?.length ? dedupeById(nt) : INITIAL_NOTIFICATIONS);
+        setCustomers(cs !== undefined ? dedupeById(cs) : INITIAL_CUSTOMERS);
+        setInvoices(inv !== undefined ? dedupeById(inv) : INITIAL_INVOICES);
+        setCheques(chq !== undefined ? dedupeById(chq) : INITIAL_CHEQUES);
+        setTasks(tk !== undefined ? dedupeById(tk) : INITIAL_TASKS);
+        setActivities(act !== undefined ? dedupeById(act) : INITIAL_ACTIVITIES);
+        setNotifications(nt !== undefined ? dedupeById(nt) : INITIAL_NOTIFICATIONS);
 
         setLoad({
           profile: true,

@@ -64,5 +64,4 @@ export const fa = {
   },
 };
 
-export const faDigits = (v: string | number) =>
-  String(v).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+export { faDigits } from "../fa/money";
