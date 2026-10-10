@@ -21,7 +21,6 @@ import {
   CheckCheck,
   MoreHorizontal,
 } from "lucide-react";
-import { formatNotificationTime, formatFullTimestamp } from "@/lib/date-utils";
 import { LightCrmLogo } from "@/components/lightcrm-logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +39,7 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile, updateUserStatus } from "@/lib/supabase/crm-service";
 import { useRouter } from "next/navigation";
-import { faDigits } from "@/lib/fa";
+import { faDigits, formatRelativeFa, formatJalaliDate } from "@/lib/fa";
 
 export type DashboardTab =
   | "today"
@@ -417,9 +416,11 @@ export function DashboardShell(props: Props) {
                           <b className="truncate text-[12.5px] text-slate-900">{n.title}</b>
                           <span
                             className="shrink-0 text-[10px] text-slate-400"
-                            title={formatFullTimestamp(n.createdAt)}
+                            title={n.createdAt ? formatJalaliDate(n.createdAt, "full") : undefined}
                           >
-                            {formatNotificationTime(n.createdAt, n.time)}
+                            {n.createdAt && formatRelativeFa(n.createdAt) !== "—"
+                              ? formatRelativeFa(n.createdAt)
+                              : n.time || "همین الان"}
                           </span>
                         </div>
                         <p className="mt-1 line-clamp-2 text-[11.5px] leading-5 text-slate-600">
