@@ -7,14 +7,7 @@ import {
   Plus,
   Printer,
   CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Building2,
-  MoreHorizontal,
-  Search,
   FileCheck,
-  TrendingUp,
-  Wallet,
 } from "lucide-react";
 import { Invoice, Cheque, Customer } from "@/data/dashboard-mock-data";
 import { Button } from "@/components/ui/button";
@@ -35,9 +28,21 @@ import {
   ChequeStatus,
   faDigits,
 } from "@/lib/fa";
-import { CreateInvoiceDialog } from "./create-invoice-dialog";
-import { InvoicePrintModal } from "./invoice-print-modal";
-import { ChequeRegisterDialog } from "./cheque-register-dialog";
+import dynamic from "next/dynamic";
+
+const CreateInvoiceDialog = dynamic(
+  () => import("./create-invoice-dialog").then((m) => m.CreateInvoiceDialog),
+  { ssr: false }
+);
+const InvoicePrintModal = dynamic(
+  () => import("./invoice-print-modal").then((m) => m.InvoicePrintModal),
+  { ssr: false }
+);
+const ChequeRegisterDialog = dynamic(
+  () => import("./cheque-register-dialog").then((m) => m.ChequeRegisterDialog),
+  { ssr: false }
+);
+
 import { RawInvoiceItem } from "@/lib/fa";
 import { toast } from "sonner";
 
@@ -71,10 +76,8 @@ export function InvoicesView({
   // Invoices metrics
   const totalInvoicesSum = invoices.reduce((s, i) => s + (i.total || 0), 0);
   const paidInvoices = invoices.filter((i) => i.status === "paid");
-  const overdueInvoices = invoices.filter((i) => i.status === "overdue");
 
   // Cheques metrics
-  const totalChequesSum = cheques.reduce((s, c) => s + (c.amount || 0), 0);
   const inHandCheques = cheques.filter((c) => c.status === "in_hand");
   const clearedCheques = cheques.filter((c) => c.status === "cleared");
 

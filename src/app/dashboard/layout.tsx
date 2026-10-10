@@ -8,8 +8,16 @@ import {
   DashboardTab,
 } from "@/components/dashboard/dashboard-shell";
 import { CrmProvider, useCrm } from "@/components/dashboard/crm-context";
-import { DealDetailSheet } from "@/components/dashboard/deal-detail-sheet";
-import { CreateRecordDialog } from "@/components/dashboard/create-record-dialog";
+import dynamic from "next/dynamic";
+
+const DealDetailSheet = dynamic(
+  () => import("@/components/dashboard/deal-detail-sheet").then((m) => m.DealDetailSheet),
+  { ssr: false }
+);
+const CreateRecordDialog = dynamic(
+  () => import("@/components/dashboard/create-record-dialog").then((m) => m.CreateRecordDialog),
+  { ssr: false }
+);
 
 /** URL slug → the tab identity the rest of the app speaks. */
 const TAB_FROM_SLUG: Record<string, DashboardTab> = {
