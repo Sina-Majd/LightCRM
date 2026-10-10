@@ -692,7 +692,7 @@ export function TodayView({
                 return (
                   <li
                     key={task.id}
-                    className={`flex items-center gap-3 border-r-2 py-2.5 pe-3 transition hover:bg-slate-50 ${
+                    className={`flex items-center gap-3 border-r-2 py-2.5 ps-3.5 pe-3 transition hover:bg-slate-50 ${
                       isOverdue ? "border-r-rose-500" : "border-r-transparent"
                     }`}
                   >
@@ -704,7 +704,11 @@ export function TodayView({
                           ? "علامت‌گذاری به عنوان انجام‌نشده"
                           : "علامت‌گذاری به عنوان انجام‌شده"
                       }
-                      className="flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-md border-2 border-slate-300 bg-white transition hover:border-brand-600 hover:bg-brand-50"
+                      className={`flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-md border-2 transition ${
+                        task.completed
+                          ? "border-emerald-600 bg-emerald-600 text-white"
+                          : "border-slate-300 bg-white hover:border-brand-600 hover:bg-brand-50"
+                      }`}
                     >
                       {task.completed && <Check className="size-3 text-white" />}
                     </button>
