@@ -74,6 +74,11 @@
      scroll container when <html> has any non-visible overflow, and
      logs a dev warning while guessing. */
 
+  /* Prevent fixed desktop sidebar from shifting when Radix dialog locks body scroll */
+  body[data-scroll-locked] aside {
+    right: var(--removed-body-scroll-bar-size, 0px) !important;
+  }
+
   *, ::before, ::after {
     border-color: var(--card-border);
     font-family: var(--font-fa), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

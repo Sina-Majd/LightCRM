@@ -198,7 +198,10 @@ export function DashboardShell(props: Props) {
       />
 
       {/* Desktop Sidebar — fixed to survive body overflow-x containers */}
-      <aside className="hidden md:flex fixed inset-y-0 right-0 w-[264px] shrink-0 flex-col border-l border-brand-100/80 bg-white/95 backdrop-blur-xl z-30 shadow-[0_10px_35px_-20px_rgba(16,28,69,0.1)] overflow-hidden">
+      <aside
+        style={{ right: "var(--removed-body-scroll-bar-size, 0px)" }}
+        className="hidden md:flex fixed inset-y-0 right-0 right-scroll-bar-position w-[264px] shrink-0 flex-col border-l border-brand-100/80 bg-white/95 backdrop-blur-xl z-30 shadow-[0_10px_35px_-20px_rgba(16,28,69,0.1)] overflow-hidden"
+      >
         {/* Brand & Workspace Header — single plan source lives in workspace banner */}
         <div className="px-5 pb-4 pt-5 border-b border-brand-100/60 bg-white">
           <div className="flex items-center">
