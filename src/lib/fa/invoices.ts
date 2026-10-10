@@ -40,7 +40,7 @@ export function calculateInvoiceTotals(items: RawInvoiceItem[]): InvoiceCalculat
   for (const item of items) {
     const gross = (item.quantity || 0) * (item.unit_price || 0);
     const disc = item.discount || 0;
-    const { net, tax, total } = calculateItemTotal(
+    const { tax, total } = calculateItemTotal(
       item.quantity || 1,
       item.unit_price || 0,
       disc,

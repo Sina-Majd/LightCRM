@@ -13,7 +13,6 @@ import {
   Trash2,
   CheckCircle2,
   Calendar,
-  CheckSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";

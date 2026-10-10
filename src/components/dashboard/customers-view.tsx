@@ -8,18 +8,14 @@ import {
   UserPlus,
   MoreHorizontal,
   Trash2,
-  Mail,
   Phone,
-  FileText,
   User,
   ShieldCheck,
   MessageSquare,
   Receipt,
   Users,
   Wallet,
-  CheckCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Customer } from "@/data/dashboard-mock-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -350,7 +346,10 @@ export function CustomersView({
                 <div className="flex items-center gap-1.5">
                   <Button
                     size="sm"
-                    onClick={() => setSelected360(c)}
+                    onClick={() => {
+                      setSelected360(c);
+                      onSelectCustomer?.(c);
+                    }}
                     className="h-8 rounded-xl bg-brand-50 text-brand-800 border border-brand-200 hover:bg-brand-700 hover:text-white font-black text-xs transition-colors cursor-pointer"
                   >
                     پروفایل ۳۶۰

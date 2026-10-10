@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TrendingUp, Award, Clock, Target, Zap, Sparkles, ArrowUpRight, BarChart2 } from "lucide-react";
+import { TrendingUp, Award, Clock, Target, Zap, Sparkles, BarChart2 } from "lucide-react";
 import { PIPELINE_ANALYTICS, Deal } from "@/data/dashboard-mock-data";
 import { formatToman, faDigits } from "@/lib/fa";
 import { Badge } from "@/components/ui/badge";

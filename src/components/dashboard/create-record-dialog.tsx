@@ -35,7 +35,6 @@ import {
   DealPriority,
   Lead,
   LeadStatus,
-  LeadSource,
   Customer,
   CustomerTier,
   CustomerHealth,
