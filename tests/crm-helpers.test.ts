@@ -4,6 +4,7 @@ import * as dates from "@/lib/fa/jalali";
 import * as pipeline from "@/lib/crm/pipeline";
 import { dedupeById } from "@/lib/crm/collections";
 import { saveDealOrder, orderDealsBySavedOrder } from "@/lib/crm/deal-order";
+import { safeRedirectUrl } from "@/lib/auth/redirect";
 
 test("Jalali conversion round trips Nowruz and leap-year Esfand", () => {
   for (const [jy, jm, jd] of [[1403, 12, 30], [1404, 1, 1], [1405, 8, 6]]) {
@@ -52,4 +53,15 @@ test("corrupt and unavailable order storage cannot break the pipeline", () => {
   const unavailable = { getItem() { throw Error("disabled"); }, setItem() { throw Error("full"); } };
   assert.deepEqual(orderDealsBySavedOrder(deals, "one", unavailable), deals);
   assert.doesNotThrow(() => saveDealOrder(deals, "one", unavailable));
+});
+
+test("auth return paths preserve local paths, queries and fragments", () => {
+  assert.equal(safeRedirectUrl("https://crm.example", "/dashboard/tasks?q=one#today").href,
+    "https://crm.example/dashboard/tasks?q=one#today");
+});
+
+test("auth redirects reject external URLs and URL parser control-character bypasses", () => {
+  for (const path of [null, "https://evil.example", "//evil.example", "/\\evil.example", "/\t/evil.example", "/\n/evil.example", "javascript:alert(1)"]) {
+    assert.equal(safeRedirectUrl("https://crm.example", path).href, "https://crm.example/dashboard");
+  }
 });

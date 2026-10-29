@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirectUrl } from "@/lib/auth/redirect";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const rawNext = searchParams.get("next") ?? "/dashboard";
-  // Validate next to prevent open redirects (must be relative path starting with single slash)
-  const isValidNext =
-    rawNext.startsWith("/") &&
-    !rawNext.startsWith("//") &&
-    !rawNext.includes("\\") &&
-    !rawNext.startsWith("/\\");
-  const next = isValidNext ? rawNext : "/dashboard";
+  const next = safeRedirectUrl(origin, searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const response = NextResponse.redirect(next);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     }
   }
 

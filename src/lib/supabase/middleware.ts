@@ -14,13 +14,25 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          const previousResponse = supabaseResponse;
           supabaseResponse = NextResponse.next({
             request,
           });
+          previousResponse.cookies.getAll().forEach((cookie) =>
+            supabaseResponse.cookies.set(cookie)
+          );
+          previousResponse.headers.forEach((value, name) => {
+            if (["cache-control", "expires", "pragma"].includes(name)) {
+              supabaseResponse.headers.set(name, value);
+            }
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
+          );
+          Object.entries(headers).forEach(([name, value]) =>
+            supabaseResponse.headers.set(name, value)
           );
         },
       },
@@ -32,7 +44,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+  const isDashboard = request.nextUrl.pathname === "/dashboard" ||
+    request.nextUrl.pathname.startsWith("/dashboard/");
   const isAuthRoute =
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname === "/register" ||
@@ -44,6 +57,10 @@ export async function updateSession(request: NextRequest) {
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
     });
+    for (const name of ["cache-control", "expires", "pragma"]) {
+      const value = supabaseResponse.headers.get(name);
+      if (value) redirectResponse.headers.set(name, value);
+    }
     return redirectResponse;
   };
 

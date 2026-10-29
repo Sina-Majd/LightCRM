@@ -38,7 +38,10 @@ function Content() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password: pass,
-        options: { data: { full_name: name, company, plan } },
+        options: {
+          data: { full_name: name.trim(), company: company.trim(), plan },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) {
         setLoading(false);
