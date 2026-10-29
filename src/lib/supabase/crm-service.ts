@@ -1,15 +1,41 @@
+import type { Database, Json } from "./database.types";
 import { createClient } from "./client";
-import { Lead, LeadStatus, INITIAL_DEALS, INITIAL_CUSTOMERS, INITIAL_INVOICES, INITIAL_CHEQUES, INITIAL_TASKS, INITIAL_ACTIVITIES, INITIAL_NOTIFICATIONS, INITIAL_LEADS } from "@/data/dashboard-mock-data";
-import type { Deal, Customer, CRMTask, CRMNotification, PipelineStage, Invoice, Cheque, CRMActivity } from "@/lib/crm/types";
+import { taskDueCategory } from "@/lib/crm/tasks";
+import type {
+  Deal,
+  Customer,
+  CRMTask,
+  CRMNotification,
+  PipelineStage,
+  Invoice,
+  Cheque,
+  CRMActivity,
+} from "@/lib/crm/types";
 import { DEFAULT_PIPELINE_STAGES as INITIAL_PIPELINE_STAGES, getStageTheme } from "@/lib/crm/pipeline";
 import {
   formatToman,
   formatRelativeFa,
   RawInvoiceItem,
-  calculateInvoiceTotals,
+  toLocalISODate,
+  CALL_RESULT_MAP,
   ChequeStatus,
   CallResult,
 } from "@/lib/fa";
+
+type Tables = Database["public"]["Tables"];
+type Insert<Name extends keyof Tables> = Tables[Name]["Insert"];
+type Update<Name extends keyof Tables> = Tables[Name]["Update"];
+
+function requireWorkspace(workspaceId: string | undefined): string {
+  if (!workspaceId) throw new Error("A workspace is required to save CRM data.");
+  return workspaceId;
+}
+
+function customerTier(tier: Customer["tier"] = "Growth"): "Enterprise" | "Growth" | "Startup" {
+  if (tier === "سازمانی" || tier === "Enterprise") return "Enterprise";
+  if (tier === "استارتاپ" || tier === "Startup") return "Startup";
+  return "Growth";
+}
 
 export interface UserProfile {
   id: string;
@@ -26,25 +52,31 @@ export interface UserProfile {
 // USER PROFILE & WORKSPACE
 // -------------------------------------------------------------
 
+function assertSuccess(error: { message: string } | null): void {
+  if (error) throw new Error(error.message, { cause: error });
+}
+
 export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  assertSuccess(error);
+  if (!data) return null;
 
   // Attempt to resolve workspace_id from profiles or workspace_members
   let workspaceId = data.workspace_id;
   if (!workspaceId) {
-    const { data: member } = await supabase
+    const { data: member, error: membershipError } = await supabase
       .from("workspace_members")
       .select("workspace_id")
       .eq("user_id", userId)
       .limit(1)
-      .single();
+      .maybeSingle();
+    assertSuccess(membershipError);
     if (member?.workspace_id) {
       workspaceId = member.workspace_id;
     }
@@ -70,9 +102,9 @@ export async function updateUserStatus(
   const { error } = await supabase
     .from("profiles")
     .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", userId);
+    .eq("id", userId).select("id").single();
 
-  if (error) console.error("Error updating status:", error);
+  assertSuccess(error);
 }
 
 // -------------------------------------------------------------
@@ -87,9 +119,8 @@ export async function fetchPipelineStages(workspaceId?: string): Promise<Pipelin
   }
   const { data, error } = await query.order("position", { ascending: true });
 
-  if (error || !data || data.length === 0) {
-    return INITIAL_PIPELINE_STAGES;
-  }
+  assertSuccess(error);
+  if (!data?.length) return INITIAL_PIPELINE_STAGES;
 
   return data.map((s) => {
     const theme = getStageTheme(s.stage_key);
@@ -115,9 +146,8 @@ export async function fetchDeals(workspaceId?: string): Promise<Deal[]> {
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data) {
-    return INITIAL_DEALS;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((d) => {
     const val = Number(d.value) || 0;
@@ -131,7 +161,7 @@ export async function fetchDeals(workspaceId?: string): Promise<Deal[]> {
       value: val,
       formattedValue: formatToman(val),
       stageId: d.stage_id || "stage-new",
-      priority: d.priority || "medium",
+      priority: d.priority as Deal["priority"],
       probability: d.probability ?? 50,
       tags: d.tags || [],
       notes: d.notes || "",
@@ -148,17 +178,16 @@ export async function fetchDeals(workspaceId?: string): Promise<Deal[]> {
 }
 
 export async function createDeal(
-  arg1?: string,
-  arg2?: string | Partial<Deal>,
-  arg3?: Partial<Deal>
-): Promise<Deal | null> {
+  workspaceId: string | undefined,
+  userId: string,
+  deal: Partial<Deal>
+): Promise<Deal> {
   const supabase = createClient();
-  const workspaceId = typeof arg2 === "string" ? arg1 : undefined;
-  const userId = (typeof arg2 === "string" ? arg2 : arg1) || "";
-  const deal = (typeof arg2 === "string" ? arg3 : arg2) || {};
 
   const val = Number(deal.value) || 0;
-  const insertPayload: Record<string, unknown> = {
+  const insertPayload: Insert<"deals"> = {
+    workspace_id: requireWorkspace(workspaceId),
+    created_by: userId,
     user_id: userId,
     title: deal.title || "معامله جدید",
     company: deal.company || "مشتری عمومی",
@@ -176,10 +205,6 @@ export async function createDeal(
     next_action_due: deal.nextActionDue || null,
     assignee_name: deal.assignee?.name || "شما",
   };
-  if (workspaceId) {
-    insertPayload.workspace_id = workspaceId;
-    insertPayload.created_by = userId;
-  }
 
   const { data, error } = await supabase
     .from("deals")
@@ -187,22 +212,20 @@ export async function createDeal(
     .select()
     .single();
 
-  if (error || !data) {
-    console.error("Error creating deal:", error);
-    return null;
-  }
+  assertSuccess(error);
+  if (!data) throw new Error("No record returned after saving.");
 
   return {
     id: data.id,
     title: data.title,
     company: data.company,
     contact: data.contact,
-    email: data.email,
-    phone: data.phone,
+    email: data.email || "",
+    phone: data.phone || "",
     value: Number(data.value),
     formattedValue: formatToman(Number(data.value)),
     stageId: data.stage_id,
-    priority: data.priority,
+    priority: data.priority as Deal["priority"],
     probability: data.probability,
     tags: data.tags || [],
     notes: data.notes || "",
@@ -219,7 +242,7 @@ export async function createDeal(
 
 export async function updateDealStage(dealId: string, stageId: string, probability?: number) {
   const supabase = createClient();
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: Update<"deals"> = {
     stage_id: stageId,
     updated_at: new Date().toISOString(),
   };
@@ -229,8 +252,8 @@ export async function updateDealStage(dealId: string, stageId: string, probabili
   const { error } = await supabase
     .from("deals")
     .update(updatePayload)
-    .eq("id", dealId);
-  if (error) console.error("Error updating deal stage:", error);
+    .eq("id", dealId).select("id").single();
+  assertSuccess(error);
 }
 
 
@@ -247,14 +270,20 @@ export async function updateDealNextAction(
       next_action_due: due,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", dealId);
-  if (error) console.error("Error updating deal next action:", error);
+    .eq("id", dealId).select("id").single();
+  assertSuccess(error);
 }
 
 export async function deleteDeal(dealId: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("deals").delete().eq("id", dealId);
-  if (error) console.error("Error deleting deal:", error);
+  const { error } = await supabase.from("deals").delete().eq("id", dealId).select("id").single();
+  assertSuccess(error);
+}
+
+export async function updateDealNotes(dealId: string, notes: string) {
+  const { error } = await createClient().from("deals")
+    .update({ notes }).eq("id", dealId).select("id").single();
+  assertSuccess(error);
 }
 
 // -------------------------------------------------------------
@@ -269,9 +298,8 @@ export async function fetchCustomers(workspaceId?: string): Promise<Customer[]> 
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data) {
-    return INITIAL_CUSTOMERS;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((c) => {
     const ltvVal = Number(c.ltv) || 0;
@@ -281,16 +309,16 @@ export async function fetchCustomers(workspaceId?: string): Promise<Customer[]> 
       company: c.company || "",
       email: c.email || "",
       phone: c.phone || "",
-      customerType: c.customer_type || "company",
+      customerType: c.customer_type === "individual" ? "individual" : "company",
       nationalId: c.national_id || null,
       economicCode: c.economic_code || null,
-      segment: c.segment || "customer",
+      segment: c.segment === "lead" ? "lead" : "customer",
       ltv: ltvVal,
       formattedLtv: formatToman(ltvVal),
       activeDealsCount: c.active_deals_count || 0,
-      healthScore: c.health_score || 85,
-      healthStatus: c.health_status || "good",
-      tier: c.tier || "در حال رشد",
+      healthScore: c.health_score ?? 85,
+      healthStatus: c.health_status as Customer["healthStatus"],
+      tier: c.tier as Customer["tier"],
       renewalDate: c.renewal_date || "—",
       lastTouch: formatRelativeFa(c.updated_at || c.created_at),
       location: c.location || "ایران",
@@ -300,16 +328,15 @@ export async function fetchCustomers(workspaceId?: string): Promise<Customer[]> 
 }
 
 export async function createCustomer(
-  arg1?: string,
-  arg2?: string | Partial<Customer>,
-  arg3?: Partial<Customer>
-): Promise<Customer | null> {
+  workspaceId: string | undefined,
+  userId: string,
+  customer: Partial<Customer>
+): Promise<Customer> {
   const supabase = createClient();
-  const workspaceId = typeof arg2 === "string" ? arg1 : undefined;
-  const userId = (typeof arg2 === "string" ? arg2 : arg1) || "";
-  const customer = (typeof arg2 === "string" ? arg3 : arg2) || {};
 
-  const payload: Record<string, unknown> = {
+  const payload: Insert<"customers"> = {
+    workspace_id: requireWorkspace(workspaceId),
+    created_by: userId,
     user_id: userId,
     name: customer.name || "مشتری جدید",
     company: customer.company || "",
@@ -320,16 +347,12 @@ export async function createCustomer(
     economic_code: customer.economicCode || null,
     segment: customer.segment || "customer",
     ltv: customer.ltv || 0,
-    health_score: customer.healthScore || 90,
+    health_score: customer.healthScore ?? 90,
     health_status: customer.healthStatus || "good",
-    tier: customer.tier || "در حال رشد",
+    tier: customerTier(customer.tier),
     location: customer.location || "ایران",
     industry: customer.industry || "عمومی",
   };
-  if (workspaceId) {
-    payload.workspace_id = workspaceId;
-    payload.created_by = userId;
-  }
 
   const { data, error } = await supabase
     .from("customers")
@@ -337,27 +360,25 @@ export async function createCustomer(
     .select()
     .single();
 
-  if (error || !data) {
-    console.error("Error creating customer:", error);
-    return null;
-  }
+  assertSuccess(error);
+  if (!data) throw new Error("No record returned after saving.");
 
   return {
     id: data.id,
     name: data.name,
     company: data.company,
-    email: data.email,
-    phone: data.phone,
-    customerType: data.customer_type,
+    email: data.email || "",
+    phone: data.phone || "",
+    customerType: data.customer_type === "individual" ? "individual" : "company",
     nationalId: data.national_id,
     economicCode: data.economic_code,
-    segment: data.segment,
+    segment: data.segment === "lead" ? "lead" : "customer",
     ltv: Number(data.ltv),
     formattedLtv: formatToman(Number(data.ltv)),
     activeDealsCount: data.active_deals_count || 0,
     healthScore: data.health_score,
-    healthStatus: data.health_status,
-    tier: data.tier,
+    healthStatus: data.health_status as Customer["healthStatus"],
+    tier: data.tier as Customer["tier"],
     renewalDate: data.renewal_date || "—",
     lastTouch: "لحظاتی پیش",
     location: data.location,
@@ -367,19 +388,48 @@ export async function createCustomer(
 
 export async function deleteCustomer(customerId: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("customers").delete().eq("id", customerId);
-  if (error) console.error("Error deleting customer:", error);
+  const { error } = await supabase.from("customers").delete().eq("id", customerId).select("id").single();
+  assertSuccess(error);
 }
 
 // -------------------------------------------------------------
 // INVOICES & INVOICE ITEMS
 // -------------------------------------------------------------
 
+type InvoiceRow = Tables["invoices"]["Row"] & {
+  customers?: { name: string } | null;
+  items?: Tables["invoice_items"]["Row"][];
+};
+
+function invoiceRowFromJson(data: Json | null): InvoiceRow {
+  if (!data || typeof data !== "object" || Array.isArray(data) || typeof data.id !== "string" ||
+      !Array.isArray(data.items) || !Number.isFinite(Number(data.number))) {
+    throw new Error("No complete invoice returned after saving.");
+  }
+  return data as unknown as InvoiceRow;
+}
+
+function invoiceFromRow(row: InvoiceRow): Invoice {
+  return {
+    id: row.id, workspaceId: row.workspace_id, customerId: row.customer_id,
+    customerName: row.customer_name || row.customers?.name || "مشتری نامشخص", number: Number(row.number),
+    type: row.type as Invoice["type"], status: row.status as Invoice["status"], issueDate: row.issue_date, dueDate: row.due_date,
+    subtotal: Number(row.subtotal) || 0, discount: Number(row.discount) || 0,
+    tax: Number(row.tax) || 0, total: Number(row.total) || 0, notes: row.notes || "",
+    items: [...(row.items ?? [])].sort((a, b) => Number(a.item_order) - Number(b.item_order)).map((item) => ({
+      id: item.id, workspaceId: item.workspace_id, invoiceId: item.invoice_id,
+      itemOrder: Number(item.item_order), description: item.description,
+      quantity: Number(item.quantity ?? 1), unitPrice: Number(item.unit_price) || 0,
+      discount: Number(item.discount) || 0, taxRate: Number(item.tax_rate ?? 10), total: Number(item.total) || 0,
+    })),
+  };
+}
+
 export async function fetchInvoices(workspaceId?: string): Promise<Invoice[]> {
   const supabase = createClient();
   let query = supabase.from("invoices").select(`
     *,
-    customers:customer_id ( name ),
+    customers ( name ),
     items:invoice_items ( * )
   `);
   if (workspaceId) {
@@ -387,120 +437,46 @@ export async function fetchInvoices(workspaceId?: string): Promise<Invoice[]> {
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data) {
-    return INITIAL_INVOICES;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
-  return data.map((inv) => {
-    return {
-      id: inv.id,
-      workspaceId: inv.workspace_id,
-      customerId: inv.customer_id,
-      customerName: inv.customers?.name || "مشتری نامشخص",
-      number: inv.number,
-      type: inv.type,
-      status: inv.status,
-      issueDate: inv.issue_date,
-      dueDate: inv.due_date,
-      subtotal: Number(inv.subtotal) || 0,
-      discount: Number(inv.discount) || 0,
-      tax: Number(inv.tax) || 0,
-      total: Number(inv.total) || 0,
-      notes: inv.notes || "",
-      items: (inv.items || []).map((it: Record<string, unknown>) => ({
-        id: String(it.id),
-        invoiceId: String(it.invoice_id),
-        itemOrder: Number(it.item_order) || 0,
-        description: String(it.description || ""),
-        quantity: Number(it.quantity) || 1,
-        unitPrice: Number(it.unit_price) || 0,
-        discount: Number(it.discount) || 0,
-        taxRate: Number(it.tax_rate) || 10,
-        total: Number(it.total) || 0,
-      })),
-    };
-  });
+  return data.map(invoiceFromRow);
 }
 
 export async function createInvoice(
   workspaceId: string | undefined,
-  userId: string,
   invoice: Partial<Invoice>,
   rawItems: RawInvoiceItem[]
-): Promise<Invoice | null> {
+): Promise<Invoice> {
   const supabase = createClient();
-  const totals = calculateInvoiceTotals(rawItems);
-
-  // Get max number
-  const { data: numData } = await supabase
-    .from("invoices")
-    .select("number")
-    .order("number", { ascending: false })
-    .limit(1);
-
-  const nextNumber = (numData?.[0]?.number || 1000) + 1;
-
-  const invoicePayload: Record<string, unknown> = {
-    customer_id: invoice.customerId || null,
-    number: nextNumber,
-    type: invoice.type || "invoice",
-    status: invoice.status || "draft",
-    issue_date: invoice.issueDate || new Date().toISOString().split("T")[0],
-    due_date: invoice.dueDate || null,
-    subtotal: totals.subtotal,
-    discount: totals.discount,
-    tax: totals.tax,
-    total: totals.total,
-    notes: invoice.notes || "",
-  };
-  if (workspaceId) {
-    invoicePayload.workspace_id = workspaceId;
-    invoicePayload.created_by = userId;
-  }
-
-  const { data: invRow, error: invError } = await supabase
-    .from("invoices")
-    .insert(invoicePayload)
-    .select()
-    .single();
-
-  if (invError || !invRow) {
-    console.error("Error creating invoice:", invError);
-    return null;
-  }
-
-  // Insert items
-  if (rawItems.length > 0) {
-    const itemsPayload = rawItems.map((it, idx) => ({
-      workspace_id: workspaceId || invRow.workspace_id,
-      invoice_id: invRow.id,
-      item_order: idx + 1,
-      description: it.description,
-      quantity: it.quantity,
-      unit_price: it.unit_price,
-      discount: it.discount || 0,
-      tax_rate: it.tax_rate ?? 10,
-      total: it.total || 0,
-    }));
-    await supabase.from("invoice_items").insert(itemsPayload);
-  }
-
-  return {
-    id: invRow.id,
-    workspaceId: invRow.workspace_id,
-    customerId: invRow.customer_id,
-    customerName: invoice.customerName,
-    number: invRow.number,
-    type: invRow.type,
-    status: invRow.status,
-    issueDate: invRow.issue_date,
-    dueDate: invRow.due_date,
-    subtotal: Number(invRow.subtotal),
-    discount: Number(invRow.discount),
-    tax: Number(invRow.tax),
-    total: Number(invRow.total),
-    notes: invRow.notes,
-  };
+  if (!rawItems.length) throw new Error("An invoice requires at least one item.");
+  const items = rawItems.map((item) => {
+    const taxRate = item.tax_rate ?? 10;
+    const discount = item.discount ?? 0;
+    if (!item.description.trim() || !Number.isFinite(item.quantity) || item.quantity <= 0 ||
+        !Number.isFinite(item.unit_price) || item.unit_price < 0 ||
+        !Number.isFinite(discount) || discount < 0 ||
+        !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
+      throw new Error("Invoice item values are invalid.");
+    }
+    return {
+      ...item,
+      description: item.description.trim(),
+      discount: Math.min(discount, item.quantity * item.unit_price),
+      tax_rate: taxRate,
+    };
+  });
+  const { data, error } = await supabase.rpc("create_invoice_with_items", {
+    workspace: requireWorkspace(workspaceId),
+    header: {
+      customer_id: invoice.customerId || null, type: invoice.type || "invoice",
+      status: invoice.status || "draft", issue_date: invoice.issueDate || toLocalISODate(new Date()),
+      due_date: invoice.dueDate || null, notes: invoice.notes || "",
+    },
+    lines: items,
+  });
+  assertSuccess(error);
+  return invoiceFromRow(invoiceRowFromJson(data));
 }
 
 // -------------------------------------------------------------
@@ -511,16 +487,15 @@ export async function fetchCheques(workspaceId?: string): Promise<Cheque[]> {
   const supabase = createClient();
   let query = supabase.from("cheques").select(`
     *,
-    customers:customer_id ( name )
+    customers ( name )
   `);
   if (workspaceId) {
     query = query.eq("workspace_id", workspaceId);
   }
   const { data, error } = await query.order("due_date", { ascending: true });
 
-  if (error || !data) {
-    return INITIAL_CHEQUES;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((chq) => ({
     id: chq.id,
@@ -530,7 +505,7 @@ export async function fetchCheques(workspaceId?: string): Promise<Cheque[]> {
     customerName: chq.customers?.name || "مشتری نامشخص",
     sayadNumber: chq.sayad_number,
     bankName: chq.bank_name,
-    branchName: chq.branch_name,
+    branchName: chq.branch_name || "",
     accountOwner: chq.account_owner,
     amount: Number(chq.amount) || 0,
     dueDate: chq.due_date,
@@ -542,27 +517,23 @@ export async function fetchCheques(workspaceId?: string): Promise<Cheque[]> {
 export async function createCheque(
   workspaceId: string | undefined,
   cheque: Partial<Cheque>
-): Promise<Cheque | null> {
+): Promise<Cheque> {
   const supabase = createClient();
-  const payload: Record<string, unknown> = {
+  const payload: Insert<"cheques"> = {
+    workspace_id: requireWorkspace(workspaceId),
     customer_id: cheque.customerId || null,
-    sayad_number: cheque.sayadNumber,
-    bank_name: cheque.bankName,
+    sayad_number: cheque.sayadNumber || "",
+    bank_name: cheque.bankName || "",
     branch_name: cheque.branchName || "",
-    account_owner: cheque.accountOwner,
+    account_owner: cheque.accountOwner || "",
     amount: cheque.amount || 0,
-    due_date: cheque.dueDate,
+    due_date: cheque.dueDate || toLocalISODate(new Date()),
     status: cheque.status || "in_hand",
   };
-  if (workspaceId) {
-    payload.workspace_id = workspaceId;
-  }
 
   const { data, error } = await supabase.from("cheques").insert(payload).select().single();
-  if (error || !data) {
-    console.error("Error creating cheque:", error);
-    return null;
-  }
+  assertSuccess(error);
+  if (!data) throw new Error("No record returned after saving.");
 
   return {
     id: data.id,
@@ -570,11 +541,11 @@ export async function createCheque(
     customerId: data.customer_id,
     sayadNumber: data.sayad_number,
     bankName: data.bank_name,
-    branchName: data.branch_name,
+    branchName: data.branch_name || "",
     accountOwner: data.account_owner,
     amount: Number(data.amount),
     dueDate: data.due_date,
-    status: data.status,
+    status: data.status as ChequeStatus,
   };
 }
 
@@ -583,8 +554,8 @@ export async function updateChequeStatus(chequeId: string, status: ChequeStatus)
   const { error } = await supabase
     .from("cheques")
     .update({ status, status_updated_at: new Date().toISOString() })
-    .eq("id", chequeId);
-  if (error) console.error("Error updating cheque status:", error);
+    .eq("id", chequeId).select("id").single();
+  assertSuccess(error);
 }
 
 // -------------------------------------------------------------
@@ -601,18 +572,17 @@ export async function fetchActivities(workspaceId?: string, limit = 20): Promise
     .order("happened_at", { ascending: false })
     .limit(limit);
 
-  if (error || !data) {
-    return INITIAL_ACTIVITIES;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((a) => ({
     id: a.id,
     workspaceId: a.workspace_id,
-    subjectType: a.subject_type,
+    subjectType: a.subject_type as CRMActivity["subjectType"],
     subjectId: a.subject_id,
-    kind: a.kind,
+    kind: a.kind as CRMActivity["kind"],
     body: a.body,
-    callResult: a.call_result,
+    callResult: a.call_result as CallResult | null,
     happenedAt: a.happened_at,
     createdBy: a.created_by || "شما",
   }));
@@ -627,28 +597,20 @@ export async function logQuickCall(
   note = ""
 ) {
   const supabase = createClient();
-  const callLabels: Record<CallResult, string> = {
-    connected: "صحبت شد / پاسخ داد",
-    busy: "اشغال بود",
-    no_answer: "پاسخ نداد",
-    wrong_number: "شماره اشتباه",
-    follow_up_scheduled: "تنظیم پیگیری مجدد",
-  };
 
-  const payload: Record<string, unknown> = {
+  const payload: Insert<"activities"> = {
+    workspace_id: requireWorkspace(workspaceId),
+    created_by: userId,
     subject_type: subjectType,
     subject_id: subjectId,
     kind: "call",
     call_result: callResult,
-    body: `نتیجه تماس: ${callLabels[callResult]}${note ? ` - ${note}` : ""}`,
+    body: `نتیجه تماس: ${CALL_RESULT_MAP[callResult].label}${note ? ` - ${note}` : ""}`,
     happened_at: new Date().toISOString(),
   };
-  if (workspaceId) {
-    payload.workspace_id = workspaceId;
-    payload.created_by = userId;
-  }
 
-  await supabase.from("activities").insert(payload);
+  const { error } = await supabase.from("activities").insert(payload);
+  assertSuccess(error);
 }
 
 // -------------------------------------------------------------
@@ -663,73 +625,78 @@ export async function fetchTasks(workspaceId?: string): Promise<CRMTask[]> {
   }
   const { data, error } = await query.order("due_date", { ascending: true });
 
-  if (error || !data) {
-    return INITIAL_TASKS;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((t) => ({
     id: t.id,
     title: t.title,
-    type: t.type,
+    type: t.type as CRMTask["type"],
     dueDate: t.due_date,
-    dueCategory: t.due_category,
-    priority: t.priority,
+    dueCategory: taskDueCategory(t.due_date),
+    priority: t.priority as CRMTask["priority"],
     completed: t.completed,
     relatedTo: t.related_to || "",
-    relatedType: t.related_type,
+    relatedType: t.related_type as CRMTask["relatedType"],
   }));
 }
 
 export async function createTask(
-  arg1?: string,
-  arg2?: string | Partial<CRMTask>,
-  arg3?: Partial<CRMTask>
-): Promise<CRMTask | null> {
+  workspaceId: string | undefined,
+  userId: string,
+  task: Partial<CRMTask>
+): Promise<CRMTask> {
   const supabase = createClient();
-  const workspaceId = typeof arg2 === "string" ? arg1 : undefined;
-  const userId = (typeof arg2 === "string" ? arg2 : arg1) || "";
-  const task = (typeof arg2 === "string" ? arg3 : arg2) || {};
 
-  const payload: Record<string, unknown> = {
+  const payload: Insert<"tasks"> = {
+    workspace_id: requireWorkspace(workspaceId),
+    created_by: userId,
     user_id: userId,
     title: task.title || "وظیفه جدید",
     type: task.type || "call",
-    due_date: task.dueDate || new Date().toISOString().split("T")[0],
+    due_date: task.dueDate || toLocalISODate(new Date()),
     due_category: task.dueCategory || "today",
     priority: task.priority || "medium",
     completed: false,
     related_to: task.relatedTo || "",
     related_type: task.relatedType || "deal",
   };
-  if (workspaceId) {
-    payload.workspace_id = workspaceId;
-    payload.created_by = userId;
-  }
 
   const { data, error } = await supabase.from("tasks").insert(payload).select().single();
-  if (error || !data) return null;
+  assertSuccess(error);
+  if (!data) throw new Error("No record returned after saving.");
 
   return {
     id: data.id,
     title: data.title,
-    type: data.type,
+    type: data.type as CRMTask["type"],
     dueDate: data.due_date,
-    dueCategory: data.due_category,
-    priority: data.priority,
+    dueCategory: taskDueCategory(data.due_date),
+    priority: data.priority as Deal["priority"],
     completed: data.completed,
     relatedTo: data.related_to,
-    relatedType: data.related_type,
+    relatedType: data.related_type as CRMTask["relatedType"],
   };
 }
 
 export async function toggleTask(taskId: string, completed: boolean) {
   const supabase = createClient();
-  await supabase.from("tasks").update({ completed }).eq("id", taskId);
+  const { error } = await supabase.from("tasks").update({ completed }).eq("id", taskId).select("id").single();
+  assertSuccess(error);
+}
+
+export async function updateTaskDueDate(taskId: string, dueDate: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("tasks")
+    .update({ due_date: dueDate, due_category: taskDueCategory(dueDate) })
+    .eq("id", taskId).select("id").single();
+  assertSuccess(error);
 }
 
 export async function deleteTask(taskId: string) {
   const supabase = createClient();
-  await supabase.from("tasks").delete().eq("id", taskId);
+  const { error } = await supabase.from("tasks").delete().eq("id", taskId).select("id").single();
+  assertSuccess(error);
 }
 
 export async function fetchNotifications(workspaceId?: string): Promise<CRMNotification[]> {
@@ -740,9 +707,8 @@ export async function fetchNotifications(workspaceId?: string): Promise<CRMNotif
   }
   const { data, error } = await query.order("created_at", { ascending: false });
 
-  if (error || !data) {
-    return INITIAL_NOTIFICATIONS;
-  }
+  assertSuccess(error);
+  if (!data) return [];
 
   return data.map((n) => ({
     id: n.id,
@@ -751,39 +717,14 @@ export async function fetchNotifications(workspaceId?: string): Promise<CRMNotif
     time: formatRelativeFa(n.created_at),
     createdAt: n.created_at,
     read: n.read,
-    type: n.type,
+    type: n.type as CRMNotification["type"],
   }));
-}
-
-export async function createNotification(
-  userId: string,
-  notif: Partial<CRMNotification>
-): Promise<CRMNotification | null> {
-  const supabase = createClient();
-  const payload: Record<string, unknown> = {
-    user_id: userId,
-    title: notif.title || "اعلان جدید",
-    description: notif.description || "",
-    time: "همین الان",
-    read: false,
-    type: notif.type || "system",
-  };
-  const { data, error } = await supabase.from("notifications").insert(payload).select().single();
-  if (error || !data) return null;
-  return {
-    id: data.id,
-    title: data.title,
-    description: data.description,
-    time: formatRelativeFa(data.created_at),
-    createdAt: data.created_at,
-    read: data.read,
-    type: data.type,
-  };
 }
 
 export async function markNotificationRead(id: string) {
   const supabase = createClient();
-  await supabase.from("notifications").update({ read: true }).eq("id", id);
+  const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id).select("id").single();
+  assertSuccess(error);
 }
 
 export async function markAllNotificationsRead(workspaceId?: string) {
@@ -792,26 +733,6 @@ export async function markAllNotificationsRead(workspaceId?: string) {
   if (workspaceId) {
     query = query.eq("workspace_id", workspaceId);
   }
-  await query.neq("id", "00000000-0000-0000-0000-000000000000");
-}
-
-
-// -------------------------------------------------------------
-// LEADS (COMPATIBILITY)
-// -------------------------------------------------------------
-
-export async function fetchLeads(_userId?: string): Promise<Lead[]> {
-  return INITIAL_LEADS;
-}
-
-export async function createLead(_userId: string, _lead: Partial<Lead>): Promise<Lead | null> {
-  return null;
-}
-
-export async function updateLeadStatus(_leadId: string, _status: LeadStatus) {}
-
-export async function deleteLead(_leadId: string) {}
-
-export async function convertLeadToDeal(_userId: string, _lead: Lead): Promise<Deal | null> {
-  return null;
+  const { error } = await query.eq("read", false);
+  assertSuccess(error);
 }

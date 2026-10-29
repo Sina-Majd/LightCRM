@@ -566,7 +566,6 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       if (user?.id) {
         const created = await createInvoice(
           userProfile?.workspaceId,
-          user.id,
           invoice,
           rawItems
         );

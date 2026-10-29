@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction } from "@/lib/use-async-action";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -71,6 +73,12 @@ interface Props {
   children: React.ReactNode;
 }
 
+const USER_STATUS = {
+  "Available": "آماده پاسخگویی",
+  "Away": "مشغول",
+  "Do Not Disturb": "در جلسه کاری",
+} as const;
+
 const PLAN_FA_MAP: Record<string, string> = {
   starter: "پلن پایه",
   business: "پلن سازمانی",
@@ -129,7 +137,9 @@ export function DashboardShell(props: Props) {
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
-  const [status, setStatus] = useState("آماده پاسخگویی");
+  const { isPending, run } = useAsyncAction();
+  const [savedStatus, setSavedStatus] = useState<UserProfile["status"] | null>(null);
+  const status = USER_STATUS[savedStatus ?? userProfile?.status ?? "Available"];
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -173,16 +183,21 @@ export function DashboardShell(props: Props) {
   ];
 
   const signOut = async () => {
-    try {
-      await createClient().auth.signOut();
-    } catch {}
-    router.push("/login");
+    await run(async () => {
+      const { error } = await createClient().auth.signOut();
+      if (error) throw error;
+      router.replace("/login");
+      router.refresh();
+    });
   };
 
-  const setUserStatus = (s: string) => {
-    setStatus(s);
-    toast.success(`وضعیت شما به «${s}» تغییر یافت.`);
-    if (userProfile?.id) updateUserStatus(userProfile.id, s as never);
+  const setUserStatus = async (value: UserProfile["status"]) => {
+    if (!userProfile?.id) return;
+    await run(async () => {
+      await updateUserStatus(userProfile.id, value);
+      setSavedStatus(value);
+      toast.success(`وضعیت شما به «${USER_STATUS[value]}» تغییر یافت.`);
+    });
   };
 
   return (
@@ -306,7 +321,8 @@ export function DashboardShell(props: Props) {
                 تغییر وضعیت کارشناس
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => setUserStatus("آماده پاسخگویی")}
+                disabled={isPending}
+                onClick={() => setUserStatus("Available")}
                 className={`cursor-pointer text-right text-xs font-bold gap-2.5 rounded-xl px-2.5 py-2 ${
                   status === "آماده پاسخگویی" ? "bg-emerald-50 text-emerald-900" : ""
                 }`}
@@ -316,7 +332,8 @@ export function DashboardShell(props: Props) {
                 {status === "آماده پاسخگویی" && <Check className="h-3.5 w-3.5 text-emerald-600" />}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setUserStatus("مشغول")}
+                disabled={isPending}
+                onClick={() => setUserStatus("Away")}
                 className={`cursor-pointer text-right text-xs font-bold gap-2.5 rounded-xl px-2.5 py-2 ${
                   status === "مشغول" ? "bg-amber-50 text-amber-900" : ""
                 }`}
@@ -326,7 +343,8 @@ export function DashboardShell(props: Props) {
                 {status === "مشغول" && <Check className="h-3.5 w-3.5 text-amber-600" />}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setUserStatus("در جلسه کاری")}
+                disabled={isPending}
+                onClick={() => setUserStatus("Do Not Disturb")}
                 className={`cursor-pointer text-right text-xs font-bold gap-2.5 rounded-xl px-2.5 py-2 ${
                   status === "در جلسه کاری" ? "bg-rose-50 text-rose-900" : ""
                 }`}

@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     ".vitest/**",
+    "supabase/.temp/**",
+    "supabase/.branches/**",
     "next-env.d.ts",
   ]),
   {
