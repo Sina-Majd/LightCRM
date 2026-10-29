@@ -41,8 +41,8 @@ function Cell({
   if (!value) return null;
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <span className="shrink-0 text-slate-500">{label}:</span>
-      <b className="text-slate-900">{value}</b>
+      <dt className="shrink-0 text-slate-600">{label}:</dt>
+      <dd className="font-bold text-slate-900">{value}</dd>
     </div>
   );
 }
@@ -52,7 +52,7 @@ export function InvoicePrintModal({
   onClose,
   invoice,
   customer,
-  companyName = "شرکت داده‌پردازی و نرم‌افزار لایت",
+  companyName = "فروشنده",
   companyPhone,
   companyAddress,
 }: Props) {
@@ -86,7 +86,7 @@ export function InvoicePrintModal({
               <DialogTitle className="truncate text-[14px] font-black text-slate-900">
                 پیش‌نمایش چاپ — {INVOICE_TYPE_MAP[invoice.type]}
               </DialogTitle>
-              <DialogDescription className="truncate text-[11px] text-slate-500">
+              <DialogDescription className="truncate text-[11px] text-slate-600">
                 سند {faDigits(invoice.number)} · فقط همین برگه چاپ می‌شود
               </DialogDescription>
             </div>
@@ -115,7 +115,7 @@ export function InvoicePrintModal({
         </div>
 
         {/* Scrollable preview. The sheet below is what actually prints. */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div tabIndex={0} role="region" aria-label="پیش‌نمایش قابل پیمایش فاکتور" className="flex-1 overflow-y-auto p-4 focus-visible:outline-2 focus-visible:outline-brand-600 sm:p-6">
           <div
             id="invoice-printable"
             className="mx-auto flex max-w-4xl flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6 text-right text-slate-800 shadow-sm sm:p-8"
@@ -126,7 +126,7 @@ export function InvoicePrintModal({
                 <h2 className="text-[15px] font-black leading-6 text-slate-950">
                   {companyName}
                 </h2>
-                <p className="mt-0.5 text-[11.5px] text-slate-500">
+                <p className="mt-0.5 text-[11.5px] text-slate-600">
                   سیستم یکپارچه فروش و خدمات
                 </p>
               </div>
@@ -137,20 +137,20 @@ export function InvoicePrintModal({
                 </h1>
                 <dl className="mt-2 space-y-1 text-[11.5px]">
                   <div className="flex gap-2 sm:justify-end">
-                    <dt className="text-slate-500">شماره سند:</dt>
+                    <dt className="text-slate-600">شماره سند:</dt>
                     <dd className="font-black text-slate-900">
                       {faDigits(invoice.number)}
                     </dd>
                   </div>
                   <div className="flex gap-2 sm:justify-end">
-                    <dt className="text-slate-500">تاریخ صدور:</dt>
+                    <dt className="text-slate-600">تاریخ صدور:</dt>
                     <dd className="font-bold text-slate-900">
                       {formatJalaliDate(invoice.issueDate)}
                     </dd>
                   </div>
                   {invoice.dueDate && (
                     <div className="flex gap-2 sm:justify-end">
-                      <dt className="text-slate-500">
+                      <dt className="text-slate-600">
                         {isProforma ? "تاریخ اعتبار:" : "تاریخ سررسید:"}
                       </dt>
                       <dd className="font-bold text-slate-900">
@@ -166,7 +166,7 @@ export function InvoicePrintModal({
             <section className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h3 className="mb-2.5 flex items-center gap-1.5 text-[12px] font-black text-slate-900">
-                  <Building2 className="size-3.5 text-slate-500" />
+                  <Building2 className="size-3.5 text-slate-600" />
                   مشخصات فروشنده
                 </h3>
                 <dl className="space-y-1.5 text-[11.5px]">
@@ -178,7 +178,7 @@ export function InvoicePrintModal({
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <h3 className="mb-2.5 flex items-center gap-1.5 text-[12px] font-black text-slate-900">
-                  <Building2 className="size-3.5 text-slate-500" />
+                  <Building2 className="size-3.5 text-slate-600" />
                   مشخصات خریدار
                 </h3>
                 <dl className="space-y-1.5 text-[11.5px]">
@@ -197,8 +197,8 @@ export function InvoicePrintModal({
             </section>
 
             {/* Line items — description gets the room, numbers stay narrow. */}
-            <section className="overflow-hidden rounded-xl border border-slate-200">
-              <table className="w-full table-fixed text-right text-[11.5px]">
+            <section tabIndex={0} role="region" aria-label="اقلام فاکتور، قابل پیمایش افقی" className="overflow-x-auto rounded-xl border border-slate-200 focus-visible:outline-2 focus-visible:outline-brand-600">
+              <table className="w-full min-w-[720px] table-fixed text-right text-[11.5px] print:min-w-0">
                 <colgroup>
                   <col className="w-12" />
                   <col />
@@ -220,14 +220,14 @@ export function InvoicePrintModal({
                 <tbody className="divide-y divide-slate-100">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-6 text-center text-slate-500">
+                      <td colSpan={6} className="p-6 text-center text-slate-600">
                         اقلامی ثبت نشده است
                       </td>
                     </tr>
                   ) : (
                     items.map((it, idx) => (
                       <tr key={it.id || idx}>
-                        <td className="p-2.5 text-center font-bold text-slate-500">
+                        <td className="p-2.5 text-center font-bold text-slate-600">
                           {faDigits(idx + 1)}
                         </td>
                         <td className="p-2.5 font-bold leading-6 text-slate-800">
@@ -242,7 +242,7 @@ export function InvoicePrintModal({
                         <td className="p-2.5 text-center tabular-nums">
                           {formatTomanCompact(it.unitPrice)}
                         </td>
-                        <td className="p-2.5 text-center tabular-nums text-rose-600">
+                        <td className="p-2.5 text-center tabular-nums text-rose-700">
                           {it.discount > 0 ? formatTomanCompact(it.discount) : "۰"}
                         </td>
                         <td className="p-2.5 text-center font-black tabular-nums text-slate-900">
@@ -253,7 +253,7 @@ export function InvoicePrintModal({
                   )}
                 </tbody>
               </table>
-              <p className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-[10.5px] text-slate-500">
+              <p className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-[10.5px] text-slate-600">
                 همه مبالغ به تومان
               </p>
             </section>
@@ -275,21 +275,21 @@ export function InvoicePrintModal({
               <div className="rounded-xl border border-slate-300 bg-white p-4 sm:col-span-2">
                 <dl className="space-y-2 text-[11.5px]">
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">جمع ناخالص</dt>
+                    <dt className="text-slate-600">جمع ناخالص</dt>
                     <dd className="font-bold text-slate-900">
                       {formatToman(invoice.subtotal)}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">تخفیف</dt>
-                    <dd className="font-bold text-rose-600">
+                    <dt className="text-slate-600">تخفیف</dt>
+                    <dd className="font-bold text-rose-700">
                       {invoice.discount > 0
                         ? formatToman(invoice.discount)
                         : "۰ تومان"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-500">مالیات ارزش افزوده</dt>
+                    <dt className="text-slate-600">مالیات ارزش افزوده</dt>
                     <dd className="font-bold text-slate-900">
                       {formatToman(invoice.tax)}
                     </dd>

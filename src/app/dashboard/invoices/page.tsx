@@ -6,11 +6,11 @@ import { useCrm } from "@/components/dashboard/crm-context";
 
 export default function InvoicesPage() {
   const {
-    load, invoices, cheques, customers, searchQuery,
+    load, invoices, cheques, customers, searchQuery, userProfile,
     createInvoiceRecord, createChequeRecord, updateCheque,
   } = useCrm();
 
-  if (!load.invoices || !load.cheques) return <InvoicesSkeleton />;
+  if (!load.invoices || !load.cheques || !load.customers) return <InvoicesSkeleton />;
 
   return (
     <InvoicesView
@@ -18,6 +18,7 @@ export default function InvoicesPage() {
       cheques={cheques}
       customers={customers}
       searchQuery={searchQuery}
+      companyName={userProfile?.companyName}
       onCreateInvoice={createInvoiceRecord}
       onCreateCheque={createChequeRecord}
       onUpdateChequeStatus={updateCheque}

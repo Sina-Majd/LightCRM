@@ -1,5 +1,7 @@
 "use client";
 
+import { isOpenInvoice, isInvoiceOverdue } from "@/lib/crm/invoices";
+
 import React, { useState } from "react";
 import {
   AlertCircle,
@@ -352,14 +354,13 @@ export function TodayView({
 
   /* 4. Receivables — overdue total + aging */
   const overdueInvoices = invoices
-    .filter((inv) => inv.status === "overdue" || inv.status === "partially_paid")
+    .filter((inv) => isInvoiceOverdue(inv))
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
   const totalOverdue = overdueInvoices.reduce((s, inv) => s + inv.total, 0);
 
   const agingSegments = bucketize(
-    // Cancelled and draft invoices are not receivables — exclude them.
     invoices
-      .filter((inv) => inv.status !== "cancelled" && inv.status !== "draft")
+      .filter(isOpenInvoice)
       .map((inv) => ({ date: inv.dueDate, amount: inv.total })),
     RECEIVABLE_AGING
   );
@@ -568,13 +569,13 @@ export function TodayView({
           <PanelHeader
             icon={Receipt}
             tone={overdueInvoices.length > 0 ? "rose" : "emerald"}
-            title="مطالبات و سن بدهی"
-            subtitle="قدیمی‌ترین فاکتورها در صدر"
+            title="فاکتورهای معوق و سن اسناد"
+            subtitle="مبلغ کامل اسناد؛ پرداخت‌های جزئی کسر نشده‌اند"
             action={<PanelLink onClick={() => onNavigate("invoices")}>دفتر فاکتور</PanelLink>}
           />
 
           <MetricHead
-            label="مطالبات معوق"
+            label="ارزش کل فاکتورهای معوق"
             amount={formatTomanCompact(totalOverdue)}
             hint={
               overdueInvoices.length > 0

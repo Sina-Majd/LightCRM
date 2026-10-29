@@ -1,5 +1,7 @@
 "use client";
 
+import { SummaryMetricCard } from "./summary-metric-card";
+import { isIssuedInvoice } from "@/lib/crm/invoices";
 
 import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
 
@@ -54,6 +56,7 @@ interface Props {
   cheques: Cheque[];
   customers: Customer[];
   searchQuery: string;
+  companyName?: string;
   onCreateInvoice: AsyncAction<[Partial<Invoice>, RawInvoiceItem[]]>;
   onCreateCheque: AsyncAction<[Partial<Cheque>]>;
   onUpdateChequeStatus: AsyncAction<[string, ChequeStatus]>;
@@ -64,6 +67,7 @@ export function InvoicesView({
   cheques,
   customers,
   searchQuery,
+  companyName,
   onCreateInvoice,
   onCreateCheque,
   onUpdateChequeStatus,
@@ -78,11 +82,12 @@ export function InvoicesView({
     useState<Invoice | null>(null);
 
   // Invoices metrics
-  const totalInvoicesSum = invoices.reduce((s, i) => s + (i.total || 0), 0);
-  const paidInvoices = invoices.filter((i) => i.status === "paid");
+  const issuedInvoices = invoices.filter(isIssuedInvoice);
+  const totalInvoicesSum = issuedInvoices.reduce((s, i) => s + i.total, 0);
+  const paidInvoices = issuedInvoices.filter((i) => i.status === "paid");
 
   // Cheques metrics
-  const inHandCheques = cheques.filter((c) => c.status === "in_hand");
+  const pendingCheques = cheques.filter((c) => c.status === "in_hand" || c.status === "deposited");
   const clearedCheques = cheques.filter((c) => c.status === "cleared");
 
   // Filtered lists
@@ -108,101 +113,15 @@ export function InvoicesView({
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* 4 Summary Bento Metric Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="rounded-3xl border border-brand-100/80 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-brand-200">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
-              <Receipt className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[12px] font-bold text-slate-500">
-                مجموع اسناد صادرشده
-              </div>
-              <div className="text-xl font-black text-slate-900 tracking-tight">
-                {formatToman(totalInvoicesSum)}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-            <span>تعداد اسناد مالی</span>
-            <b className="font-bold text-brand-700">
-              {faDigits(invoices.length)} فقره سند
-            </b>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-brand-100/80 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-brand-200">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-              <CheckCircle2 className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[12px] font-bold text-slate-500">
-                مطالبات تسویه‌شده
-              </div>
-              <div className="text-xl font-black text-emerald-700 tracking-tight">
-                {formatToman(
-                  paidInvoices.reduce((s, i) => s + (i.total || 0), 0)
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-            <span>فاکتورهای پرداخت‌شده</span>
-            <b className="font-bold text-emerald-700">
-              {faDigits(paidInvoices.length)} فاکتور
-            </b>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-brand-100/80 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-brand-200">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-              <Banknote className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[12px] font-bold text-slate-500">
-                چک‌های نزد صندوق و بانک
-              </div>
-              <div className="text-xl font-black text-amber-700 tracking-tight">
-                {formatToman(
-                  inHandCheques.reduce((s, c) => s + (c.amount || 0), 0)
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-            <span>چک‌های در دست وصول</span>
-            <b className="font-bold text-amber-700">
-              {faDigits(inHandCheques.length)} فقره چک
-            </b>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-brand-100/80 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-brand-200">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-              <FileCheck className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[12px] font-bold text-slate-500">
-                چک‌های وصول‌شده
-              </div>
-              <div className="text-xl font-black text-emerald-700 tracking-tight">
-                {formatToman(
-                  clearedCheques.reduce((s, c) => s + (c.amount || 0), 0)
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-            <span>وصول قطعی در حساب</span>
-            <b className="font-bold text-emerald-700">
-              {faDigits(clearedCheques.length)} فقره چک
-            </b>
-          </div>
-        </div>
+        <SummaryMetricCard title="فاکتورهای رسمی صادرشده" value={formatToman(totalInvoicesSum)} detail="بدون پیش‌نویس و ابطال"
+          count={`${faDigits(issuedInvoices.length)} فقره سند`} icon={Receipt} tone="brand" />
+        <SummaryMetricCard title="فاکتورهای تسویه‌شده" value={formatToman(paidInvoices.reduce((sum, invoice) => sum + invoice.total, 0))}
+          detail="پرداخت کامل" count={`${faDigits(paidInvoices.length)} فاکتور`} icon={CheckCircle2} tone="emerald" />
+        <SummaryMetricCard title="چک‌های نزد صندوق و بانک" value={formatToman(pendingCheques.reduce((sum, cheque) => sum + cheque.amount, 0))}
+          detail="در دست وصول" count={`${faDigits(pendingCheques.length)} فقره چک`} icon={Banknote} tone="amber" />
+        <SummaryMetricCard title="چک‌های وصول‌شده" value={formatToman(clearedCheques.reduce((sum, cheque) => sum + cheque.amount, 0))}
+          detail="وصول قطعی در حساب" count={`${faDigits(clearedCheques.length)} فقره چک`} icon={FileCheck} tone="emerald" />
       </div>
 
       {/* Sub Tabs Bar & Primary Actions */}
@@ -478,6 +397,7 @@ export function InvoicesView({
         isOpen={!!selectedInvoiceForPrint}
         onClose={() => setSelectedInvoiceForPrint(null)}
         invoice={selectedInvoiceForPrint}
+        companyName={companyName || undefined}
         customer={customers.find(
           (c) => c.id === selectedInvoiceForPrint?.customerId
         )}
