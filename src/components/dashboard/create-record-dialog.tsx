@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -24,17 +26,20 @@ import {
   Wallet,
   User,
   Mail,
-  Phone,
   KanbanSquare,
-  Users,
   UserCheck,
   PlusCircle,
 } from "lucide-react";
-import { Lead, LeadStatus } from "@/data/dashboard-mock-data";
-import type { Deal, DealPriority, Customer, CustomerTier, CustomerHealth, PipelineStage } from "@/lib/crm/types";
-import { formatToman } from "@/lib/fa";
-
-export type RecordType = "deal" | "lead" | "customer";
+import type {
+  Deal,
+  DealPriority,
+  Customer,
+  CustomerTier,
+  PipelineStage,
+  RecordType,
+} from "@/lib/crm/types";
+import { probabilityForStage } from "@/lib/crm/pipeline";
+import { formatToman, parseTomanInput } from "@/lib/fa";
 
 interface Props {
   isOpen: boolean;
@@ -42,9 +47,8 @@ interface Props {
   defaultType?: RecordType;
   defaultStageId?: string;
   stages: PipelineStage[];
-  onCreateDeal: (deal: Deal) => void;
-  onCreateLead: (lead: Lead) => void;
-  onCreateCustomer: (customer: Customer) => void;
+  onCreateDeal: AsyncAction<[Deal]>;
+  onCreateCustomer: AsyncAction<[Customer]>;
 }
 
 const STAGE_FA: Record<string, string> = {
@@ -62,68 +66,62 @@ export function CreateRecordDialog({
   defaultStageId,
   stages,
   onCreateDeal,
-  onCreateLead,
   onCreateCustomer,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [tab, setTab] = useState<RecordType>(defaultType);
   const [prevOpen, setPrevOpen] = useState(isOpen);
   const [prevType, setPrevType] = useState(defaultType);
-  if (isOpen !== prevOpen || defaultType !== prevType) {
-    setPrevOpen(isOpen);
-    setPrevType(defaultType);
-    if (isOpen) setTab(defaultType);
-  }
+
 
   const [dealTitle, setDealTitle] = useState("");
   const [dealCompany, setDealCompany] = useState("");
   const [dealContact, setDealContact] = useState("");
   const [dealEmail, setDealEmail] = useState("");
-  const [dealValue, setDealValue] = useState<number | string>(150000000);
+  const [dealValue, setDealValue] = useState<number | string>("");
   const [dealStageId, setDealStageId] = useState(
     defaultStageId || stages[0]?.id || "stage-new"
   );
   const [dealPriority, setDealPriority] = useState<DealPriority>("high");
 
-  const [leadName, setLeadName] = useState("");
-  const [leadCompany, setLeadCompany] = useState("");
-  const [leadEmail, setLeadEmail] = useState("");
-  const [leadPhone, setLeadPhone] = useState("");
-  const [leadScore, setLeadScore] = useState<number | string>(85);
-  const [leadStatus, setLeadStatus] = useState<LeadStatus>("hot");
-
+  const [custSegment, setCustSegment] = useState<Customer["segment"]>("customer");
+  const [custType, setCustType] = useState<Customer["customerType"]>("company");
   const [custCompany, setCustCompany] = useState("");
   const [custName, setCustName] = useState("");
   const [custEmail, setCustEmail] = useState("");
   const [custPhone, setCustPhone] = useState("");
   const [custTier, setCustTier] = useState<CustomerTier>("سازمانی");
-  const [custLtv, setCustLtv] = useState<number | string>(350000000);
+  const [custLtv, setCustLtv] = useState<number | string>(0);
+
+  const [prevStage, setPrevStage] = useState(defaultStageId);
+  if (isOpen !== prevOpen || defaultType !== prevType || defaultStageId !== prevStage) {
+    setPrevOpen(isOpen);
+    setPrevType(defaultType);
+    setPrevStage(defaultStageId);
+    if (isOpen) {
+      setTab(defaultType);
+      setDealStageId(defaultStageId || stages[0]?.id || "stage-new");
+    }
+  }
 
   const close = () => onClose();
 
-  const submitDeal = (e: React.FormEvent) => {
+  const submitDeal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dealTitle || !dealCompany) return;
-    const numeric =
-      typeof dealValue === "number"
-        ? dealValue
-        : parseFloat(dealValue as string) || 150000000;
-    onCreateDeal({
+    if (!dealTitle.trim() || !dealCompany.trim()) return;
+    const numeric = parseTomanInput(String(dealValue));
+    const saved = await run(() => onCreateDeal({
       id: `deal-${Date.now()}`,
-      title: dealTitle,
-      company: dealCompany,
+      title: dealTitle.trim(),
+      company: dealCompany.trim(),
       contact: dealContact || "مخاطب اصلی",
-      email: dealEmail || "contact@company.ir",
-      phone: "۰۲۱۸۸۰۰۰۰۰۰",
+      email: dealEmail.trim(),
+      phone: "",
       value: numeric,
       formattedValue: formatToman(numeric),
       stageId: dealStageId || stages[0]?.id,
       priority: dealPriority,
-      probability:
-        dealStageId === "stage-won"
-          ? 100
-          : dealStageId === "stage-negotiation"
-          ? 85
-          : 50,
+      probability: probabilityForStage(stages, dealStageId),
       tags: ["معامله جدید"],
       notes: "ثبت سریع در پایپ‌لاین",
       daysInStage: 0,
@@ -131,7 +129,8 @@ export function CreateRecordDialog({
       nextActionTitle: "برقراری تماس اولیه و بررسی نیازها",
       nextActionDue: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
       assignee: { name: "شما", avatar: "" },
-    });
+    }));
+    if (!saved) return;
     close();
     setDealTitle("");
     setDealCompany("");
@@ -139,67 +138,30 @@ export function CreateRecordDialog({
     setDealEmail("");
   };
 
-  const submitLead = (e: React.FormEvent) => {
+  const submitCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!leadName || !leadCompany) return;
-    const score = Math.min(
-      100,
-      Math.max(
-        1,
-        typeof leadScore === "number"
-          ? leadScore
-          : parseInt(leadScore as string) || 80
-      )
-    );
-    onCreateLead({
-      id: `lead-${Date.now()}`,
-      name: leadName,
-      company: leadCompany,
-      email: leadEmail || "lead@company.ir",
-      phone: leadPhone || "۰۹۱۲۰۰۰۰۰۰۰",
-      title: "مدیر توسعه بازار",
-      score,
-      status: leadStatus,
-      source: "وبسایت",
-      estimatedValue: 120000000,
-      formattedValue: formatToman(120000000),
-      createdDate: "همین حالا",
-      notes: "",
-      assignedTo: "شما",
-    });
-    close();
-    setLeadName("");
-    setLeadCompany("");
-    setLeadEmail("");
-    setLeadPhone("");
-  };
-
-  const submitCustomer = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!custCompany || !custName) return;
-    const numeric =
-      typeof custLtv === "number"
-        ? custLtv
-        : parseFloat(custLtv as string) || 350000000;
-    onCreateCustomer({
+    if (!custName.trim() || (custType === "company" && !custCompany.trim())) return;
+    const numeric = parseTomanInput(String(custLtv));
+    const saved = await run(() => onCreateCustomer({
       id: `cust-${Date.now()}`,
-      name: custName,
-      company: custCompany,
-      email: custEmail || "info@company.ir",
-      phone: custPhone || "۰۲۱۸۸۰۰۰۰۰۰",
-      customerType: "company",
-      segment: "customer",
+      name: custName.trim(),
+      company: custCompany.trim(),
+      email: custEmail.trim(),
+      phone: custPhone.trim(),
+      customerType: custType,
+      segment: custSegment,
       ltv: numeric,
       formattedLtv: formatToman(numeric),
-      activeDealsCount: 1,
+      activeDealsCount: 0,
       healthScore: 90,
       healthStatus: "good",
       tier: custTier,
-      renewalDate: "۱۲ ماه بعد",
+      renewalDate: "—",
       lastTouch: "همین حالا",
-      location: "تهران",
-      industry: "فناوری اطلاعات و خدمات",
-    });
+      location: "",
+      industry: "",
+    }));
+    if (!saved) return;
     close();
     setCustCompany("");
     setCustName("");
@@ -219,11 +181,10 @@ export function CreateRecordDialog({
           <DialogDescription className="text-xs text-slate-500 font-bold">
             معامله، سرنخ یا مشتری را مستقیم وارد فضای کاری لایت کنید.
           </DialogDescription>
-          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-brand-100 bg-brand-50/40 p-1.5 pt-2 mt-3">
+          <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-brand-100 bg-brand-50/40 p-1.5 pt-2 mt-3">
             {(
               [
                 ["deal", "معامله فروش", KanbanSquare],
-                ["lead", "سرنخ بازاریابی", Users],
                 ["customer", "پرونده مشتری", UserCheck],
               ] as const
             ).map(([v, l, Icon]) => (
@@ -245,10 +206,11 @@ export function CreateRecordDialog({
         </DialogHeader>
 
         {tab === "deal" && (
-          <form onSubmit={submitDeal} className="space-y-3.5 pt-2">
+          <form aria-busy={isPending} onSubmit={submitDeal} className="space-y-3.5 pt-2">
             <div className={field}>
-              <Label requiredIndicator>عنوان معامله</Label>
+              <Label htmlFor="record-dealTitle" requiredIndicator>عنوان معامله</Label>
               <Input
+                id="record-dealTitle"
                 required
                 value={dealTitle}
                 onChange={(e) => setDealTitle(e.target.value)}
@@ -258,8 +220,9 @@ export function CreateRecordDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className={field}>
-                <Label requiredIndicator>شرکت طرف حساب</Label>
+                <Label htmlFor="record-dealCompany" requiredIndicator>شرکت طرف حساب</Label>
                 <Input
+                  id="record-dealCompany"
                   required
                   value={dealCompany}
                   onChange={(e) => setDealCompany(e.target.value)}
@@ -269,11 +232,12 @@ export function CreateRecordDialog({
                 />
               </div>
               <div className={field}>
-                <Label requiredIndicator>ارزش تخمینی (تومان)</Label>
+                <Label htmlFor="record-dealValue" requiredIndicator>ارزش تخمینی (تومان)</Label>
                 <NumberInput
+                  id="record-dealValue"
                   value={dealValue}
                   onChange={setDealValue}
-                  step={10000000}
+                  step={1}
                   min={0}
                   icon={<Wallet className="h-3.5 w-3.5 text-emerald-600" />}
                 />
@@ -281,8 +245,9 @@ export function CreateRecordDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className={field}>
-                <Label>مخاطب اصلی</Label>
+                <Label htmlFor="record-dealContact">مخاطب اصلی</Label>
                 <Input
+                  id="record-dealContact"
                   value={dealContact}
                   onChange={(e) => setDealContact(e.target.value)}
                   placeholder="نام رابط تصمیم‌گیرنده"
@@ -291,8 +256,9 @@ export function CreateRecordDialog({
                 />
               </div>
               <div className={field}>
-                <Label>ایمیل کاری</Label>
+                <Label htmlFor="record-dealEmail">ایمیل کاری</Label>
                 <Input
+                  id="record-dealEmail"
                   type="email"
                   value={dealEmail}
                   onChange={(e) => setDealEmail(e.target.value)}
@@ -306,7 +272,7 @@ export function CreateRecordDialog({
               <div className={field}>
                 <Label>مرحله در پایپ‌لاین</Label>
                 <Select value={dealStageId} onValueChange={setDealStageId}>
-                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                  <SelectTrigger aria-label="مرحله معامله" className="h-10 rounded-xl border-brand-100 bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-brand-100 bg-white">
@@ -324,7 +290,7 @@ export function CreateRecordDialog({
                   value={dealPriority}
                   onValueChange={(v) => setDealPriority(v as DealPriority)}
                 >
-                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                  <SelectTrigger aria-label="اولویت معامله" className="h-10 rounded-xl border-brand-100 bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-brand-100 bg-white">
@@ -337,7 +303,7 @@ export function CreateRecordDialog({
               </div>
             </div>
             <Button
-              type="submit"
+              type="submit" disabled={isPending}
               className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
             >
               ثبت معامله در پایپ‌لاین
@@ -345,102 +311,39 @@ export function CreateRecordDialog({
           </form>
         )}
 
-        {tab === "lead" && (
-          <form onSubmit={submitLead} className="space-y-3.5 pt-2">
+        {tab === "customer" && (
+          <form aria-busy={isPending} onSubmit={submitCustomer} className="space-y-3.5 pt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className={field}>
-                <Label requiredIndicator>نام و نام‌خانوادگی</Label>
-                <Input
-                  required
-                  value={leadName}
-                  onChange={(e) => setLeadName(e.target.value)}
-                  className="h-10 rounded-xl border-brand-100 bg-white"
-                  placeholder="نام سرنخ"
-                />
-              </div>
-              <div className={field}>
-                <Label requiredIndicator>شرکت</Label>
-                <Input
-                  required
-                  value={leadCompany}
-                  onChange={(e) => setLeadCompany(e.target.value)}
-                  className="h-10 rounded-xl border-brand-100 bg-white"
-                  placeholder="شرکت یا سازمان"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className={field}>
-                <Label>ایمیل</Label>
-                <Input
-                  value={leadEmail}
-                  onChange={(e) => setLeadEmail(e.target.value)}
-                  className="h-10 rounded-xl border-brand-100 bg-white"
-                  icon={<Mail className="h-3.5 w-3.5" />}
-                />
-              </div>
-              <div className={field}>
-                <Label>تلفن همراه</Label>
-                <Input
-                  value={leadPhone}
-                  onChange={(e) => setLeadPhone(e.target.value)}
-                  className="h-10 rounded-xl border-brand-100 bg-white"
-                  icon={<Phone className="h-3.5 w-3.5" />}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className={field}>
-                <Label>وضعیت حرارت</Label>
-                <Select
-                  value={leadStatus}
-                  onValueChange={(v) => setLeadStatus(v as LeadStatus)}
-                >
-                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-brand-100 bg-white">
-                    <SelectItem value="hot">داغ</SelectItem>
-                    <SelectItem value="warm">گرم</SelectItem>
-                    <SelectItem value="qualified">واجد شرایط</SelectItem>
-                    <SelectItem value="cold">سرد</SelectItem>
-                  </SelectContent>
+                <Label htmlFor="record-customer-type">نوع مخاطب</Label>
+                <Select value={custType} onValueChange={(value) => setCustType(value as Customer["customerType"])}>
+                  <SelectTrigger id="record-customer-type"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="company">شرکت / سازمان</SelectItem><SelectItem value="individual">شخص حقیقی</SelectItem></SelectContent>
                 </Select>
               </div>
               <div className={field}>
-                <Label>امتیاز کیفی (۱ تا ۱۰۰)</Label>
-                <NumberInput
-                  value={leadScore}
-                  onChange={setLeadScore}
-                  min={1}
-                  max={100}
-                />
+                <Label htmlFor="record-customer-segment">نوع پرونده</Label>
+                <Select value={custSegment} onValueChange={(value) => setCustSegment(value as Customer["segment"])}>
+                  <SelectTrigger id="record-customer-segment"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="customer">مشتری</SelectItem><SelectItem value="lead">سرنخ</SelectItem></SelectContent>
+                </Select>
               </div>
             </div>
-            <Button
-              type="submit"
-              className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
-            >
-              ثبت سرنخ جدید
-            </Button>
-          </form>
-        )}
-
-        {tab === "customer" && (
-          <form onSubmit={submitCustomer} className="space-y-3.5 pt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className={field}>
-                <Label requiredIndicator>شرکت / سازمان</Label>
+                <Label htmlFor="record-custCompany" requiredIndicator={custType === "company"}>شرکت / سازمان</Label>
                 <Input
-                  required
+                  id="record-custCompany"
+                  required={custType === "company"}
                   value={custCompany}
                   onChange={(e) => setCustCompany(e.target.value)}
                   className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
               <div className={field}>
-                <Label requiredIndicator>مخاطب اصلی</Label>
+                <Label htmlFor="record-custName" requiredIndicator>مخاطب اصلی</Label>
                 <Input
+                  id="record-custName"
                   required
                   value={custName}
                   onChange={(e) => setCustName(e.target.value)}
@@ -450,16 +353,18 @@ export function CreateRecordDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className={field}>
-                <Label>ایمیل</Label>
+                <Label htmlFor="record-custEmail">ایمیل</Label>
                 <Input
+                  id="record-custEmail"
                   value={custEmail}
                   onChange={(e) => setCustEmail(e.target.value)}
                   className="h-10 rounded-xl border-brand-100 bg-white"
                 />
               </div>
               <div className={field}>
-                <Label>تلفن</Label>
+                <Label htmlFor="record-custPhone">تلفن</Label>
                 <Input
+                  id="record-custPhone"
                   value={custPhone}
                   onChange={(e) => setCustPhone(e.target.value)}
                   className="h-10 rounded-xl border-brand-100 bg-white"
@@ -473,28 +378,29 @@ export function CreateRecordDialog({
                   value={custTier}
                   onValueChange={(v) => setCustTier(v as CustomerTier)}
                 >
-                  <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white">
+                  <SelectTrigger aria-label="سطح مشتری" className="h-10 rounded-xl border-brand-100 bg-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-brand-100 bg-white">
                     <SelectItem value="سازمانی">سازمانی (Enterprise)</SelectItem>
-                    <SelectItem value="رشد">رشد (Growth)</SelectItem>
+                    <SelectItem value="در حال رشد">رشد (Growth)</SelectItem>
                     <SelectItem value="استارتاپ">استارتاپ (Startup)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className={field}>
-                <Label>ارزش چرخه حیات تقریبی (تومان)</Label>
+                <Label htmlFor="record-custLtv">ارزش چرخه حیات تقریبی (تومان)</Label>
                 <NumberInput
+                  id="record-custLtv"
                   value={custLtv}
                   onChange={setCustLtv}
-                  step={10000000}
+                  step={1}
                   min={0}
                 />
               </div>
             </div>
             <Button
-              type="submit"
+              type="submit" disabled={isPending}
               className="h-11 w-full rounded-xl bg-brand-700 font-black text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20 cursor-pointer"
             >
               ثبت پرونده مشتری
@@ -505,5 +411,3 @@ export function CreateRecordDialog({
     </Dialog>
   );
 }
-
-export type { CustomerHealth };

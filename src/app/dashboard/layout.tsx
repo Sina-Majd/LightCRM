@@ -110,7 +110,6 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         defaultStageId={createRecordDefaultStage}
         stages={stages}
         onCreateDeal={createDealRecord}
-        onCreateLead={() => {}}
         onCreateCustomer={createCustomerRecord}
       />
     </DashboardShell>
