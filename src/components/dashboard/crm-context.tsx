@@ -336,22 +336,47 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       const previous = previousById.get(deal.id);
       return previous && (previous.stageId !== deal.stageId || previous.probability !== deal.probability);
     });
-    const results = await Promise.allSettled(changed.map((deal) =>
-      updateDealStage(deal.id, deal.stageId, deal.probability)));
-    const failed = new Set(changed.filter((_, index) => results[index].status === "rejected").map((deal) => deal.id));
+    // Drag/drop needs the new order before its onDragEnd responder returns.
     setDeals((current) => {
       const currentById = new Map(current.map((deal) => [deal.id, deal]));
       const reordered = updated.flatMap((deal) => {
         const existing = currentById.get(deal.id);
         if (!existing) return [];
-        return [{ ...existing, ...(failed.has(deal.id) ? {} : {
+        return [{ ...existing,
           stageId: deal.stageId, probability: deal.probability,
           daysInStage: deal.daysInStage, lastActivity: deal.lastActivity,
-        }) }];
+        }];
       });
       const ids = new Set(reordered.map((deal) => deal.id));
       return [...reordered, ...current.filter((deal) => !ids.has(deal.id))];
     });
+    const results = await Promise.allSettled(changed.map((deal) =>
+      updateDealStage(deal.id, deal.stageId, deal.probability)));
+    const failed = new Set(changed.filter((_, index) => results[index].status === "rejected").map((deal) => deal.id));
+    if (failed.size) {
+      const attemptedById = new Map(changed.map((deal) => [deal.id, deal]));
+      setDeals((current) => {
+        const rollbackIds = new Set<string>();
+        const restored = current.map((deal) => {
+          const previous = previousById.get(deal.id);
+          const attempted = attemptedById.get(deal.id);
+          // Preserve unrelated edits and any newer stage change.
+          if (!previous || !failed.has(deal.id) || deal.stageId !== attempted?.stageId || deal.probability !== attempted.probability) return deal;
+          rollbackIds.add(deal.id);
+          return { ...deal, stageId: previous.stageId, probability: previous.probability,
+            daysInStage: previous.daysInStage, lastActivity: previous.lastActivity };
+        });
+        const next = restored.filter((deal) => !rollbackIds.has(deal.id));
+        for (const [index, previous] of deals.entries()) {
+          if (!rollbackIds.has(previous.id)) continue;
+          const restoredDeal = restored.find((deal) => deal.id === previous.id)!;
+          const following = deals.slice(index + 1).find((deal) => next.some((record) => record.id === deal.id));
+          const position = following ? next.findIndex((deal) => deal.id === following.id) : next.length;
+          next.splice(position, 0, restoredDeal);
+        }
+        return next;
+      });
+    }
     const activities: CRMActivity[] = changed.filter((deal) => !failed.has(deal.id)).map((deal) => ({
       id: crypto.randomUUID(), subjectType: "deal", subjectId: deal.id, kind: "stage_change",
       body: `مرحله معامله به «${stages.find((stage) => stage.id === deal.stageId)?.title || deal.stageId}» تغییر یافت.`,

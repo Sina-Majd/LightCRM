@@ -103,6 +103,55 @@ it("keeps the open deal synchronized with persisted stage changes", async () => 
   expect(service.updateDealStage).toHaveBeenCalledWith("deal-one", "stage-won", 100);
 });
 
+it("moves a dropped deal before persistence finishes and retains the saved position", async () => {
+  const pending = Promise.withResolvers<void>();
+  vi.mocked(service.updateDealStage).mockReturnValueOnce(pending.promise);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.load.deals).toBe(true));
+  const updated = result.current.deals.map((deal) => ({ ...deal, stageId: "stage-won", probability: 100, daysInStage: 0 }));
+  let save: Promise<boolean>;
+  act(() => { save = result.current.changeDeals(updated); });
+  expect(result.current.deals[0]).toMatchObject({ stageId: "stage-won", probability: 100, daysInStage: 0 });
+  await act(async () => { pending.resolve(); expect(await save).toBe(true); });
+  expect(result.current.deals[0].stageId).toBe("stage-won");
+  expect(result.current.activities.filter((activity) => activity.kind === "stage_change")).toHaveLength(1);
+});
+
+it("restores a failed drop's stage and position without discarding other saved edits", async () => {
+  const secondDeal = { ...fixture.deals[0], id: "deal-two" };
+  vi.mocked(service.fetchDeals).mockResolvedValue([fixture.deals[0], secondDeal]);
+  const pending = Promise.withResolvers<void>();
+  vi.mocked(service.updateDealStage).mockReturnValueOnce(pending.promise);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.deals).toHaveLength(2));
+  const moved = { ...fixture.deals[0], stageId: "stage-won", probability: 100, daysInStage: 0, lastActivity: "Just moved" };
+  let save: Promise<boolean>;
+  act(() => { save = result.current.changeDeals([secondDeal, moved]); });
+  expect(result.current.deals.map((deal) => deal.id)).toEqual(["deal-two", "deal-one"]);
+  expect(result.current.deals[1].stageId).toBe("stage-won");
+  await act(async () => { await result.current.updateNextAction("deal-one", "Saved during drop", "2099-01-01"); });
+  await act(async () => { pending.reject(new Error("Offline")); expect(await save).toBe(false); });
+  expect(result.current.deals.map((deal) => deal.id)).toEqual(["deal-one", "deal-two"]);
+  expect(result.current.deals[0]).toMatchObject({
+    stageId: fixture.deals[0].stageId, probability: fixture.deals[0].probability,
+    daysInStage: fixture.deals[0].daysInStage, lastActivity: fixture.deals[0].lastActivity,
+    nextActionTitle: "Saved during drop", nextActionDue: "2099-01-01",
+  });
+  expect(result.current.activities.filter((activity) => activity.kind === "stage_change")).toHaveLength(0);
+});
+
+it("reorders within a column immediately without writing unchanged stages", async () => {
+  const secondDeal = { ...fixture.deals[0], id: "deal-two" };
+  vi.mocked(service.fetchDeals).mockResolvedValue([fixture.deals[0], secondDeal]);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.deals).toHaveLength(2));
+  let save: Promise<boolean>;
+  act(() => { save = result.current.changeDeals([secondDeal, fixture.deals[0]]); });
+  expect(result.current.deals.map((deal) => deal.id)).toEqual(["deal-two", "deal-one"]);
+  expect(service.updateDealStage).not.toHaveBeenCalled();
+  await act(async () => { expect(await save).toBe(true); });
+});
+
 it("commits successful moves and preserves failed deals when a batch partially fails", async () => {
   const secondDeal = { ...fixture.deals[0], id: "deal-two" };
   vi.mocked(service.fetchDeals).mockResolvedValue([fixture.deals[0], secondDeal]);

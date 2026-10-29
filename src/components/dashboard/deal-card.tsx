@@ -34,6 +34,7 @@ interface Props {
   stages?: PipelineStage[];
   showNextStageButton?: boolean;
   isDraggable?: boolean;
+  isDragDisabled?: boolean;
   onSelect: (deal: Deal) => void;
   onDeleteDeal?: (dealId: string) => void;
   onMoveToStage?: (dealId: string, stageId: string) => void;
@@ -53,6 +54,7 @@ export function DealCard({
   stages = [],
   showNextStageButton = false,
   isDraggable = true,
+  isDragDisabled = false,
   onSelect,
   onDeleteDeal,
   onMoveToStage,
@@ -267,7 +269,7 @@ export function DealCard({
   }
 
   return (
-    <Draggable draggableId={deal.id} index={index} disableInteractiveElementBlocking>
+    <Draggable draggableId={deal.id} index={index} isDragDisabled={isDragDisabled} disableInteractiveElementBlocking>
       {(provided, snapshot) => {
         const cardNode = body(provided, snapshot);
         if (snapshot.isDragging && isMounted) {

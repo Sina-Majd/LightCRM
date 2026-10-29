@@ -229,7 +229,7 @@ export function PipelineBoard({
                     deal={deal}
                     index={idx}
                     stages={stages}
-                    isDraggable={!isPending}
+                    isDragDisabled={isPending}
                     onSelect={onSelectDeal}
                     onDeleteDeal={() => setToDelete(deal)}
                     onMoveToStage={move}
