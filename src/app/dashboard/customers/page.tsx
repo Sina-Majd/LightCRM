@@ -6,8 +6,8 @@ import { useCrm } from "@/components/dashboard/crm-context";
 
 export default function CustomersPage() {
   const {
-    load, customers, deals, searchQuery,
-    openCreateRecord, deleteCustomer, openDeal, navigate,
+    load, customers, searchQuery,
+    openCreateRecord, deleteCustomer, navigate,
   } = useCrm();
 
   if (!load.customers) return <CustomersSkeleton />;
@@ -20,13 +20,6 @@ export default function CustomersPage() {
       onDeleteCustomer={deleteCustomer}
       onAddOpportunityForCustomer={() => openCreateRecord("deal")}
       onOpenInvoiceForCustomer={() => navigate("invoices")}
-      onSelectCustomer={(cust) => {
-        const matched = deals.find(
-          (d) => d.company.toLowerCase() === cust.company.toLowerCase()
-        );
-        if (matched) openDeal(matched);
-        else openCreateRecord("deal");
-      }}
     />
   );
 }

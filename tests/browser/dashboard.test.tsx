@@ -86,3 +86,20 @@ it("provides keyboard-accessible deal selection and a separate drag handle", asy
   await userEvent.keyboard("[Space]{Escape}");
   expect(fixture.openDeal).toHaveBeenCalledTimes(1);
 });
+
+for (const hasMatchingDeal of [true, false]) {
+  it(`opens only the customer profile when a matching deal ${hasMatchingDeal ? "exists" : "does not exist"}`, async () => {
+    await page.viewport(1440, 1000);
+    const fixture = workspaceFixture(hasMatchingDeal ? {} : { deals: [] });
+    vi.mocked(useCrm).mockReturnValue(fixture);
+    navigation.pathname = "/dashboard/customers";
+    render(<DashboardLayout><CustomersPage /></DashboardLayout>);
+    await page.getByRole("button", { name: "پروفایل ۳۶۰", exact: true }).click();
+    await expect.element(page.getByRole("dialog", { name: fixture.customers[0].company })).toBeVisible();
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(fixture.openDeal).not.toHaveBeenCalled();
+    expect(fixture.openCreateRecord).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    await expect.element(page.getByRole("dialog")).not.toBeInTheDocument();
+  });
+}

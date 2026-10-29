@@ -46,7 +46,6 @@ import {
 interface Props {
   customers: Customer[];
   searchQuery: string;
-  onSelectCustomer?: (c: Customer) => void;
   onOpenNewCustomerModal?: () => void;
   onDeleteCustomer?: AsyncAction<[string]>;
   onAddOpportunityForCustomer?: (c: Customer) => void;
@@ -63,7 +62,6 @@ const HEALTH_FA: Record<string, { fa: string; cls: string; dot: string }> = {
 export function CustomersView({
   customers,
   searchQuery,
-  onSelectCustomer,
   onOpenNewCustomerModal,
   onDeleteCustomer,
   onAddOpportunityForCustomer,
@@ -348,10 +346,7 @@ export function CustomersView({
                 <div className="flex items-center gap-1.5">
                   <Button
                     size="sm"
-                    onClick={() => {
-                      setSelected360(c);
-                      onSelectCustomer?.(c);
-                    }}
+                    onClick={() => setSelected360(c)}
                     className="h-8 rounded-xl bg-brand-50 text-brand-800 border border-brand-200 hover:bg-brand-700 hover:text-white font-black text-xs transition-colors cursor-pointer"
                   >
                     پروفایل ۳۶۰
