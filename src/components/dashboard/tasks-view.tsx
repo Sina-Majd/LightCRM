@@ -120,6 +120,7 @@ export function TasksView({
         <form onSubmit={submit} aria-busy={isPending} className="grid gap-2.5 sm:grid-cols-12">
           <div className="sm:col-span-5">
             <Input
+              aria-label="عنوان وظیفه"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="مثلاً: تماس با مهندس رضایی جهت تایید پیش‌فاکتور…"
@@ -128,6 +129,7 @@ export function TasksView({
           </div>
           <div className="sm:col-span-3">
             <Input
+              aria-label="شرکت یا معامله مرتبط"
               value={related}
               onChange={(e) => setRelated(e.target.value)}
               placeholder="مربوط به شرکت یا معامله…"
@@ -152,7 +154,7 @@ export function TasksView({
               value={pri}
               onValueChange={(v) => setPri(v as DealPriority)}
             >
-              <SelectTrigger className="h-10 flex-1 rounded-xl border-brand-100 bg-white text-xs font-bold">
+              <SelectTrigger aria-label="اولویت وظیفه" className="h-10 flex-1 rounded-xl border-brand-100 bg-white text-xs font-bold">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-brand-100 bg-white">
@@ -174,7 +176,7 @@ export function TasksView({
 
       {/* Tabs Filter Bar */}
       <div className="flex items-center justify-between rounded-2xl border border-brand-100/80 bg-white p-2.5 shadow-sm">
-        <div className="flex gap-1.5">
+        <div className="flex min-w-0 gap-1.5 overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
           {[
             ["all", `همه (${faDigits(tasks.length)})`],
             ["pending", `در انتظار انجام (${faDigits(pending)})`],
@@ -194,7 +196,7 @@ export function TasksView({
             </button>
           ))}
         </div>
-        <span className="hidden text-[12px] font-bold text-slate-400 sm:block px-2">
+        <span className="hidden text-[12px] font-bold text-slate-600 sm:block px-2">
           {faDigits(pending)} اقدام باقی‌مانده
         </span>
       </div>
@@ -227,6 +229,7 @@ export function TasksView({
                 }`}
               >
                 <Checkbox
+                  aria-label={`انجام وظیفه: ${t.title}`}
                   checked={t.completed}
                   onCheckedChange={() => onToggleTask(t.id)}
                   className="mt-1"
@@ -255,9 +258,10 @@ export function TasksView({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
+                            aria-label={`گزینه‌های وظیفه: ${t.title}`}
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0 text-slate-400 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
+                            className="h-7 w-7 p-0 text-slate-600 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
@@ -311,7 +315,7 @@ export function TasksView({
             );
           })}
           {filtered.length === 0 && (
-            <div className="py-12 text-center text-[13px] font-bold text-slate-400">
+            <div className="py-12 text-center text-[13px] font-bold text-slate-600">
               هیچ وظیفه‌ای در این وضعیت ثبت نشده است. 🎉
             </div>
           )}

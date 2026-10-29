@@ -252,6 +252,7 @@ export function DealDetailSheet({
                 className="mt-3 space-y-2 border-t border-brand-200 pt-3"
               >
                 <Input
+                  aria-label="عنوان اقدام بعدی"
                   value={nextActionTitle}
                   onChange={(e) => setNextActionTitle(e.target.value)}
                   placeholder="مثال: تماس تلفنی جهت تایید پیش‌فاکتور…"
@@ -261,7 +262,7 @@ export function DealDetailSheet({
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <Select value={nextActionHours} onValueChange={setNextActionHours}>
-                      <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold">
+                      <SelectTrigger aria-label="موعد اقدام بعدی" className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-slate-200 bg-white">
@@ -393,7 +394,7 @@ export function DealDetailSheet({
               یادداشت‌های مذاکره
             </h3>
 
-            <p className="mt-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[12px] leading-6 text-slate-700">
+            <p className="mt-2.5 whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 p-3 text-[12px] leading-6 text-slate-700">
               {deal.notes?.trim() || "توضیحاتی ثبت نشده است."}
             </p>
 

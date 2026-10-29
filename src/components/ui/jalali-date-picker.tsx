@@ -309,7 +309,7 @@ export function JalaliDatePicker({
   );
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative flex items-center gap-1", className)}>
       <button
         type="button"
         ref={triggerRef}
@@ -328,21 +328,17 @@ export function JalaliDatePicker({
           <CalendarDays className="size-4 shrink-0 text-brand-600" />
           <span className="truncate">{triggerLabel}</span>
         </span>
-        {selected && (
-          <span
-            role="button"
-            tabIndex={-1}
-            aria-label="پاک کردن تاریخ"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange("");
-            }}
-            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-          >
-            <X className="size-3.5" />
-          </span>
-        )}
       </button>
+      {selected && (
+        <button
+          type="button"
+          aria-label="پاک کردن تاریخ"
+          onClick={() => onChange("")}
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
 
       {panel ? createPortal(panel, document.body) : null}
     </div>

@@ -419,7 +419,7 @@ export function CreateInvoiceDialog({
                             onClick={() => removeItem(index)}
                             disabled={items.length <= 1}
                             aria-label={`حذف ردیف ${index + 1}`}
-                            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-40"
+                            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:pointer-events-none disabled:opacity-40"
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -466,7 +466,7 @@ export function CreateInvoiceDialog({
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-slate-600">تخفیف کل</dt>
-                  <dd className="font-black tabular-nums text-rose-600">
+                  <dd className="font-black tabular-nums text-rose-700">
                     {totals.discount > 0 ? formatToman(totals.discount) : "۰ تومان"}
                   </dd>
                 </div>

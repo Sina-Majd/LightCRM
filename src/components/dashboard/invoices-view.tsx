@@ -173,8 +173,8 @@ export function InvoicesView({
       {/* TAB 1: INVOICES & PROFORMAS TABLE */}
       {subTab === "invoices" && (
         <div className="rounded-3xl border border-brand-100/80 bg-white overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
+          <div tabIndex={0} role="region" aria-label="جدول اسناد مالی، قابل پیمایش افقی" className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-brand-500">
+            <table className="w-full min-w-[760px] text-right text-xs">
               <thead className="bg-brand-50/50 border-b border-brand-100 text-slate-700 font-black">
                 <tr>
                   <th className="p-4">شماره سند</th>
@@ -252,8 +252,8 @@ export function InvoicesView({
       {/* TAB 2: SAYAD CHEQUES MANAGEMENT */}
       {subTab === "cheques" && (
         <div className="rounded-3xl border border-brand-100/80 bg-white overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
+          <div tabIndex={0} role="region" aria-label="جدول اسناد مالی، قابل پیمایش افقی" className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-brand-500">
+            <table className="w-full min-w-[760px] text-right text-xs">
               <thead className="bg-brand-50/50 border-b border-brand-100 text-slate-700 font-black">
                 <tr>
                   <th className="p-4">شناسه صیادی (۱۶ رقم)</th>

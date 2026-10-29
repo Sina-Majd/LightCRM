@@ -202,6 +202,7 @@ export function DashboardShell(props: Props) {
 
   return (
     <div className="min-h-screen bg-[#f8faff] text-slate-950 md:flex relative selection:bg-brand-500 selection:text-white md:pr-[264px]" dir="rtl">
+      <a href="#dashboard-main" className="sr-only focus:not-sr-only focus:fixed focus:right-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-700 focus:p-3 focus:text-white">رفتن به محتوای اصلی</a>
       {/* Ambient background aura (Matches Landing / Login styling) */}
       <div
         aria-hidden="true"
@@ -232,7 +233,7 @@ export function DashboardShell(props: Props) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-black leading-5">
-                {userProfile?.companyName || "شرکت داده‌پردازی سپهر"}
+                {userProfile?.companyName || "فضای کاری"}
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -246,6 +247,7 @@ export function DashboardShell(props: Props) {
           {/* Quick Create Deal Button */}
           <Button
             onClick={onOpenNewDealModal}
+                aria-label="ایجاد معامله جدید"
             className="mt-3.5 h-11 w-full bg-brand-700 font-black text-white hover:bg-brand-800 shadow-md shadow-brand-700/25 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 text-[13px]"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
@@ -302,7 +304,7 @@ export function DashboardShell(props: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-black text-slate-900">
-                    {userProfile?.fullName || "علیرضا رضایی"}
+                    {userProfile?.fullName || "کاربر"}
                   </span>
                   <span className="flex items-center gap-1.5 text-[11px] text-slate-500 font-bold mt-0.5">
                     <span>{status}</span>
@@ -372,7 +374,7 @@ export function DashboardShell(props: Props) {
         <header className="sticky top-0 z-20 border-b border-brand-100/80 bg-white/85 backdrop-blur-xl shadow-xs">
           <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
             <div className="min-w-0">
-              <h1 className="truncate text-[15.5px] font-black text-brand-950">
+              <h1 className="line-clamp-2 text-[13px] leading-5 font-black text-brand-950 sm:line-clamp-1 sm:text-[15.5px]">
                 {TITLES[activeTab].t}
               </h1>
               <p className="hidden truncate text-[11.5px] text-slate-500 sm:block">
@@ -385,6 +387,7 @@ export function DashboardShell(props: Props) {
               <div className="relative hidden sm:block">
                 <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
+                  aria-label="جستجو در فضای کاری"
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder="جستجو در معاملات، مشتریان، فاکتورها…"
@@ -395,7 +398,7 @@ export function DashboardShell(props: Props) {
               {/* Notification Bell */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-brand-100 bg-white cursor-pointer hover:bg-brand-50 transition shadow-xs">
+                  <button aria-label={`اعلان‌ها، ${faDigits(unread)} خوانده نشده`} className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-brand-100 bg-white cursor-pointer hover:bg-brand-50 transition shadow-xs">
                     <Bell className="h-[18px] w-[18px] text-slate-700" />
                     {unread > 0 && (
                       <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-black text-white shadow-xs">
@@ -456,14 +459,15 @@ export function DashboardShell(props: Props) {
               {/* Mobile Quick Action & Avatar */}
               <Button
                 onClick={onOpenNewDealModal}
+                aria-label="ایجاد معامله جدید"
                 className="h-10 bg-brand-700 font-bold hover:bg-brand-800 md:hidden rounded-xl shadow-sm"
               >
                 <Plus className="h-4 w-4" />
               </Button>
               <button
+                aria-label="حساب کاربری"
                 onClick={() => setDrawer(true)}
                 className="md:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-700"
-                aria-label="حساب"
               >
                 <User className="h-5 w-5" />
               </button>
@@ -475,6 +479,7 @@ export function DashboardShell(props: Props) {
             <div className="relative">
               <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
+                aria-label="جستجو در فضای کاری"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="جستجو در معاملات و مشتریان…"
@@ -498,10 +503,10 @@ export function DashboardShell(props: Props) {
               </Avatar>
               <div>
                 <div className="font-black text-[14px]">
-                  {userProfile?.fullName || "علیرضا رضایی"}
+                  {userProfile?.fullName || "کاربر"}
                 </div>
                 <div className="text-[12px] text-slate-500">
-                  {userProfile?.companyName || "شرکت داده‌پردازی سپهر"}
+                  {userProfile?.companyName || "فضای کاری"}
                 </div>
               </div>
               <Badge className="mr-auto bg-brand-100 text-brand-800 font-bold">{formatPlanFa(userProfile?.plan)}</Badge>
@@ -586,7 +591,7 @@ export function DashboardShell(props: Props) {
         </Sheet>
 
         {/* Main Content Body */}
-        <main className="p-4 sm:p-6 pb-28 md:pb-10 flex-1">
+        <main id="dashboard-main" tabIndex={-1} className="p-4 sm:p-6 pb-28 md:pb-10 flex-1">
           <div className="mx-auto max-w-[1440px]">{children}</div>
         </main>
 

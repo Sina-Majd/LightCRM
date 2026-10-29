@@ -13,6 +13,7 @@ import {
   AlertCircle,
   CalendarCheck,
   PhoneCall,
+  GripVertical,
 } from "lucide-react";
 import type { Deal, PipelineStage } from "@/lib/crm/types";
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,6 @@ export function DealCard({
       <div
         ref={provided?.innerRef}
         {...provided?.draggableProps}
-        {...provided?.dragHandleProps}
         onClick={(e) => {
           const t = e.target as HTMLElement;
           if (t.closest("button,[role=menu],[data-radix-dropdown-menu-content]")) return;
@@ -91,7 +91,6 @@ export function DealCard({
           dragging
             ? "z-[9999] border-brand-600 opacity-95 shadow-2xl ring-2 ring-brand-500/30"
             : "",
-          isDraggable && !dragging && "cursor-grab active:cursor-grabbing"
         )}
       >
         <div className="p-3.5">
@@ -99,7 +98,7 @@ export function DealCard({
           <div className="flex items-center justify-between gap-2">
             <span className="flex min-w-0 items-center gap-1.5">
               {stageIdx >= 0 && (
-                <span className="shrink-0 text-[10.5px] font-black tabular-nums text-slate-400">
+                <span className="shrink-0 text-[10.5px] font-black tabular-nums text-slate-600">
                   {faDigits(stageIdx + 1)}/{faDigits(stages.length)}
                 </span>
               )}
@@ -116,7 +115,9 @@ export function DealCard({
 
           {/* Row 2 — title */}
           <h4 className="mt-2 line-clamp-2 text-[13px] font-black leading-6 text-slate-900">
-            {deal.title}
+            <button type="button" onClick={() => onSelect(deal)} className="cursor-pointer text-start hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+              {deal.title}
+            </button>
           </h4>
 
           {/* Row 3 — value + probability on one line */}
@@ -180,6 +181,16 @@ export function DealCard({
           )}
 
           <div className="flex shrink-0 items-center gap-1">
+            {provided?.dragHandleProps && (
+              <button
+                {...provided.dragHandleProps}
+                type="button"
+                aria-label={`جابجایی معامله ${deal.title}`}
+                className="flex size-7 cursor-grab items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 active:cursor-grabbing"
+              >
+                <GripVertical className="size-3.5" />
+              </button>
+            )}
             {onOpenQuickCall && (
               <button
                 onClick={() => onOpenQuickCall(deal)}
@@ -195,6 +206,7 @@ export function DealCard({
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`گزینه‌های معامله ${deal.title}`}
                   className="size-7 cursor-pointer p-0 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -255,7 +267,7 @@ export function DealCard({
   }
 
   return (
-    <Draggable draggableId={deal.id} index={index}>
+    <Draggable draggableId={deal.id} index={index} disableInteractiveElementBlocking>
       {(provided, snapshot) => {
         const cardNode = body(provided, snapshot);
         if (snapshot.isDragging && isMounted) {

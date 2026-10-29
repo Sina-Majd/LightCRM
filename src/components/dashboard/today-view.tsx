@@ -851,11 +851,11 @@ export function TodayView({
             body="تماس‌ها، جلسات و تغییر مرحله پرونده‌ها اینجا نمایش داده می‌شوند."
           />
         ) : (
-          <ul className="relative flex gap-3 pt-4">
+          <ul className="relative grid gap-4 pt-4 sm:grid-cols-2 xl:grid-cols-5">
             {/* rail runs right→left, matching Persian reading direction */}
             <span
               aria-hidden="true"
-              className="absolute inset-x-0 top-[27px] h-px bg-gradient-to-l from-brand-300 via-slate-200 to-slate-100"
+              className="absolute inset-x-0 top-[27px] hidden h-px bg-gradient-to-l from-brand-300 via-slate-200 to-slate-100 xl:block"
             />
             {activities.slice(0, 5).map((act, i) => {
               const kindMeta = ACTIVITY_KIND_MAP[act.kind] || {
@@ -863,7 +863,7 @@ export function TodayView({
                 icon: "FileText",
               };
               return (
-                <li key={act.id} className="relative flex-1">
+                <li key={act.id} className="relative min-w-0">
                   <div
                     className={`z-10 flex size-[27px] items-center justify-center rounded-full border-2 bg-white shadow-xs ${
                       i === 0 ? "border-brand-600" : "border-slate-200"
@@ -875,7 +875,7 @@ export function TodayView({
                     <b className="truncate text-[10.5px] font-black text-slate-900">
                       {kindMeta.label}
                     </b>
-                    <span className="shrink-0 text-[9.5px] font-medium text-slate-400">
+                    <span className="shrink-0 text-[10.5px] font-medium text-slate-600">
                       {formatRelativeFa(act.happenedAt)}
                     </span>
                   </div>

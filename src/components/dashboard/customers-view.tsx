@@ -251,10 +251,7 @@ export function CustomersView({
           const isCompany = c.customerType === "company";
 
           // Format WhatsApp URL
-          const cleanPhone = (c.phone || "").replace(/[^0-9]/g, "");
-          const waNumber = cleanPhone.startsWith("0")
-            ? `98${cleanPhone.slice(1)}`
-            : cleanPhone;
+          const waNumber = whatsappNumber(c.phone || "");
 
           return (
             <div
@@ -276,7 +273,7 @@ export function CustomersView({
                       {isCompany ? c.company : c.name}
                     </span>
                     <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 truncate font-bold">
-                      <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+                      <MapPin className="h-3 w-3 shrink-0 text-slate-600" />
                       {c.location || "ایران"}
                     </span>
                   </div>
@@ -293,12 +290,12 @@ export function CustomersView({
               {/* Identity & Legal Data */}
               <div className="mt-4 space-y-2 border-t border-brand-100/60 pt-3 text-[12.5px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">رابط اصلی:</span>
+                  <span className="text-slate-600 font-bold">رابط اصلی:</span>
                   <b className="text-slate-900">{c.name}</b>
                 </div>
                 {c.nationalId && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400 font-bold">
+                    <span className="text-slate-600 font-bold">
                       {isCompany ? "شناسه ملی:" : "کد ملی:"}
                     </span>
                     <span className="text-xs font-black text-slate-900">
@@ -308,14 +305,14 @@ export function CustomersView({
                 )}
                 {c.economicCode && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400 font-bold">کد اقتصادی:</span>
+                    <span className="text-slate-600 font-bold">کد اقتصادی:</span>
                     <span className="text-xs font-bold text-slate-700">
                       {faDigits(c.economicCode)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-bold">وضعیت سلامت:</span>
+                  <span className="text-slate-600 font-bold">وضعیت سلامت:</span>
                   <span className={`flex items-center gap-1.5 text-xs font-black ${h.cls}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${h.dot}`} />
                     {faDigits(c.healthScore)}٪ · {h.fa}
@@ -326,13 +323,13 @@ export function CustomersView({
               {/* LTV & Deals Block */}
               <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-brand-100/60 bg-brand-50/30 p-3 text-[11.5px]">
                 <div>
-                  <div className="text-[10.5px] font-bold text-slate-400">ارزش کل سبد</div>
+                  <div className="text-[10.5px] font-bold text-slate-600">ارزش کل سبد</div>
                   <b className="mt-0.5 block text-xs font-black text-emerald-700 tracking-tight">
                     {c.formattedLtv}
                   </b>
                 </div>
                 <div>
-                  <div className="text-[10.5px] font-bold text-slate-400">بخش / وضعیت</div>
+                  <div className="text-[10.5px] font-bold text-slate-600">بخش / وضعیت</div>
                   <Badge
                     variant="outline"
                     className="text-[10px] mt-0.5 font-black border-brand-200 bg-white"
@@ -344,7 +341,7 @@ export function CustomersView({
 
               {/* Footer: Contacts & Menu */}
               <div className="mt-4 flex items-center justify-between border-t border-brand-100/60 pt-3">
-                <span className="text-[11px] text-slate-400 font-bold">
+                <span className="text-[11px] text-slate-600 font-bold">
                   آخرین تماس: {c.lastTouch}
                 </span>
 
@@ -365,7 +362,8 @@ export function CustomersView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer text-slate-400 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
+                        aria-label={`گزینه‌های مشتری ${c.name}`}
+                        className="h-8 w-8 p-0 cursor-pointer text-slate-600 hover:text-slate-700 hover:bg-brand-50 rounded-lg"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -391,7 +389,7 @@ export function CustomersView({
                       <DropdownMenuItem
                         className="flex items-center gap-2 cursor-pointer text-right text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
                         onClick={() => {
-                          if (c.phone) window.open(`tel:${c.phone}`);
+                          if (c.phone) window.open(`tel:${normalizePhone(c.phone)}`);
                         }}
                       >
                         <Phone className="h-3.5 w-3.5 text-slate-600 shrink-0" />
@@ -489,20 +487,20 @@ export function CustomersView({
               {/* Contact Information */}
               <div className="space-y-2.5 p-4 rounded-2xl border border-brand-100/80 bg-brand-50/20 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">رابط اصلی:</span>
+                  <span className="text-slate-600 font-bold">رابط اصلی:</span>
                   <b className="text-slate-900">{selected360.name}</b>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">شماره تلفن:</span>
+                  <span className="text-slate-600 font-bold">شماره تلفن:</span>
                   <a
-                    href={`tel:${selected360.phone}`}
+                    href={`tel:${normalizePhone(selected360.phone)}`}
                     className="font-bold text-brand-700"
                   >
                     <bdi>{selected360.phone}</bdi>
                   </a>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">ایمیل کاری:</span>
+                  <span className="text-slate-600 font-bold">ایمیل کاری:</span>
                   <a
                     href={`mailto:${selected360.email}`}
                     className="text-slate-700 font-bold"
@@ -511,13 +509,13 @@ export function CustomersView({
                   </a>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">موقعیت و شهر:</span>
+                  <span className="text-slate-600 font-bold">موقعیت و شهر:</span>
                   <span className="text-slate-700 font-bold">
                     {selected360.location}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-bold">حوزه فعالیت:</span>
+                  <span className="text-slate-600 font-bold">حوزه فعالیت:</span>
                   <span className="text-slate-700 font-bold">
                     {selected360.industry}
                   </span>
@@ -527,7 +525,7 @@ export function CustomersView({
               {/* Danger Zone: Delete Customer */}
               {onDeleteCustomer && (
                 <div className="pt-3 border-t border-brand-100/80 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400">
+                  <span className="text-[11px] font-bold text-slate-600">
                     حذف دائمی پرونده مخاطب
                   </span>
                   <Button
