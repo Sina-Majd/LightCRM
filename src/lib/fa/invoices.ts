@@ -1,3 +1,5 @@
+import { isOverdue } from "./jalali";
+
 export type InvoiceType = "proforma" | "invoice";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "partially_paid" | "overdue" | "cancelled";
 
@@ -18,16 +20,25 @@ export interface InvoiceCalculatedTotals {
   total: number;
 }
 
+function nonNegative(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function itemAmounts(quantity: number, unitPrice: number, discount = 0, taxRate = 10) {
+  const gross = nonNegative(quantity) * nonNegative(unitPrice);
+  const appliedDiscount = Math.min(gross, nonNegative(discount));
+  const net = gross - appliedDiscount;
+  const tax = Math.round(net * (nonNegative(taxRate) / 100));
+  return { gross, discount: appliedDiscount, net, tax, total: net + tax };
+}
+
 export function calculateItemTotal(
   quantity: number,
   unitPrice: number,
   discount: number = 0,
   taxRate: number = 10
 ): { net: number; tax: number; total: number } {
-  const gross = (quantity || 0) * (unitPrice || 0);
-  const net = Math.max(0, gross - (discount || 0));
-  const tax = Math.round(net * ((taxRate || 0) / 100));
-  const total = net + tax;
+  const { net, tax, total } = itemAmounts(quantity, unitPrice, discount, taxRate);
   return { net, tax, total };
 }
 
@@ -38,17 +49,15 @@ export function calculateInvoiceTotals(items: RawInvoiceItem[]): InvoiceCalculat
   let grandTotal = 0;
 
   for (const item of items) {
-    const gross = (item.quantity || 0) * (item.unit_price || 0);
-    const disc = item.discount || 0;
-    const { tax, total } = calculateItemTotal(
-      item.quantity || 1,
-      item.unit_price || 0,
-      disc,
+    const { gross, discount, tax, total } = itemAmounts(
+      item.quantity,
+      item.unit_price,
+      item.discount,
       item.tax_rate ?? 10
     );
 
     subtotal += gross;
-    totalDiscount += disc;
+    totalDiscount += discount;
     totalTax += tax;
     grandTotal += total;
   }
@@ -65,18 +74,14 @@ export function resolveInvoiceStatus(
   paidSum: number,
   total: number,
   dueDateStr: string | null = null,
-  currentStatus: InvoiceStatus = "draft"
+  currentStatus: InvoiceStatus = "draft",
+  now: Date = new Date()
 ): InvoiceStatus {
   if (currentStatus === "cancelled") return "cancelled";
   if (total > 0 && paidSum >= total) return "paid";
   if (paidSum > 0 && paidSum < total) return "partially_paid";
 
-  if (dueDateStr) {
-    const dueDate = new Date(dueDateStr);
-    if (!isNaN(dueDate.getTime()) && dueDate.getTime() < Date.now()) {
-      return "overdue";
-    }
-  }
+  if (isOverdue(dueDateStr, now)) return "overdue";
 
   return currentStatus === "draft" ? "draft" : "sent";
 }

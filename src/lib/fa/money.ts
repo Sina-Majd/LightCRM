@@ -13,17 +13,17 @@ export function enDigits(value: string): string {
 }
 
 export function rialToToman(rial: number): number {
-  if (!rial || isNaN(rial)) return 0;
+  if (!Number.isFinite(rial)) return 0;
   return Math.floor(rial / 10);
 }
 
 export function tomanToRial(toman: number): number {
-  if (!toman || isNaN(toman)) return 0;
+  if (!Number.isFinite(toman)) return 0;
   return Math.round(toman * 10);
 }
 
 export function formatNumberFa(num: number): string {
-  if (num === null || num === undefined || isNaN(num)) return "۰";
+  if (!Number.isFinite(num)) return "۰";
   const parts = Math.round(num).toString().split(".");
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "٬");
   return faDigits(parts.join("."));
@@ -54,8 +54,11 @@ export function formatTomanCompact(rial: number): string {
 
 export function parseTomanInput(str: string): number {
   if (!str) return 0;
-  const normalized = enDigits(str).replace(/[^0-9]/g, "");
-  const toman = parseInt(normalized, 10);
-  if (isNaN(toman)) return 0;
+  const normalized = enDigits(str)
+    .replace(/[,٬\s]/g, "")
+    .replace(/٫/g, ".")
+    .replace(/تومان/g, "");
+  if (!/^\d+(?:\.\d+)?$/.test(normalized)) return 0;
+  const toman = Number(normalized);
   return tomanToRial(toman);
 }

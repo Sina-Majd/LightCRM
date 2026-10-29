@@ -27,6 +27,17 @@ export const FA_WEEKDAYS = [
 
 export function toValidDate(val: string | Date | null | undefined): Date | null {
   if (!val) return null;
+  if (typeof val === "string") {
+    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
+    if (parts) {
+      const [, year, month, day] = parts.map(Number);
+      const local = new Date(0);
+      local.setFullYear(year, month - 1, day);
+      local.setHours(0, 0, 0, 0);
+      return local.getFullYear() === year && local.getMonth() === month - 1 && local.getDate() === day
+        ? local : null;
+    }
+  }
   const d = typeof val === "string" ? new Date(val) : val;
   return isNaN(d.getTime()) ? null : d;
 }
@@ -126,12 +137,15 @@ export function formatRelativeFa(val: string | Date | null | undefined): string 
   return formatJalaliDate(d, "medium");
 }
 
-export function isOverdue(val: string | Date | null | undefined): boolean {
+export function isOverdue(val: string | Date | null | undefined, now: Date = new Date()): boolean {
   const d = toValidDate(val);
   if (!d) return false;
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
-  return d.getTime() < new Date().getTime();
+  const deadline = new Date(d);
+  // A date without a time remains payable throughout that local calendar day.
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    deadline.setHours(23, 59, 59, 999);
+  }
+  return deadline.getTime() < now.getTime();
 }
 
 /**
