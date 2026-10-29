@@ -5,7 +5,7 @@ import { TasksSkeleton } from "@/components/dashboard/skeletons";
 import { useCrm } from "@/components/dashboard/crm-context";
 
 export default function TasksPage() {
-  const { load, tasks, toggleTaskDone, addTask, deleteTask } = useCrm();
+  const { load, tasks, toggleTaskDone, rescheduleTask, addTask, deleteTask } = useCrm();
 
   if (!load.tasks) return <TasksSkeleton />;
 
@@ -13,6 +13,7 @@ export default function TasksPage() {
     <TasksView
       tasks={tasks}
       onToggleTask={toggleTaskDone}
+      onRescheduleTask={rescheduleTask}
       onAddTask={addTask}
       onDeleteTask={deleteTask}
     />

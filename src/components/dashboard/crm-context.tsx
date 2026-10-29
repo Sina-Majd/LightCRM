@@ -21,6 +21,7 @@ import {
   createDeal,
   updateDealStage,
   updateDealNextAction,
+  updateDealNotes,
   deleteDeal as deleteDealRow,
   fetchCustomers,
   createCustomer,
@@ -35,6 +36,7 @@ import {
   fetchTasks,
   createTask,
   toggleTask,
+  updateTaskDueDate,
   deleteTask as deleteTaskRow,
   fetchNotifications,
   markNotificationRead as markNotificationReadRow,
@@ -46,59 +48,33 @@ import {
   CallResult,
   getDealNextActionState,
 } from "@/lib/fa";
-import { INITIAL_DEALS, INITIAL_CUSTOMERS, INITIAL_INVOICES, INITIAL_CHEQUES, INITIAL_TASKS, INITIAL_ACTIVITIES, INITIAL_NOTIFICATIONS } from "@/data/dashboard-mock-data";
-import type { Deal, Customer, CRMTask, Invoice, Cheque, CRMActivity, CRMNotification, PipelineStage } from "@/lib/crm/types";
+import type {
+  Deal,
+  Customer,
+  CRMTask,
+  Invoice,
+  Cheque,
+  CRMActivity,
+  CRMNotification,
+  PipelineStage,
+  RecordType,
+} from "@/lib/crm/types";
 import { DEFAULT_PIPELINE_STAGES as INITIAL_PIPELINE_STAGES } from "@/lib/crm/pipeline";
-import { RecordType } from "./create-record-dialog";
+import { probabilityForStage } from "@/lib/crm/pipeline";
 import { dedupeById } from "@/lib/crm/collections";
+import { taskDueCategory } from "@/lib/crm/tasks";
+import { saveDealOrder, orderDealsBySavedOrder } from "@/lib/crm/deal-order";
 
-/* ------------------------------------------------------------------ */
-/* Helpers (moved verbatim from the old page.tsx)                      */
-/* ------------------------------------------------------------------ */
-
-function saveDealOrder(dealsList: Deal[]) {
-  if (typeof window === "undefined" || !dealsList) return;
+async function runMutation(action: () => Promise<void>): Promise<boolean> {
   try {
-    localStorage.setItem(
-      "lightcrm_deals_order",
-      JSON.stringify(dealsList.map((d) => d.id))
-    );
-  } catch {
-    // ignore storage quota errors
+    await action();
+    return true;
+  } catch (error) {
+    console.error("CRM mutation failed:", error);
+    toast.error("ذخیره تغییرات انجام نشد. لطفاً دوباره تلاش کنید.");
+    return false;
   }
 }
-
-function orderDealsBySavedOrder(dealsList: Deal[]): Deal[] {
-  if (typeof window === "undefined" || !dealsList) return dealsList;
-  try {
-    const raw = localStorage.getItem("lightcrm_deals_order");
-    if (!raw) return dealsList;
-    const orderList: string[] = JSON.parse(raw);
-    const orderMap = new Map(orderList.map((id, index) => [id, index]));
-
-    return [...dealsList].sort((a, b) => {
-      const idxA = orderMap.has(a.id) ? orderMap.get(a.id)! : 999999;
-      const idxB = orderMap.has(b.id) ? orderMap.get(b.id)! : 999999;
-      return idxA - idxB;
-    });
-  } catch {
-    return dealsList;
-  }
-}
-
-/** Probability implied by a pipeline stage — mirrors pipeline-board. */
-function probabilityForStage(stages: PipelineStage[], target: string): number {
-  const s = stages.find((x) => x.id === target);
-  if (target === "stage-won" || s?.title.includes("موفق")) return 100;
-  if (target === "stage-negotiation" || s?.title.includes("مذاکره")) return 85;
-  if (target === "stage-proposal" || s?.title.includes("پیش‌فاکتور")) return 70;
-  if (target === "stage-qualified" || s?.title.includes("ارزیابی")) return 50;
-  return 30;
-}
-
-/* ------------------------------------------------------------------ */
-/* Context shape                                                       */
-/* ------------------------------------------------------------------ */
 
 /** Per-resource readiness, so each view skeletonizes only what it needs. */
 export interface LoadState {
@@ -117,6 +93,8 @@ export interface CrmContextValue {
   user: User | null;
   userProfile: UserProfile | null;
   load: LoadState;
+  loadError: string | null;
+  reloadWorkspace: () => void;
 
   stages: PipelineStage[];
   deals: Deal[];
@@ -154,36 +132,45 @@ export interface CrmContextValue {
   closeDeal: () => void;
 
   // Handlers
-  createDealRecord: (deal: Deal) => Promise<void>;
-  changeDeals: (deals: Deal[]) => Promise<void>;
-  changeStageFromSheet: (dealId: string, stageId: string) => Promise<void>;
+  createDealRecord: (deal: Deal) => Promise<boolean>;
+  changeDeals: (deals: Deal[]) => Promise<boolean>;
+  changeStageFromSheet: (dealId: string, stageId: string) => Promise<boolean>;
   updateNextAction: (
     dealId: string,
     title: string | null,
     due: string | null
-  ) => Promise<void>;
-  logCall: (dealId: string, result: CallResult, note: string) => Promise<void>;
-  deleteDeal: (dealId: string) => Promise<void>;
+  ) => Promise<boolean>;
+  logCall: (dealId: string, result: CallResult, note: string) => Promise<boolean>;
+  addDealNote: (dealId: string, note: string) => Promise<boolean>;
+  deleteDeal: (dealId: string) => Promise<boolean>;
 
-  createCustomerRecord: (customer: Customer) => Promise<void>;
-  deleteCustomer: (id: string) => Promise<void>;
+  createCustomerRecord: (customer: Customer) => Promise<boolean>;
+  deleteCustomer: (id: string) => Promise<boolean>;
 
   createInvoiceRecord: (
     invoice: Partial<Invoice>,
     items: RawInvoiceItem[]
-  ) => Promise<void>;
-  createChequeRecord: (cheque: Partial<Cheque>) => Promise<void>;
-  updateCheque: (id: string, status: ChequeStatus) => Promise<void>;
+  ) => Promise<boolean>;
+  createChequeRecord: (cheque: Partial<Cheque>) => Promise<boolean>;
+  updateCheque: (id: string, status: ChequeStatus) => Promise<boolean>;
 
-  toggleTaskDone: (id: string) => Promise<void>;
-  addTask: (task: CRMTask) => Promise<void>;
-  deleteTask: (id: string) => Promise<void>;
+  toggleTaskDone: (id: string) => Promise<boolean>;
+  rescheduleTask: (id: string, dueDate: string) => Promise<boolean>;
+  addTask: (task: CRMTask) => Promise<boolean>;
+  deleteTask: (id: string) => Promise<boolean>;
 
-  markNotification: (id: string) => Promise<void>;
-  markAllNotifications: () => Promise<void>;
+  markNotification: (id: string) => Promise<boolean>;
+  markAllNotifications: () => Promise<boolean>;
 
   /** Navigate between dashboard sections. */
   navigate: (tab: string) => void;
+}
+
+function loadState(ready: boolean): LoadState {
+  return {
+    profile: ready, stages: ready, deals: ready, customers: ready,
+    invoices: ready, cheques: ready, tasks: ready, activities: ready, notifications: ready,
+  };
 }
 
 const CrmContext = createContext<CrmContextValue | null>(null);
@@ -205,30 +192,26 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [load, setLoad] = useState<LoadState>({
-    profile: false,
-    stages: false,
-    deals: false,
-    customers: false,
-    invoices: false,
-    cheques: false,
-    tasks: false,
-    activities: false,
-    notifications: false,
-  });
+  const [load, setLoad] = useState<LoadState>(() => loadState(false));
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [dealOrderReady, setDealOrderReady] = useState(false);
+  const [loadVersion, setLoadVersion] = useState(0);
+  const reloadWorkspace = useCallback(() => setLoadVersion((version) => version + 1), []);
 
   const [stages, setStages] = useState<PipelineStage[]>(INITIAL_PIPELINE_STAGES);
-  const [deals, setDeals] = useState<Deal[]>(INITIAL_DEALS);
-  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
-  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
-  const [cheques, setCheques] = useState<Cheque[]>(INITIAL_CHEQUES);
-  const [tasks, setTasks] = useState<CRMTask[]>(INITIAL_TASKS);
-  const [activities, setActivities] = useState<CRMActivity[]>(INITIAL_ACTIVITIES);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [cheques, setCheques] = useState<Cheque[]>([]);
+  const [tasks, setTasks] = useState<CRMTask[]>([]);
+  const [activities, setActivities] = useState<CRMActivity[]>([]);
   const [notifications, setNotifications] = useState<CRMNotification[]>(
-    INITIAL_NOTIFICATIONS
+    []
   );
 
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const selectedDeal = deals.find((deal) => deal.id === selectedDealId) ?? null;
+  const orderScope = userProfile?.workspaceId ? `workspace:${userProfile.workspaceId}` : `user:${user?.id}`;
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateRecordOpen, setIsCreateRecordOpen] = useState(false);
   const [createRecordType, setCreateRecordType] = useState<RecordType>("deal");
@@ -243,93 +226,73 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
 
     async function loadWorkspaceData() {
       try {
-        const supabase = createClient();
-        const {
-          data: { user: currentUser },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !currentUser) {
-          router.push("/login");
+        const { data: { user: currentUser }, error } = await createClient().auth.getUser();
+        if (!isMounted) return;
+        if (error || !currentUser) {
+          router.replace("/login");
           return;
         }
 
-        if (!isMounted) return;
+        setLoad(loadState(false));
+        setDealOrderReady(false);
+        setLoadError(null);
         setUser(currentUser);
-
-        const prof = await fetchUserProfile(currentUser.id);
+        const profile = await fetchUserProfile(currentUser.id);
         if (!isMounted) return;
-        setUserProfile(prof);
-        setLoad((p) => ({ ...p, profile: true }));
+        if (!profile?.workspaceId) throw new Error("The account has no configured workspace.");
+        setUserProfile(profile);
+        setLoad((previous) => ({ ...previous, profile: true }));
+        const workspaceId = profile?.workspaceId;
+        const scope = workspaceId ? `workspace:${workspaceId}` : `user:${currentUser.id}`;
 
-        const wsId = prof?.workspaceId;
+        // Release each view as its own resource finishes, even if another fails.
+        async function loadResource<T extends { id: string }>(
+          key: keyof LoadState,
+          request: Promise<T[]>,
+          setRecords: (records: T[]) => void
+        ) {
+          try {
+            const records = await request;
+            if (isMounted) setRecords(dedupeById(records));
+          } catch (error) {
+            console.error(`Failed to load CRM ${key}:`, error);
+            if (isMounted) setLoadError("بخشی از اطلاعات بارگذاری نشد. برای دریافت اطلاعات دوباره تلاش کنید.");
+          } finally {
+            if (isMounted) setLoad((previous) => ({ ...previous, [key]: true }));
+          }
+        }
 
-        // Fetch every entity in parallel. `settle` keeps per-position types and
-        // isolates failures so one dead resource never blanks the whole app.
-        const settle = <T,>(p: Promise<T>): Promise<T | undefined> =>
-          p.then((v) => (v ?? undefined)).catch(() => undefined);
-
-        const [stg, dl, cs, inv, chq, tk, act, nt] = await Promise.all([
-          settle(fetchPipelineStages(wsId)),
-          settle(fetchDeals(wsId)),
-          settle(fetchCustomers(wsId)),
-          settle(fetchInvoices(wsId)),
-          settle(fetchCheques(wsId)),
-          settle(fetchTasks(wsId)),
-          settle(fetchActivities(wsId)),
-          settle(fetchNotifications(wsId)),
+        await Promise.all([
+          loadResource("stages", fetchPipelineStages(workspaceId), (records) =>
+            setStages(records.length ? records : INITIAL_PIPELINE_STAGES)),
+          loadResource("deals", fetchDeals(workspaceId), (records) => {
+            setDeals(orderDealsBySavedOrder(records, scope));
+            setDealOrderReady(true);
+          }),
+          loadResource("customers", fetchCustomers(workspaceId), setCustomers),
+          loadResource("invoices", fetchInvoices(workspaceId), setInvoices),
+          loadResource("cheques", fetchCheques(workspaceId), setCheques),
+          loadResource("tasks", fetchTasks(workspaceId), setTasks),
+          loadResource("activities", fetchActivities(workspaceId), setActivities),
+          loadResource("notifications", fetchNotifications(workspaceId), setNotifications),
         ]);
-
-        if (!isMounted) return;
-
-        setStages(stg?.length ? dedupeById(stg) : INITIAL_PIPELINE_STAGES);
-        setDeals(
-          dl !== undefined
-            ? dedupeById(orderDealsBySavedOrder(dl))
-            : orderDealsBySavedOrder(INITIAL_DEALS)
-        );
-        setCustomers(cs !== undefined ? dedupeById(cs) : INITIAL_CUSTOMERS);
-        setInvoices(inv !== undefined ? dedupeById(inv) : INITIAL_INVOICES);
-        setCheques(chq !== undefined ? dedupeById(chq) : INITIAL_CHEQUES);
-        setTasks(tk !== undefined ? dedupeById(tk) : INITIAL_TASKS);
-        setActivities(act !== undefined ? dedupeById(act) : INITIAL_ACTIVITIES);
-        setNotifications(nt !== undefined ? dedupeById(nt) : INITIAL_NOTIFICATIONS);
-
-        setLoad({
-          profile: true,
-          stages: true,
-          deals: true,
-          customers: true,
-          invoices: true,
-          cheques: true,
-          tasks: true,
-          activities: true,
-          notifications: true,
-        });
-      } catch (err) {
-        console.error("Failed to load CRM data:", err);
-        // Release every skeleton even on failure — never leave the UI stuck.
+      } catch (error) {
+        console.error("Failed to load CRM data:", error);
         if (isMounted) {
-          setLoad({
-            profile: true,
-            stages: true,
-            deals: true,
-            customers: true,
-            invoices: true,
-            cheques: true,
-            tasks: true,
-            activities: true,
-            notifications: true,
-          });
+          setLoad(loadState(true));
+          setLoadError("اطلاعات فضای کاری بارگذاری نشد. لطفاً دوباره تلاش کنید.");
         }
       }
     }
 
-    loadWorkspaceData();
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+    void loadWorkspaceData();
+    return () => { isMounted = false; };
+  }, [router, loadVersion]);
+
+  // Storage writes are effects, never side effects inside React state updaters.
+  useEffect(() => {
+    if (user && dealOrderReady) saveDealOrder(deals, orderScope);
+  }, [deals, orderScope, user, dealOrderReady]);
 
   /* ---------- Navigation ---------- */
   const navigate = useCallback(
@@ -350,343 +313,166 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
   const closeCreateRecord = useCallback(() => setIsCreateRecordOpen(false), []);
 
   const openDeal = useCallback((deal: Deal) => {
-    setSelectedDeal(deal);
+    setSelectedDealId(deal.id);
     setIsDetailOpen(true);
   }, []);
 
   const closeDeal = useCallback(() => {
     setIsDetailOpen(false);
-    setSelectedDeal(null);
+    setSelectedDealId(null);
   }, []);
 
-  /* ---------- Deals ---------- */
-  const createDealRecord = useCallback(
-    async (newDeal: Deal) => {
-      setDeals((prev) => {
-        const updated = dedupeById([newDeal, ...prev]);
-        saveDealOrder(updated);
-        return updated;
-      });
-      setLoad((p) => ({ ...p, deals: true }));
+  /* ---------- Mutations ---------- */
+  const createDealRecord = useCallback((deal: Deal) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    const created = await createDeal(userProfile?.workspaceId, user.id, deal);
+    setDeals((previous) => dedupeById([created, ...previous]));
+    toast.success("معامله با موفقیت ایجاد شد.");
+  }), [user, userProfile]);
 
-      toast.success("معامله با موفقیت ایجاد شد.", {
-        description: `«${newDeal.title}» در مرحله مورد نظر قرار گرفت.`,
-      });
-
-      if (user?.id) {
-        const created = await createDeal(
-          userProfile?.workspaceId,
-          user.id,
-          newDeal
-        );
-        if (created) {
-          setDeals((prev) => {
-            const updated = prev.map((d) =>
-              d.id === newDeal.id ? created : d
-            );
-            saveDealOrder(updated);
-            return dedupeById(updated);
-          });
-        }
-      }
-    },
-    [user, userProfile]
-  );
-
-  const changeDeals = useCallback(
-    async (updatedDeals: Deal[]) => {
-      const prevDeals = deals;
-      saveDealOrder(updatedDeals);
-      setDeals(dedupeById(updatedDeals));
-
-      for (const nd of updatedDeals) {
-        const old = prevDeals.find((d) => d.id === nd.id);
-        if (
-          old &&
-          (old.stageId !== nd.stageId || old.probability !== nd.probability)
-        ) {
-          await updateDealStage(nd.id, nd.stageId, nd.probability);
-          const newAct: CRMActivity = {
-            id: `act-${Date.now()}`,
-            subjectType: "deal",
-            subjectId: nd.id,
-            kind: "stage_change",
-            body: `مرحله معامله به «${
-              stages.find((s) => s.id === nd.stageId)?.title || nd.stageId
-            }» تغییر یافت.`,
-            happenedAt: new Date().toISOString(),
-            createdBy: userProfile?.fullName || "شما",
-          };
-          setActivities((prev) => [newAct, ...prev]);
-        }
-      }
-    },
-    [deals, stages, userProfile]
-  );
-
-  const changeStageFromSheet = useCallback(
-    async (dealId: string, newStageId: string) => {
-      const currentDeal = deals.find((d) => d.id === dealId) || selectedDeal;
-      if (currentDeal && currentDeal.stageId === newStageId) return;
-
-      const prob = probabilityForStage(stages, newStageId);
-
-      setDeals((prev) =>
-        dedupeById(
-          prev.map((d) =>
-            d.id === dealId
-              ? {
-                  ...d,
-                  stageId: newStageId,
-                  probability: prob,
-                  lastActivity: "لحظاتی پیش",
-                }
-              : d
-          )
-        )
-      );
-
-      setSelectedDeal((prev) =>
-        prev && prev.id === dealId
-          ? {
-              ...prev,
-              stageId: newStageId,
-              probability: prob,
-              lastActivity: "لحظاتی پیش",
-            }
-          : prev
-      );
-
-      const targetStage = stages.find((s) => s.id === newStageId);
-      toast.success("مرحله به‌روزرسانی شد", {
-        description: `معامله به ${targetStage?.title || "مرحله جدید"} منتقل گردید.`,
-      });
-
-      await updateDealStage(dealId, newStageId, prob);
-    },
-    [deals, stages, selectedDeal]
-  );
-
-  const updateNextAction = useCallback(
-    async (dealId: string, title: string | null, due: string | null) => {
-      setDeals((prev) =>
-        prev.map((d) =>
-          d.id === dealId
-            ? { ...d, nextActionTitle: title, nextActionDue: due }
-            : d
-        )
-      );
-      setSelectedDeal((prev) =>
-        prev && prev.id === dealId
-          ? { ...prev, nextActionTitle: title, nextActionDue: due }
-          : prev
-      );
-      await updateDealNextAction(dealId, title, due);
-    },
-    []
-  );
-
-  const logCall = useCallback(
-    async (dealId: string, result: CallResult, note: string) => {
-      const matchedDeal = deals.find((d) => d.id === dealId);
-      const newAct: CRMActivity = {
-        id: `act-${Date.now()}`,
-        subjectType: "deal",
-        subjectId: dealId,
-        kind: "call",
-        callResult: result,
-        body: `تماس با ${matchedDeal?.contact || "مخاطب"}: ${note}`,
-        happenedAt: new Date().toISOString(),
-        createdBy: userProfile?.fullName || "شما",
-      };
-      setActivities((prev) => [newAct, ...prev]);
-
-      if (user?.id) {
-        await logQuickCall(
-          userProfile?.workspaceId,
-          user.id,
-          "deal",
-          dealId,
-          result,
-          note
-        );
-      }
-    },
-    [deals, user, userProfile]
-  );
-
-  const deleteDeal = useCallback(async (dealId: string) => {
-    setDeals((prev) => {
-      const updated = prev.filter((d) => d.id !== dealId);
-      saveDealOrder(updated);
-      return updated;
+  const changeDeals = useCallback((updated: Deal[]) => runMutation(async () => {
+    const previousById = new Map(deals.map((deal) => [deal.id, deal]));
+    const changed = updated.filter((deal) => {
+      const previous = previousById.get(deal.id);
+      return previous && (previous.stageId !== deal.stageId || previous.probability !== deal.probability);
     });
-    setSelectedDeal((prev) => (prev && prev.id === dealId ? null : prev));
-    setIsDetailOpen(false);
-    toast.success("معامله حذف شد.");
+    const results = await Promise.allSettled(changed.map((deal) =>
+      updateDealStage(deal.id, deal.stageId, deal.probability)));
+    const failed = new Set(changed.filter((_, index) => results[index].status === "rejected").map((deal) => deal.id));
+    setDeals((current) => {
+      const currentById = new Map(current.map((deal) => [deal.id, deal]));
+      const reordered = updated.flatMap((deal) => {
+        const existing = currentById.get(deal.id);
+        if (!existing) return [];
+        return [{ ...existing, ...(failed.has(deal.id) ? {} : {
+          stageId: deal.stageId, probability: deal.probability,
+          daysInStage: deal.daysInStage, lastActivity: deal.lastActivity,
+        }) }];
+      });
+      const ids = new Set(reordered.map((deal) => deal.id));
+      return [...reordered, ...current.filter((deal) => !ids.has(deal.id))];
+    });
+    const activities: CRMActivity[] = changed.filter((deal) => !failed.has(deal.id)).map((deal) => ({
+      id: crypto.randomUUID(), subjectType: "deal", subjectId: deal.id, kind: "stage_change",
+      body: `مرحله معامله به «${stages.find((stage) => stage.id === deal.stageId)?.title || deal.stageId}» تغییر یافت.`,
+      happenedAt: new Date().toISOString(), createdBy: userProfile?.fullName || "شما",
+    }));
+    setActivities((current) => [...activities, ...current]);
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure?.status === "rejected") throw failure.reason;
+  }), [deals, stages, userProfile]);
+
+  const changeStageFromSheet = useCallback((dealId: string, stageId: string) => runMutation(async () => {
+    const probability = probabilityForStage(stages, stageId);
+    await updateDealStage(dealId, stageId, probability);
+    setDeals((previous) => previous.map((deal) => deal.id === dealId ? {
+      ...deal, stageId, probability, daysInStage: 0, lastActivity: "لحظاتی پیش",
+    } : deal));
+    toast.success("مرحله به‌روزرسانی شد");
+  }), [stages]);
+
+  const updateNextAction = useCallback((dealId: string, title: string | null, due: string | null) => runMutation(async () => {
+    await updateDealNextAction(dealId, title, due);
+    setDeals((previous) => previous.map((deal) => deal.id === dealId ? {
+      ...deal, nextActionTitle: title, nextActionDue: due,
+    } : deal));
+  }), []);
+
+  const logCall = useCallback((dealId: string, result: CallResult, note: string) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    await logQuickCall(userProfile?.workspaceId, user.id, "deal", dealId, result, note);
+    const matched = deals.find((deal) => deal.id === dealId);
+    const activity: CRMActivity = {
+      id: crypto.randomUUID(), subjectType: "deal", subjectId: dealId, kind: "call", callResult: result,
+      body: `تماس با ${matched?.contact || "مخاطب"}: ${note}`,
+      happenedAt: new Date().toISOString(), createdBy: userProfile?.fullName || "شما",
+    };
+    setActivities((previous) => [activity, ...previous]);
+  }), [deals, user, userProfile]);
+
+  const deleteDeal = useCallback((dealId: string) => runMutation(async () => {
     await deleteDealRow(dealId);
-  }, []);
+    setDeals((previous) => previous.filter((deal) => deal.id !== dealId));
+    setSelectedDealId((previous) => previous === dealId ? null : previous);
+    toast.success("معامله حذف شد.");
+  }), []);
 
-  /* ---------- Customers ---------- */
-  const createCustomerRecord = useCallback(
-    async (newCustomer: Customer) => {
-      setCustomers((prev) => dedupeById([newCustomer, ...prev]));
-      setLoad((p) => ({ ...p, customers: true }));
-      toast.success("مشتری با موفقیت ثبت شد.");
+  const addDealNote = useCallback((dealId: string, note: string) => runMutation(async () => {
+    const deal = deals.find((record) => record.id === dealId);
+    if (!deal || !note.trim()) throw new Error("A saved deal and note are required.");
+    const notes = [deal.notes.trim(), note.trim()].filter(Boolean).join("\n\n");
+    await updateDealNotes(dealId, notes);
+    setDeals((previous) => previous.map((record) => record.id === dealId ? { ...record, notes } : record));
+  }), [deals]);
 
-      if (user?.id) {
-        const created = await createCustomer(
-          userProfile?.workspaceId,
-          user.id,
-          newCustomer
-        );
-        if (created) {
-          setCustomers((prev) =>
-            dedupeById(
-              prev.map((c) => (c.id === newCustomer.id ? created : c))
-            )
-          );
-        }
-      }
-    },
-    [user, userProfile]
-  );
+  const createCustomerRecord = useCallback((customer: Customer) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    const created = await createCustomer(userProfile?.workspaceId, user.id, customer);
+    setCustomers((previous) => dedupeById([created, ...previous]));
+    toast.success("مشتری با موفقیت ثبت شد.");
+  }), [user, userProfile]);
 
-  const removeCustomer = useCallback(async (customerId: string) => {
-    setCustomers((prev) => prev.filter((c) => c.id !== customerId));
+  const removeCustomer = useCallback((id: string) => runMutation(async () => {
+    await deleteCustomerRow(id);
+    setCustomers((previous) => previous.filter((customer) => customer.id !== id));
     toast.success("مشتری حذف شد.");
-    await deleteCustomerRow(customerId);
-  }, []);
+  }), []);
 
-  /* ---------- Invoices & cheques ---------- */
-  const createInvoiceRecord = useCallback(
-    async (invoice: Partial<Invoice>, rawItems: RawInvoiceItem[]) => {
-      setLoad((p) => ({ ...p, invoices: true }));
+  const createInvoiceRecord = useCallback((invoice: Partial<Invoice>, items: RawInvoiceItem[]) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    const created = await createInvoice(userProfile?.workspaceId, invoice, items);
+    setInvoices((previous) => [created, ...previous]);
+  }), [user, userProfile]);
 
-      if (user?.id) {
-        const created = await createInvoice(
-          userProfile?.workspaceId,
-          invoice,
-          rawItems
-        );
-        if (created) {
-          setInvoices((prev) => [created, ...prev]);
-          return;
-        }
-      }
+  const createChequeRecord = useCallback((cheque: Partial<Cheque>) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    const created = await createCheque(userProfile?.workspaceId, cheque);
+    setCheques((previous) => [{ ...created, customerName: cheque.customerName }, ...previous]);
+  }), [user, userProfile]);
 
-      const fallback: Invoice = {
-        id: `inv-${Date.now()}`,
-        number: invoices.length + 1025,
-        type: invoice.type || "proforma",
-        status: "draft",
-        issueDate: invoice.issueDate || new Date().toISOString().split("T")[0],
-        dueDate: invoice.dueDate,
-        subtotal: invoice.subtotal || 0,
-        discount: invoice.discount || 0,
-        tax: invoice.tax || 0,
-        total: invoice.total || 0,
-        notes: invoice.notes,
-        customerName: invoice.customerName,
-        customerId: invoice.customerId,
-      };
-      setInvoices((prev) => [fallback, ...prev]);
-    },
-    [user, userProfile, invoices]
-  );
+  const updateCheque = useCallback((id: string, status: ChequeStatus) => runMutation(async () => {
+    await updateChequeStatus(id, status);
+    setCheques((previous) => previous.map((cheque) => cheque.id === id ? {
+      ...cheque, status, statusUpdatedAt: new Date().toISOString(),
+    } : cheque));
+  }), []);
 
-  const createChequeRecord = useCallback(
-    async (cheque: Partial<Cheque>) => {
-      setLoad((p) => ({ ...p, cheques: true }));
-
-      if (user?.id) {
-        const created = await createCheque(userProfile?.workspaceId, cheque);
-        if (created) {
-          setCheques((prev) => [created, ...prev]);
-          return;
-        }
-      }
-
-      const fallback: Cheque = {
-        id: `chq-${Date.now()}`,
-        customerId: cheque.customerId,
-        customerName: cheque.customerName,
-        sayadNumber: cheque.sayadNumber || "0000000000000000",
-        bankName: cheque.bankName || "بانک ملی",
-        branchName: cheque.branchName,
-        accountOwner: cheque.accountOwner || "صاحب حساب",
-        amount: cheque.amount || 0,
-        dueDate: cheque.dueDate || new Date().toISOString().split("T")[0],
-        status: cheque.status || "in_hand",
-      };
-      setCheques((prev) => [fallback, ...prev]);
-    },
-    [user, userProfile]
-  );
-
-  const updateCheque = useCallback(
-    async (chequeId: string, status: ChequeStatus) => {
-      setCheques((prev) =>
-        prev.map((c) =>
-          c.id === chequeId
-            ? { ...c, status, statusUpdatedAt: new Date().toISOString() }
-            : c
-        )
-      );
-      await updateChequeStatus(chequeId, status);
-    },
-    []
-  );
-
-  /* ---------- Tasks ---------- */
-  const toggleTaskDone = useCallback(async (taskId: string) => {
-    const target = tasks.find((t) => t.id === taskId);
+  const toggleTaskDone = useCallback((id: string) => runMutation(async () => {
+    const target = tasks.find((task) => task.id === id);
     if (!target) return;
-    const newCompleted = !target.completed;
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, completed: newCompleted } : t))
-    );
-    await toggleTask(taskId, newCompleted);
-  }, [tasks]);
+    const completed = !target.completed;
+    await toggleTask(id, completed);
+    setTasks((previous) => previous.map((task) => task.id === id ? { ...task, completed } : task));
+  }), [tasks]);
 
-  const addTask = useCallback(
-    async (newTask: CRMTask) => {
-      setTasks((prev) => dedupeById([newTask, ...prev]));
-      setLoad((p) => ({ ...p, tasks: true }));
-      if (user?.id) {
-        const created = await createTask(
-          userProfile?.workspaceId,
-          user.id,
-          newTask
-        );
-        if (created) {
-          setTasks((prev) =>
-            dedupeById(prev.map((t) => (t.id === newTask.id ? created : t)))
-          );
-        }
-      }
-    },
-    [user, userProfile]
-  );
+  const addTask = useCallback((task: CRMTask) => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
+    const created = await createTask(userProfile?.workspaceId, user.id, task);
+    setTasks((previous) => dedupeById([created, ...previous]));
+  }), [user, userProfile]);
 
-  const removeTask = useCallback(async (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    await deleteTaskRow(taskId);
-  }, []);
+  const rescheduleTask = useCallback((id: string, dueDate: string) => runMutation(async () => {
+    await updateTaskDueDate(id, dueDate);
+    setTasks((previous) => previous.map((task) => task.id === id ? {
+      ...task, dueDate, dueCategory: taskDueCategory(dueDate),
+    } : task));
+  }), []);
 
-  /* ---------- Notifications ---------- */
-  const markNotification = useCallback(async (id: string) => {
-    setNotifications((prev) =>
-      dedupeById(prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    );
+  const removeTask = useCallback((id: string) => runMutation(async () => {
+    await deleteTaskRow(id);
+    setTasks((previous) => previous.filter((task) => task.id !== id));
+  }), []);
+
+  const markNotification = useCallback((id: string) => runMutation(async () => {
     await markNotificationReadRow(id);
-  }, []);
+    setNotifications((previous) => previous.map((notification) => notification.id === id ? { ...notification, read: true } : notification));
+  }), []);
 
-  const markAllNotifications = useCallback(async () => {
-    if (!user?.id) return;
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllNotifications = useCallback(() => runMutation(async () => {
+    if (!user) throw new Error("Authentication required.");
     await markAllNotificationsRead(userProfile?.workspaceId);
-  }, [user, userProfile]);
+    setNotifications((previous) => previous.map((notification) => ({ ...notification, read: true })));
+  }), [user, userProfile]);
 
   /* ---------- Derived ---------- */
   const counts = useMemo(() => {
@@ -710,6 +496,8 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       user,
       userProfile,
       load,
+      loadError,
+      reloadWorkspace,
       stages,
       deals,
       customers,
@@ -735,6 +523,7 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       changeStageFromSheet,
       updateNextAction,
       logCall,
+      addDealNote,
       deleteDeal,
       createCustomerRecord,
       deleteCustomer: removeCustomer,
@@ -742,6 +531,7 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       createChequeRecord,
       updateCheque,
       toggleTaskDone,
+      rescheduleTask,
       addTask,
       deleteTask: removeTask,
       markNotification,
@@ -749,13 +539,13 @@ export function CrmProvider({ children }: { children: React.ReactNode }) {
       navigate,
     }),
     [
-      user, userProfile, load, stages, deals, customers, invoices, cheques,
+      user, userProfile, load, loadError, reloadWorkspace, stages, deals, customers, invoices, cheques,
       tasks, activities, notifications, counts, createRecordType,
       createRecordDefaultStage, openCreateRecord, selectedDeal, isDetailOpen,
       isCreateRecordOpen, closeCreateRecord, searchQuery, setSearchQuery,
       openDeal, closeDeal, createDealRecord, changeDeals, changeStageFromSheet,
-      updateNextAction, logCall, deleteDeal, createCustomerRecord, removeCustomer,
-      createInvoiceRecord, createChequeRecord, updateCheque, toggleTaskDone,
+      updateNextAction, logCall, addDealNote, deleteDeal, createCustomerRecord, removeCustomer,
+      createInvoiceRecord, createChequeRecord, updateCheque, toggleTaskDone, rescheduleTask,
       addTask, removeTask, markNotification, markAllNotifications, navigate,
     ]
   );

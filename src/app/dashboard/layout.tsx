@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 
 import {
@@ -38,6 +39,8 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const {
     userProfile,
     load,
+    loadError,
+    reloadWorkspace,
     stages,
     counts,
     searchQuery,
@@ -50,6 +53,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     changeStageFromSheet,
     updateNextAction,
     logCall,
+    addDealNote,
     deleteDeal,
     createDealRecord,
     createCustomerRecord,
@@ -78,9 +82,16 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       userProfile={userProfile}
       counts={counts}
     >
+      {loadError && (
+        <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p>{loadError}</p>
+          <Button variant="outline" onClick={reloadWorkspace}>تلاش مجدد</Button>
+        </div>
+      )}
       {children}
 
       <DealDetailSheet
+        key={selectedDeal?.id ?? "closed"}
         deal={selectedDeal}
         isOpen={isDetailOpen}
         onClose={closeDeal}
@@ -89,6 +100,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         onDeleteDeal={deleteDeal}
         onUpdateNextAction={updateNextAction}
         onLogCall={logCall}
+        onAddNote={addDealNote}
       />
 
       <CreateRecordDialog

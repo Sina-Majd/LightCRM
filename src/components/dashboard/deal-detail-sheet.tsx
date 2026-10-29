@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Sheet,
@@ -33,6 +35,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
+import { normalizePhone, whatsappNumber } from "@/lib/fa/phone";
 import type { Deal, PipelineStage } from "@/lib/crm/types";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import {
@@ -48,14 +51,11 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   stages: PipelineStage[];
-  onStageChange?: (dealId: string, newStageId: string) => void;
-  onDeleteDeal?: (dealId: string) => void;
-  onUpdateNextAction?: (
-    dealId: string,
-    title: string | null,
-    due: string | null
-  ) => void;
-  onLogCall?: (dealId: string, result: CallResult, note: string) => void;
+  onStageChange?: AsyncAction<[string, string]>;
+  onDeleteDeal?: AsyncAction<[string]>;
+  onUpdateNextAction?: AsyncAction<[string, string | null, string | null]>;
+  onLogCall?: AsyncAction<[string, CallResult, string]>;
+  onAddNote?: AsyncAction<[string, string]>;
 }
 
 /** Call outcomes — one segmented row, dots carry the status. */
@@ -83,9 +83,10 @@ export function DealDetailSheet({
   onDeleteDeal,
   onUpdateNextAction,
   onLogCall,
+  onAddNote,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [note, setNote] = useState("");
-  const [notes, setNotes] = useState<string[]>([]);
   const [confirm, setConfirm] = useState(false);
 
   const [nextActionTitle, setNextActionTitle] = useState("");
@@ -102,7 +103,7 @@ export function DealDetailSheet({
   const stageIdx = stages.findIndex((s) => s.id === deal.stageId);
   const stage = stages[stageIdx];
 
-  const handleSaveNextAction = (e: React.FormEvent) => {
+  const handleSaveNextAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nextActionTitle.trim()) {
       toast.error("عنوان اقدام بعدی نمی‌تواند خالی باشد.");
@@ -110,14 +111,14 @@ export function DealDetailSheet({
     }
     const hours = parseInt(nextActionHours, 10) || 24;
     const dueDate = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-    onUpdateNextAction?.(deal.id, nextActionTitle.trim(), dueDate);
+    if (!onUpdateNextAction || !await run(() => onUpdateNextAction(deal.id, nextActionTitle.trim(), dueDate))) return;
     toast.success("اقدام بعدی ثبت شد.");
     setIsEditingAction(false);
     setNextActionTitle("");
   };
 
-  const handleCallResult = (res: CallResult) => {
-    onLogCall?.(deal.id, res, `تماس ثبت‌شده برای ${deal.title}`);
+  const handleCallResult = async (res: CallResult) => {
+    if (!onLogCall || !await run(() => onLogCall(deal.id, res, `تماس ثبت‌شده برای ${deal.title}`))) return;
     toast.success(`نتیجه تماس: ${CALL_RESULT_MAP[res].label}`);
     if (res === "follow_up_scheduled" || res === "connected") {
       setIsEditingAction(true);
@@ -125,10 +126,7 @@ export function DealDetailSheet({
     }
   };
 
-  const cleanPhone = (deal.phone || "").replace(/[^0-9]/g, "");
-  const waNumber = cleanPhone.startsWith("0")
-    ? `98${cleanPhone.slice(1)}`
-    : cleanPhone;
+  const waNumber = whatsappNumber(deal.phone || "");
 
   return (
     <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
@@ -276,7 +274,7 @@ export function DealDetailSheet({
                     </Select>
                   </div>
                   <Button
-                    type="submit"
+                    type="submit" disabled={isPending}
                     size="sm"
                     className="h-10 shrink-0 cursor-pointer rounded-xl bg-brand-700 px-4 text-xs font-black text-white hover:bg-brand-800"
                   >
@@ -343,7 +341,7 @@ export function DealDetailSheet({
                   <dt className="shrink-0 font-bold text-slate-500">تلفن</dt>
                   <dd className="flex min-w-0 items-center gap-1.5">
                     <a
-                      href={`tel:${deal.phone}`}
+                      href={`tel:${normalizePhone(deal.phone)}`}
                       className="flex items-center gap-1 font-black text-brand-700 hover:underline"
                     >
                       <Phone className="size-3 shrink-0" />
@@ -400,23 +398,24 @@ export function DealDetailSheet({
             </p>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                if (!note.trim()) return;
-                setNotes([note.trim(), ...notes]);
+                if (!note.trim() || !onAddNote) return;
+                if (!await run(() => onAddNote(deal.id, note.trim()))) return;
                 setNote("");
                 toast.success("یادداشت اضافه شد.");
               }}
               className="mt-2.5 flex gap-2"
             >
               <Input
+                aria-label="یادداشت مذاکره"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="یادداشت تماس یا توافقات مذاکره…"
                 className="h-10 rounded-xl border-slate-200 bg-white text-xs"
               />
               <Button
-                type="submit"
+                type="submit" disabled={isPending || !onAddNote}
                 aria-label="ثبت یادداشت"
                 className="size-10 shrink-0 cursor-pointer rounded-xl bg-brand-700 text-white hover:bg-brand-800"
               >
@@ -424,18 +423,6 @@ export function DealDetailSheet({
               </Button>
             </form>
 
-            {notes.length > 0 && (
-              <ul className="mt-2.5 space-y-1.5">
-                {notes.map((n, i) => (
-                  <li
-                    key={i}
-                    className="rounded-xl border border-brand-200 bg-brand-50 p-2.5 text-[11.5px] font-bold leading-6 text-slate-800"
-                  >
-                    {n}
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
         </div>
 
@@ -473,8 +460,8 @@ export function DealDetailSheet({
       <ConfirmDeleteDialog
         open={confirm}
         onOpenChange={setConfirm}
-        onConfirm={() => {
-          onDeleteDeal?.(deal.id);
+        onConfirm={async () => {
+          if (!onDeleteDeal || await onDeleteDeal(deal.id) === false) return false;
           setConfirm(false);
           onClose();
         }}

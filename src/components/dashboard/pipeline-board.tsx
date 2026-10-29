@@ -1,10 +1,14 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { Plus, Trophy, Wallet, Target, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import type { Deal, PipelineStage } from "@/lib/crm/types";
+import { probabilityForStage, isWonStage } from "@/lib/crm/pipeline";
+import { dedupeById } from "@/lib/crm/collections";
 import { formatTomanCompact, faDigits } from "@/lib/fa";
 import { DealCard } from "./deal-card";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
@@ -30,10 +34,10 @@ const PRIORITY_FILTERS = [
 interface Props {
   stages: PipelineStage[];
   deals: Deal[];
-  onDealsChange: (d: Deal[]) => void;
+  onDealsChange: AsyncAction<[Deal[]]>;
   onSelectDeal: (deal: Deal) => void;
   onOpenNewDealModal: (stageId?: string) => void;
-  onDeleteDeal?: (dealId: string) => void;
+  onDeleteDeal?: AsyncAction<[string]>;
   onOpenQuickCall?: (deal: Deal) => void;
   searchQuery: string;
 }
@@ -48,17 +52,15 @@ export function PipelineBoard({
   onOpenQuickCall,
   searchQuery,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const isDesktop = useIsDesktop();
   const [filter, setFilter] = useState("all");
   const [toDelete, setToDelete] = useState<Deal | null>(null);
   const [mobileStage, setMobileStage] = useState(stages[0]?.id || "");
 
   const filtered = React.useMemo(() => {
-    const seen = new Set<string>();
     const q = (searchQuery || "").trim().toLowerCase();
-    return deals.filter((d) => {
-      if (!d?.id || seen.has(d.id)) return false;
-      seen.add(d.id);
+    return dedupeById(deals).filter((d) => {
       const okQ =
         !q ||
         (d.title + (d.company || "") + (d.contact || "")).toLowerCase().includes(q);
@@ -67,8 +69,8 @@ export function PipelineBoard({
     });
   }, [deals, searchQuery, filter]);
 
-  const activeDeals = deals.filter((d) => d.stageId !== "stage-won");
-  const wonDeals = deals.filter((d) => d.stageId === "stage-won");
+  const activeDeals = deals.filter((d) => !isWonStage(stages, d.stageId));
+  const wonDeals = deals.filter((d) => isWonStage(stages, d.stageId));
   const activeValue = activeDeals.reduce((s, d) => s + d.value, 0);
   const wonValue = wonDeals.reduce((s, d) => s + d.value, 0);
   const winRate =
@@ -90,27 +92,13 @@ export function PipelineBoard({
     return STAGE_ACCENT[index % STAGE_ACCENT.length];
   };
 
-  const probabilityFor = (target: string) => {
-    const s = stages.find((x) => x.id === target);
-    if (target === "stage-won" || s?.title.includes("موفق")) return 100;
-    if (target === "stage-negotiation" || s?.title.includes("مذاکره")) return 85;
-    if (target === "stage-proposal" || s?.title.includes("پیش‌فاکتور")) return 70;
-    if (target === "stage-qualified" || s?.title.includes("ارزیابی")) return 50;
-    return 30;
-  };
-
-  const isWonStage = (target: string) => {
-    const s = stages.find((x) => x.id === target);
-    return target === "stage-won" || !!s?.title.includes("موفق");
-  };
-
-  const move = (dealId: string, target: string) => {
+  const move = async (dealId: string, target: string) => {
     const deal = deals.find((d) => d.id === dealId);
     if (!deal || deal.stageId === target) return;
     const targetStage = stages.find((s) => s.id === target);
 
     const prev = deals;
-    onDealsChange(
+    const saved = await run(() => onDealsChange(
       deals.map((d) =>
         d.id === dealId
           ? {
@@ -118,23 +106,24 @@ export function PipelineBoard({
               stageId: target,
               daysInStage: 0,
               lastActivity: "همین حالا",
-              probability: probabilityFor(target),
+              probability: probabilityForStage(stages, target),
             }
           : d
       )
-    );
+    ));
+    if (!saved) return;
     toast(
-      isWonStage(target) ? "معامله برده شد 🎉" : "مرحله معامله به‌روزرسانی شد",
+      isWonStage(stages, target) ? "معامله برده شد 🎉" : "مرحله معامله به‌روزرسانی شد",
       {
         description: `${deal.company} → ${targetStage?.title || target}`,
-        action: { label: "بازگردانی", onClick: () => onDealsChange(prev) },
+        action: { label: "بازگردانی", onClick: () => { void run(() => onDealsChange(prev)); } },
       }
     );
   };
 
-  const onDragEnd = (r: DropResult) => {
+  const onDragEnd = async (r: DropResult) => {
     const { source, destination, draggableId } = r;
-    if (!destination) return;
+    if (!destination || isPending) return;
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
@@ -151,7 +140,7 @@ export function PipelineBoard({
       stageId: dest,
       daysInStage: source.droppableId === dest ? moved.daysInStage : 0,
       lastActivity: "همین حالا",
-      probability: probabilityFor(dest),
+      probability: probabilityForStage(stages, dest),
     };
 
     const others = deals.filter((d) => d.id !== draggableId);
@@ -165,9 +154,9 @@ export function PipelineBoard({
     }
     const ids = new Set(next.map((d) => d.id));
     for (const d of others) if (!ids.has(d.id)) next.push(d);
-    onDealsChange(next);
+    if (!await run(() => onDealsChange(next))) return;
 
-    if (isWonStage(dest)) {
+    if (isWonStage(stages, dest)) {
       toast.success("معامله با موفقیت برده شد 🎉", {
         description: `${moved.company} نهایی شد.`,
       });
@@ -203,7 +192,7 @@ export function PipelineBoard({
           </div>
 
           <div className="mt-2.5 flex items-baseline justify-between gap-2">
-            <span className="text-[11.5px] font-bold text-slate-500">جمع مرحله</span>
+            <span className="text-[11.5px] font-bold text-slate-600">جمع مرحله</span>
             <span className={`text-[12.5px] font-black tabular-nums ${color.text}`}>
               {formatTomanCompact(sum)}
             </span>
@@ -217,7 +206,7 @@ export function PipelineBoard({
                 style={{ width: `${Math.min(100, share)}%` }}
               />
             </div>
-            <span className="shrink-0 text-[10.5px] font-black tabular-nums text-slate-500">
+            <span className="shrink-0 text-[10.5px] font-black tabular-nums text-slate-600">
               {faDigits(Math.round(share))}٪
             </span>
           </div>
@@ -240,7 +229,7 @@ export function PipelineBoard({
                     deal={deal}
                     index={idx}
                     stages={stages}
-                    isDraggable
+                    isDraggable={!isPending}
                     onSelect={onSelectDeal}
                     onDeleteDeal={() => setToDelete(deal)}
                     onMoveToStage={move}
@@ -251,7 +240,7 @@ export function PipelineBoard({
                 {list.length === 0 && !snap.isDraggingOver && (
                   <button
                     onClick={() => onOpenNewDealModal(stage.id)}
-                    className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 bg-white text-[12px] font-bold text-slate-500 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                    className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 bg-white text-[12px] font-bold text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
                   >
                     <Plus className="size-4" />
                     ایجاد معامله در این مرحله
@@ -277,7 +266,7 @@ export function PipelineBoard({
               />
             ))}
             {list.length === 0 && (
-              <div className="flex h-24 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-[11.5px] text-slate-400">
+              <div className="flex h-24 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-[11.5px] text-slate-600">
                 معامله‌ای در این مرحله نیست
               </div>
             )}
@@ -288,7 +277,7 @@ export function PipelineBoard({
         <div className="border-t border-slate-200 p-2">
           <button
             onClick={() => onOpenNewDealModal(stage.id)}
-            className="flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11.5px] font-bold text-slate-500 transition-colors hover:bg-white hover:text-brand-800"
+            className="flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11.5px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-brand-800"
           >
             <Plus className="size-3.5" />
             افزودن
@@ -301,7 +290,7 @@ export function PipelineBoard({
   return (
     <div className="space-y-4" dir="rtl">
       {/* ===== KPI row — one figure per cell, evenly weighted ===== */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[
           {
             icon: Wallet,
@@ -348,7 +337,7 @@ export function PipelineBoard({
               >
                 <s.icon className="size-4" />
               </span>
-              <span className="text-[12px] font-bold text-slate-500">{s.label}</span>
+              <span className="text-[12px] font-bold text-slate-600">{s.label}</span>
             </div>
             <div
               className={`mt-2.5 text-[19px] font-black tabular-nums leading-tight ${s.valueClass}`}
@@ -363,7 +352,7 @@ export function PipelineBoard({
                 />
               </div>
             ) : (
-              <div className="mt-1 text-[11px] font-medium text-slate-500">{s.meta}</div>
+              <div className="mt-1 text-[11px] font-medium text-slate-600">{s.meta}</div>
             )}
           </div>
         ))}
@@ -372,7 +361,7 @@ export function PipelineBoard({
       {/* ===== Toolbar — filter + primary action, on their own row ===== */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-bold text-slate-500">فیلتر اولویت</span>
+          <span className="text-[12px] font-bold text-slate-600">فیلتر اولویت</span>
           <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
             {PRIORITY_FILTERS.map((f) => (
               <button
@@ -392,7 +381,7 @@ export function PipelineBoard({
 
         <div className="flex items-center gap-3">
           {filtered.length !== deals.length && (
-            <span className="text-[11.5px] font-bold text-slate-500">
+            <span className="text-[11.5px] font-bold text-slate-600">
               {faDigits(filtered.length)} از {faDigits(deals.length)} معامله
             </span>
           )}
@@ -453,8 +442,8 @@ export function PipelineBoard({
         itemName={toDelete ? `${toDelete.title} (${toDelete.company})` : undefined}
         description="این معامله از پایپ‌لاین حذف می‌شود و پرونده آن بسته خواهد شد."
         confirmLabel="حذف معامله"
-        onConfirm={() => {
-          if (toDelete) onDeleteDeal?.(toDelete.id);
+        onConfirm={async () => {
+          if (!toDelete || !onDeleteDeal || await onDeleteDeal(toDelete.id) === false) return false;
           setToDelete(null);
         }}
       />

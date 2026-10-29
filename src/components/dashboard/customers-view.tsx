@@ -1,5 +1,8 @@
 "use client";
 
+import { normalizePhone, whatsappNumber } from "@/lib/fa/phone";
+import type { AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Building2,
@@ -45,7 +48,7 @@ interface Props {
   searchQuery: string;
   onSelectCustomer?: (c: Customer) => void;
   onOpenNewCustomerModal?: () => void;
-  onDeleteCustomer?: (id: string) => void;
+  onDeleteCustomer?: AsyncAction<[string]>;
   onAddOpportunityForCustomer?: (c: Customer) => void;
   onOpenInvoiceForCustomer?: (c: Customer) => void;
 }
@@ -555,9 +558,9 @@ export function CustomersView({
             ? `آیا از حذف اطلاعات «${toDeleteCustomer.company || toDeleteCustomer.name}» مطمئن هستید؟ تمامی سوابق این مخاطب برای همیشه حذف می‌شوند.`
             : undefined
         }
-        onConfirm={() => {
+        onConfirm={async () => {
           if (toDeleteCustomer) {
-            onDeleteCustomer?.(toDeleteCustomer.id);
+            if (!onDeleteCustomer || await onDeleteCustomer(toDeleteCustomer.id) === false) return false;
             if (selected360?.id === toDeleteCustomer.id) {
               setSelected360(null);
             }

@@ -1,5 +1,8 @@
 "use client";
 
+
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Receipt,
@@ -51,9 +54,9 @@ interface Props {
   cheques: Cheque[];
   customers: Customer[];
   searchQuery: string;
-  onCreateInvoice: (inv: Partial<Invoice>, items: RawInvoiceItem[]) => void;
-  onCreateCheque: (chq: Partial<Cheque>) => void;
-  onUpdateChequeStatus: (chequeId: string, status: ChequeStatus) => void;
+  onCreateInvoice: AsyncAction<[Partial<Invoice>, RawInvoiceItem[]]>;
+  onCreateCheque: AsyncAction<[Partial<Cheque>]>;
+  onUpdateChequeStatus: AsyncAction<[string, ChequeStatus]>;
 }
 
 export function InvoicesView({
@@ -65,6 +68,7 @@ export function InvoicesView({
   onCreateCheque,
   onUpdateChequeStatus,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [subTab, setSubTab] = useState<"invoices" | "cheques">("invoices");
 
   // Modals state
@@ -401,8 +405,9 @@ export function InvoicesView({
                               className="w-52 rounded-2xl border border-brand-100 bg-white p-1.5 text-right shadow-xl"
                             >
                               <DropdownMenuItem
-                                onClick={() => {
-                                  onUpdateChequeStatus(chq.id, "in_hand");
+                                disabled={isPending}
+                                onClick={async () => {
+                                  if (!await run(() => onUpdateChequeStatus(chq.id, "in_hand"))) return;
                                   toast.success("وضعیت چک به نزد صندوق تغییر یافت.");
                                 }}
                                 className="cursor-pointer text-amber-700 text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-amber-50"
@@ -410,8 +415,9 @@ export function InvoicesView({
                                 نزد صندوق (دریافت شده)
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  onUpdateChequeStatus(chq.id, "deposited");
+                                disabled={isPending}
+                                onClick={async () => {
+                                  if (!await run(() => onUpdateChequeStatus(chq.id, "deposited"))) return;
                                   toast.success("وضعیت چک به واگذار به بانک تغییر یافت.");
                                 }}
                                 className="cursor-pointer text-brand-700 text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
@@ -419,8 +425,9 @@ export function InvoicesView({
                                 واگذار به بانک
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  onUpdateChequeStatus(chq.id, "cleared");
+                                disabled={isPending}
+                                onClick={async () => {
+                                  if (!await run(() => onUpdateChequeStatus(chq.id, "cleared"))) return;
                                   toast.success("چک صیادی با موفقیت وصول گردید.");
                                 }}
                                 className="cursor-pointer text-emerald-700 text-xs font-black rounded-xl py-2 px-2.5 hover:bg-emerald-50"
@@ -428,8 +435,9 @@ export function InvoicesView({
                                 وصول شده ✓
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  onUpdateChequeStatus(chq.id, "bounced");
+                                disabled={isPending}
+                                onClick={async () => {
+                                  if (!await run(() => onUpdateChequeStatus(chq.id, "bounced"))) return;
                                   toast.error("چک به وضعیت برگشتی تغییر یافت.");
                                 }}
                                 className="cursor-pointer text-rose-700 text-xs font-black rounded-xl py-2 px-2.5 hover:bg-rose-50"

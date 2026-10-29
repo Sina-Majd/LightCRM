@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useMemo, useState } from "react";
 import {
   Dialog,
@@ -28,6 +30,7 @@ import {
   RawInvoiceItem,
   InvoiceType,
   faDigits,
+  toLocalISODate,
 } from "@/lib/fa";
 import { toast } from "sonner";
 
@@ -36,7 +39,7 @@ interface Props {
   onClose: () => void;
   customers: Customer[];
   defaultCustomer?: Customer | null;
-  onCreateInvoice: (invoice: Partial<Invoice>, items: RawInvoiceItem[]) => void;
+  onCreateInvoice: AsyncAction<[Partial<Invoice>, RawInvoiceItem[]]>;
 }
 
 interface LineItem {
@@ -57,7 +60,7 @@ const emptyItem = (): LineItem => ({
 
 /** A row only counts if it has both a description and a price. */
 function isComplete(item: RawInvoiceItem): boolean {
-  return item.description.trim().length > 0 && item.unit_price > 0;
+  return item.description.trim().length > 0 && item.unit_price > 0 && item.quantity > 0;
 }
 
 export function CreateInvoiceDialog({
@@ -67,6 +70,7 @@ export function CreateInvoiceDialog({
   defaultCustomer,
   onCreateInvoice,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [customerId, setCustomerId] = useState<string>(
     defaultCustomer?.id || customers[0]?.id || ""
   );
@@ -115,7 +119,7 @@ export function CreateInvoiceDialog({
   // otherwise the confirmed header can disagree with the stored invoice.
   const totals = useMemo(() => calculateInvoiceTotals(validItems), [validItems]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validItems.length === 0) {
@@ -125,25 +129,18 @@ export function CreateInvoiceDialog({
 
     const customer = customers.find((c) => c.id === customerId);
     const now = new Date();
-    // Local calendar date — toISOString() is UTC and can land on the
-    // previous day for Iran (UTC+3:30) in the early hours.
-    const iso = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-        d.getDate()
-      ).padStart(2, "0")}`;
-
     const days = parseInt(dueDays, 10) || 5;
     const dueObj = new Date(now.getTime());
     dueObj.setDate(dueObj.getDate() + days);
 
-    onCreateInvoice(
+    const saved = await run(() => onCreateInvoice(
       {
         customerId: customer?.id || null,
         customerName: customer?.name || customer?.company || "مشتری عمومی",
         type,
         status: "draft",
-        issueDate: iso(now),
-        dueDate: iso(dueObj),
+        issueDate: toLocalISODate(now),
+        dueDate: toLocalISODate(dueObj),
         subtotal: totals.subtotal,
         discount: totals.discount,
         tax: totals.tax,
@@ -151,7 +148,8 @@ export function CreateInvoiceDialog({
         notes,
       },
       validItems
-    );
+    ));
+    if (!saved) return;
 
     toast.success(
       type === "proforma"
@@ -507,7 +505,7 @@ export function CreateInvoiceDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={validItems.length === 0}
+                disabled={isPending || (validItems.length === 0)}
                 className="h-11 cursor-pointer rounded-xl bg-brand-700 px-6 text-[13px] font-black text-white hover:bg-brand-800 disabled:pointer-events-none disabled:opacity-50"
               >
                 تایید و صدور {type === "proforma" ? "پیش‌فاکتور" : "فاکتور رسمی"}

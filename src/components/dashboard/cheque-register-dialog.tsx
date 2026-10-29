@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -36,7 +38,7 @@ interface Props {
   onClose: () => void;
   customers: Customer[];
   defaultCustomer?: Customer | null;
-  onCreateCheque: (cheque: Partial<Cheque>) => void;
+  onCreateCheque: AsyncAction<[Partial<Cheque>]>;
 }
 
 function FieldLabel({
@@ -63,6 +65,7 @@ export function ChequeRegisterDialog({
   defaultCustomer,
   onCreateCheque,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [customerId, setCustomerId] = useState<string>(
     defaultCustomer?.id || customers[0]?.id || ""
   );
@@ -92,7 +95,7 @@ export function ChequeRegisterDialog({
     setAccountOwner("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidSayad) {
       toast.error("شناسه صیادی باید دقیقاً ۱۶ رقم عددی باشد.");
@@ -109,7 +112,7 @@ export function ChequeRegisterDialog({
 
     const customer = customers.find((c) => c.id === customerId);
 
-    onCreateCheque({
+    const saved = await run(() => onCreateCheque({
       customerId: customer?.id || null,
       customerName: customer?.name || customer?.company || "مشتری عمومی",
       sayadNumber: cleanSayad,
@@ -120,7 +123,8 @@ export function ChequeRegisterDialog({
       dueDate,
       status,
       statusUpdatedAt: new Date().toISOString(),
-    });
+    }));
+    if (!saved) return;
 
     toast.success("چک صیادی با موفقیت در دفتر چک ثبت گردید.");
     reset();
@@ -307,7 +311,7 @@ export function ChequeRegisterDialog({
           <div className="flex shrink-0 items-center justify-start gap-2.5 border-t border-slate-200 bg-white px-6 py-4">
             <Button
               type="submit"
-              disabled={!canSubmit}
+              disabled={isPending || (!canSubmit)}
               className="h-11 cursor-pointer rounded-xl bg-brand-700 px-6 text-[13px] font-black text-white hover:bg-brand-800 disabled:pointer-events-none disabled:opacity-50"
             >
               ثبت در دفتر چک

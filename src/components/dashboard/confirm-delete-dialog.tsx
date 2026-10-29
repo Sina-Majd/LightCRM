@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -13,10 +15,11 @@ interface Props {
   description?: string;
   itemName?: string;
   confirmLabel?: string;
-  onConfirm: () => void;
+  onConfirm: AsyncAction;
 }
 
 export function ConfirmDeleteDialog({ open, onOpenChange, title, description, itemName, confirmLabel = "حذف", onConfirm }: Props) {
+  const { isPending, run } = useAsyncAction();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent dir="rtl" className="text-right">
@@ -35,15 +38,15 @@ export function ConfirmDeleteDialog({ open, onOpenChange, title, description, it
         <AlertDialogFooter className="flex flex-row items-center justify-start gap-2.5 mt-3">
           <AlertDialogAction
             className="cursor-pointer bg-rose-600 hover:bg-rose-700 text-white font-black"
-            onClick={(e) => {
+            disabled={isPending}
+            onClick={async (e) => {
               e.preventDefault();
-              onConfirm();
-              onOpenChange(false);
+              if (await run(onConfirm)) onOpenChange(false);
             }}
           >
             {confirmLabel}
           </AlertDialogAction>
-          <AlertDialogCancel className="cursor-pointer">انصراف</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending} className="cursor-pointer">انصراف</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

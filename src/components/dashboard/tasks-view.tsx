@@ -1,5 +1,7 @@
 "use client";
 
+import { useAsyncAction, type AsyncAction } from "@/lib/use-async-action";
+
 import React, { useState } from "react";
 import {
   Plus,
@@ -14,9 +16,10 @@ import {
   CheckCircle2,
   Calendar,
 } from "lucide-react";
+import { dedupeById } from "@/lib/crm/collections";
 import { toast } from "sonner";
 import type { CRMTask, DealPriority } from "@/lib/crm/types";
-import { formatJalaliDate, faDigits } from "@/lib/fa";
+import { formatJalaliDate, faDigits, toLocalISODate } from "@/lib/fa";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
@@ -39,8 +42,9 @@ import {
 interface Props {
   tasks: CRMTask[];
   onToggleTask: (id: string) => void;
-  onAddTask: (t: CRMTask) => void;
-  onDeleteTask?: (id: string) => void;
+  onAddTask: AsyncAction<[CRMTask]>;
+  onRescheduleTask: AsyncAction<[string, string]>;
+  onDeleteTask?: AsyncAction<[string]>;
 }
 
 const TYPE_FA = {
@@ -61,8 +65,10 @@ export function TasksView({
   tasks,
   onToggleTask,
   onAddTask,
+  onRescheduleTask,
   onDeleteTask,
 }: Props) {
+  const { isPending, run } = useAsyncAction();
   const [tab, setTab] = useState("all");
   const [title, setTitle] = useState("");
   const [related, setRelated] = useState("");
@@ -70,30 +76,28 @@ export function TasksView({
   const [pri, setPri] = useState<DealPriority>("high");
   const [toDelete, setToDelete] = useState<CRMTask | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onAddTask({
+    const saved = await run(() => onAddTask({
       id: `task-${Date.now()}`,
       title: title.trim(),
       type,
-      dueDate: new Date().toISOString().split("T")[0],
+      dueDate: toLocalISODate(new Date()),
       dueCategory: "today",
       priority: pri,
       completed: false,
       relatedTo: related.trim() || "عمومی",
       relatedType: "deal",
-    });
+    }));
+    if (!saved) return;
     toast.success("وظیفه جدید با موفقیت ثبت شد.");
     setTitle("");
     setRelated("");
   };
 
   const filtered = React.useMemo(() => {
-    const seen = new Set<string>();
-    return tasks.filter((t) => {
-      if (!t?.id || seen.has(t.id)) return false;
-      seen.add(t.id);
+    return dedupeById(tasks).filter((t) => {
       if (tab === "pending") return !t.completed;
       if (tab === "completed") return t.completed;
       if (tab === "urgent")
@@ -113,7 +117,7 @@ export function TasksView({
           <Sparkles className="h-4 w-4 text-brand-600" />
           <span>ثبت سریع پیگیری و وظیفه فروش</span>
         </div>
-        <form onSubmit={submit} className="grid gap-2.5 sm:grid-cols-12">
+        <form onSubmit={submit} aria-busy={isPending} className="grid gap-2.5 sm:grid-cols-12">
           <div className="sm:col-span-5">
             <Input
               value={title}
@@ -131,8 +135,8 @@ export function TasksView({
             />
           </div>
           <div className="sm:col-span-2">
-            <Select value={type} onValueChange={(v) => setType(v as never)}>
-              <SelectTrigger className="h-10 rounded-xl border-brand-100 bg-white text-xs font-bold">
+            <Select value={type} onValueChange={(v) => setType(v as CRMTask["type"])}>
+              <SelectTrigger aria-label="نوع وظیفه" className="h-10 rounded-xl border-brand-100 bg-white text-xs font-bold">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-brand-100 bg-white">
@@ -159,7 +163,7 @@ export function TasksView({
               </SelectContent>
             </Select>
             <Button
-              type="submit"
+              type="submit" disabled={isPending} aria-label="ثبت وظیفه"
               className="h-10 w-10 shrink-0 rounded-xl bg-brand-700 font-bold text-white hover:bg-brand-800 shadow-sm shadow-brand-700/20"
             >
               <Plus className="h-5 w-5" />
@@ -236,7 +240,7 @@ export function TasksView({
                       onClick={() => onToggleTask(t.id)}
                       className={`text-right text-[13.5px] font-black leading-6 cursor-pointer ${
                         t.completed
-                          ? "text-slate-400 line-through"
+                          ? "text-slate-600 line-through"
                           : "text-slate-900 hover:text-brand-800"
                       }`}
                     >
@@ -271,7 +275,14 @@ export function TasksView({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="flex items-center gap-2 cursor-pointer text-xs font-bold rounded-xl py-2 px-2.5 hover:bg-brand-50"
-                            onClick={() => toast.success("وظیفه برای فردا موکول شد.")}
+                            disabled={isPending}
+                            onClick={async () => {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              if (await run(() => onRescheduleTask(t.id, toLocalISODate(tomorrow)))) {
+                                toast.success("وظیفه برای فردا موکول شد.");
+                              }
+                            }}
                           >
                             <Calendar className="h-3.5 w-3.5 text-brand-600 shrink-0" />
                             موکول به فردا
@@ -314,8 +325,8 @@ export function TasksView({
         itemName={toDelete?.title}
         description="این وظیفه از لیست پیگیری‌های شما حذف می‌شود."
         confirmLabel="حذف وظیفه"
-        onConfirm={() => {
-          if (toDelete) onDeleteTask?.(toDelete.id);
+        onConfirm={async () => {
+          if (!toDelete || !onDeleteTask || await onDeleteTask(toDelete.id) === false) return false;
           setToDelete(null);
         }}
       />
