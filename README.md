@@ -1,284 +1,173 @@
 # LightCRM
 
-An open-source, high-performance CRM system engineered for modern businesses, agencies, and sales teams. Built with **Next.js 16** (App Router & Turbopack), **React 19**, **TypeScript**, **Tailwind CSS v4**, and **Supabase**.
+### Give every opportunity a clear next step.
 
-<p align="center">
-  <img src="public/screenshot.png" alt="LightCRM Platform Preview" width="100%" />
-</p>
+Good customer relationships grow through small, consistent actions: the call made on time, the detail remembered, the proposal that moves forward. LightCRM brings those actions into one workspace, connecting your sales pipeline, customer records, daily work and invoicing.
 
-<p align="center">
-  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3-black?style=flat-square&logo=next.js" alt="Next.js" /></a>
-  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2-blue?style=flat-square&logo=react" alt="React" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript" alt="TypeScript" /></a>
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-38BDF8?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" /></a>
-  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-Auth_%26_Postgres-3ECF8E?style=flat-square&logo=supabase" alt="Supabase" /></a>
-  <a href="#license"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License: MIT" /></a>
-</p>
+Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and **Supabase**. A focused interface, a typed application layer and a database that enforces workspace boundaries keep the experience straightforward as your records grow.
 
----
+![LightCRM dashboard](public/screenshot.png)
 
-## Key Features
+## From first conversation to next commitment
 
-- **Today Command Center**: A focused daily operations dashboard highlighting stale deals lacking next actions, overdue customer follow-ups, Sayad cheques maturing this week, and a real-time team activity feed.
-- **Visual Sales Pipeline**: Interactive drag-and-drop Kanban board powered by `@hello-pangea/dnd`, featuring stage revenue metrics, deal health indicators, urgency tags, and a slide-out deal inspector with quick call logging.
-- **Invoices & Sayad Cheques Management**:
-  - Create proformas and official tax invoices with itemized line entries, discounts, and real-time 10% VAT calculation.
-  - Standard A4 printable invoice layout styled with dedicated print stylesheets.
-  - 16-digit Sayad cheque tracking across commercial banks with complete lifecycle statuses (*In Hand*, *Deposited*, *Cleared*, *Bounced*).
-- **Customer & Lead Intelligence**: Comprehensive directory supporting both individual contacts and company accounts, lead temperature scoring (*Hot*, *Warm*, *Cold*), customer lifetime value (LTV) tracking, and one-click communication actions (Call, SMS, WhatsApp).
-- **Performance Analytics & Tasks**: Monthly sales targets against actual closed revenue, sales funnel conversion velocity metrics, and team task assignment checklists.
-- **Jalali (Solar Hijri) Calendar & RTL Support**: Native Solar Hijri date picker (`JalaliDatePicker`), Persian/English digit converters, currency formatters (Toman & Rial), and full right-to-left layout support paired with Vazirmatn typography.
+| Workspace | What you can do |
+| --- | --- |
+| **Today** | See overdue follow-ups, upcoming work, invoices, cheques and recent activity together. |
+| **Pipeline** | Move deals through sales stages, track their progress and record the next conversation. Drag-and-drop and keyboard controls are supported. |
+| **Customers** | Keep individual and company contacts organized, distinguish leads from customers and reach contact channels quickly. |
+| **Invoices** | Build itemized invoices and proformas, calculate discounts and tax, print documents and track Sayad cheques. |
+| **Tasks** | Create, complete and reschedule work with a Jalali calendar. |
+| **Analytics** | Review pipeline performance and six months of invoice activity from your workspace data. |
 
----
+The dashboard adapts to desktop and mobile screens. Forms preserve drafts when a save fails, failed requests offer a retry, and empty states provide a useful starting point.
 
-## Tech Stack
+## Get started
 
-| Layer | Technology | Description |
-| :--- | :--- | :--- |
-| **Framework** | Next.js 16 (App Router) | React Server Components, Turbopack, nested layouts, route handlers |
-| **Frontend Library** | React 19 | Server Actions, modern hooks, concurrent transitions |
-| **Language** | TypeScript 5 | Strict static typing across CRM models and database services |
-| **Styling** | Tailwind CSS v4 | PostCSS integration, design tokens, light-theme surface contrast |
-| **Typography** | Vazirmatn (`next/font/google`) | Clean typography with full RTL and Persian numeral support |
-| **Database & Auth** | Supabase | PostgreSQL, Row Level Security (RLS), Realtime subscriptions |
-| **UI Primitives** | Radix UI & Lucide Icons | Accessible dialogs, slide-out sheets, selects, and dropdown menus |
-| **Charts & Drag-and-Drop** | Recharts & `@hello-pangea/dnd` | Interactive revenue charts and fluid Kanban board interactions |
-| **Notifications** | Sonner | Stacked feedback toasts with RTL alignment |
+You will need **Node.js 24 or later**, npm and a Supabase project. Use the committed lockfile for reproducible installs.
 
----
-
-## Quick Start
-
-### 1. Prerequisites
-- **Node.js**: `20.x` or higher
-- **Package Manager**: `npm`, `pnpm`, or `yarn`
-- **Supabase Account**: A free Supabase project for PostgreSQL and Authentication
-
-### 2. Clone and Install
 ```bash
 git clone https://github.com/Sina-Majd/LightCRM.git
 cd LightCRM
-npm install
+npm ci
 ```
 
-### 3. Environment Variables
-Create an `.env.local` file in the root directory:
+Copy `.env.example` to `.env.local` and enter your project's public credentials:
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_your_public_key
 ```
 
-### 4. Database Setup (Supabase)
-Run the following SQL script inside your **Supabase SQL Editor** to initialize the required tables and security policies:
+The historical `NEXT_PUBLIC_SUPABASE_ANON_KEY` variable accepts a publishable key or a legacy anon key. These values are included in browser JavaScript. Keep secret and service-role keys out of this file; the application does not require them.
 
-```sql
--- Profiles table linked to Supabase Auth
-create table if not exists public.profiles (
-  id uuid references auth.users on delete cascade primary key,
-  full_name text default 'Sales Lead',
-  company_name text default 'My Workspace',
-  email text,
-  role text default 'Sales Lead',
-  status text default 'Available' check (status in ('Available', 'Away', 'Do Not Disturb')),
-  plan text default 'business',
-  updated_at timestamp with time zone default timezone('utc'::text, now())
-);
+### 1. Create the database
 
--- Pipeline Stages
-create table if not exists public.pipeline_stages (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  stage_key text not null,
-  title text not null,
-  position integer not null default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+For a **new, empty Supabase project**, open the SQL Editor and run the complete contents of **[supabase/schema.sql](supabase/schema.sql)** once, before registering application users.
 
--- Deals / Opportunities
-create table if not exists public.deals (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  title text not null,
-  company text not null,
-  contact text not null,
-  email text default '',
-  phone text default '',
-  value numeric default 0,
-  stage_id text not null default 'stage-new',
-  priority text default 'medium' check (priority in ('urgent', 'high', 'medium', 'low')),
-  probability integer default 50,
-  tags text[] default array[]::text[],
-  notes text default '',
-  next_action_title text,
-  next_action_due text,
-  created_at timestamp with time zone default timezone('utc'::text, now()),
-  updated_at timestamp with time zone default timezone('utc'::text, now())
-);
+This schema-only snapshot reproduces the verified application database architecture: tables, constraints, indexes, grants, row-level security, signup automation and transactional invoice creation. It includes no accounts, customer records, payments or private counter values. Supabase supplies the Auth schema and standard database roles.
 
--- Customers
-create table if not exists public.customers (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  name text not null,
-  company text default '',
-  email text default '',
-  phone text default '',
-  customer_type text default 'company' check (customer_type in ('individual', 'company')),
-  segment text default 'lead' check (segment in ('lead', 'customer')),
-  total_spend numeric default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+Use a Supabase project running **PostgreSQL 17 or later**. The script runs as one transaction and expects the SQL Editor's administrative privileges.
 
--- Invoices
-create table if not exists public.invoices (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  customer_id text,
-  customer_name text not null,
-  invoice_number text not null,
-  invoice_type text default 'proforma' check (invoice_type in ('proforma', 'invoice')),
-  status text default 'draft' check (status in ('draft', 'sent', 'paid', 'partially_paid', 'overdue', 'cancelled')),
-  subtotal numeric default 0,
-  tax numeric default 0,
-  discount numeric default 0,
-  total numeric default 0,
-  paid_amount numeric default 0,
-  issue_date text not null,
-  due_date text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+**For an existing installation**, review its schema and migration history and take a backup before applying changes. The versioned upgrades are:
 
--- Invoice Line Items
-create table if not exists public.invoice_items (
-  id uuid default gen_random_uuid() primary key,
-  invoice_id uuid references public.invoices on delete cascade not null,
-  description text not null,
-  quantity numeric default 1,
-  unit_price numeric default 0,
-  discount numeric default 0,
-  tax_rate numeric default 10,
-  total numeric default 0
-);
+- [Workspace security and invoice transactions](supabase/migrations/20261028180337_harden_workspace_security_and_invoice_transactions.sql)
+- [Tenant foreign-key indexes](supabase/migrations/20261028180704_cover_tenant_foreign_keys.sql)
 
--- Sayad Cheques
-create table if not exists public.cheques (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  sayad_number text not null,
-  bank_name text not null,
-  amount numeric not null,
-  due_date text not null,
-  drawer_name text not null,
-  holder_name text not null,
-  status text default 'in_hand' check (status in ('in_hand', 'deposited', 'cleared', 'bounced')),
-  notes text default '',
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+These migrations upgrade the earlier LightCRM schema and preserve its business records. Apply only pending migrations in order. A fresh installation using `schema.sql` already includes both upgrades; do not run them again or run the snapshot over existing tables.
 
--- Tasks
-create table if not exists public.tasks (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  title text not null,
-  type text default 'call',
-  due_date text not null,
-  priority text default 'medium',
-  completed boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+### 2. Configure authentication
 
--- Activities
-create table if not exists public.activities (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  deal_id text,
-  customer_id text,
-  kind text not null,
-  title text not null,
-  description text default '',
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
+In your Supabase project's Authentication settings:
 
--- Enable Row Level Security (RLS)
-alter table public.profiles enable row level security;
-alter table public.pipeline_stages enable row level security;
-alter table public.deals enable row level security;
-alter table public.customers enable row level security;
-alter table public.invoices enable row level security;
-alter table public.invoice_items enable row level security;
-alter table public.cheques enable row level security;
-alter table public.tasks enable row level security;
-alter table public.activities enable row level security;
+1. Enable email/password sign-in.
+2. Set the local Site URL to `http://localhost:3000`.
+3. Add `http://localhost:3000/auth/callback` to the allowed Redirect URLs. Add the equivalent HTTPS callback for your deployment.
+4. Keep the confirmation email template's `{{ .ConfirmationURL }}` link. Registration supplies the callback URL for the PKCE exchange; open the link in the browser used to register.
+5. Choose your email confirmation policy, configure SMTP for production delivery and review password security settings.
 
--- Basic Policies (User isolation)
-create policy "Users own profiles" on public.profiles for all using (auth.uid() = id);
-create policy "Users own stages" on public.pipeline_stages for all using (auth.uid() = user_id);
-create policy "Users own deals" on public.deals for all using (auth.uid() = user_id);
-create policy "Users own customers" on public.customers for all using (auth.uid() = user_id);
-create policy "Users own invoices" on public.invoices for all using (auth.uid() = user_id);
-create policy "Users own invoice items" on public.invoice_items for all using (true);
-create policy "Users own cheques" on public.cheques for all using (auth.uid() = user_id);
-create policy "Users own tasks" on public.tasks for all using (auth.uid() = user_id);
-create policy "Users own activities" on public.activities for all using (auth.uid() = user_id);
-```
+### 3. Open your workspace
 
-### 5. Running the Application
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application in your browser.
+Visit [localhost:3000](http://localhost:3000) and create an account. Signup creates a profile, a private workspace, its owner membership and five pipeline stages. Business records start empty, ready for your own work.
 
----
+Each account receives a separate workspace. Invitations and membership administration currently require trusted administrative tooling.
 
-## Project Structure
+## A database with clear boundaries
 
+Workspace access is enforced in PostgreSQL. Every public application table has row-level security, membership changes are unavailable to browser roles, and composite foreign keys keep related records inside the same workspace. Notifications are visible only to their recipient.
+
+| Area | Tables |
+| --- | --- |
+| Identity and access | `profiles`, `workspaces`, `workspace_members` |
+| Sales and contacts | `pipeline_stages`, `deals`, `customers`, `leads` |
+| Work and history | `tasks`, `activities`, `notifications` |
+| Commercial records | `invoices`, `invoice_items`, `payments`, `cheques` |
+| Internal numbering | `private.invoice_counters` |
+
+Profile updates are limited to display and availability fields. Signup metadata cannot select a paid plan or grant permissions. Internal trigger functions use fixed search paths and have no public execution grants.
+
+### Invoice integrity
+
+`create_invoice_with_items(workspace, header, lines)` saves the invoice and its items in one transaction under the caller's permissions and row-level security. PostgreSQL calculates the totals and allocates a unique, sequential number within the workspace. A failed item rolls back the invoice and its number allocation.
+
+Invoice numbers are immutable. A saved customer name remains on the invoice after a contact is removed, while optional customer references are cleared without deleting commercial records. Constraints validate amounts, quantities, tax, discounts and workspace relationships.
+
+Money is stored in **Rial** and entered and displayed in **Toman**. Tax defaults to 10%, is adjustable per line and is rounded per line. Discounts are capped at the line's gross amount. Date-only values use PostgreSQL `date`; timed follow-ups use `timestamptz`.
+
+### Reporting scope
+
+Analytics groups issued and paid invoice amounts by **invoice issue month**. Cash-receipt reporting, payment reconciliation, online payment links, subscription billing and Realtime subscriptions are outside the current feature set. Customer health and lifetime value are stored attributes. The `leads` and `payments` tables remain available for existing records and integrations; the customer directory manages its lead segment through `customers`.
+
+## Quality checks
+
+The test suite uses **Vitest**, Testing Library, an embedded PostgreSQL runtime and real-browser checks. It covers domain calculations, form behavior, service requests, workspace state, permissions and invoice transactions.
+
+```bash
+npm test                 # Unit, component, service, provider and database tests
+npm run test:watch       # Interactive watch mode
+npm run test:coverage    # V8 coverage, with an HTML report in coverage/
+npm run check:fast       # TypeScript, ESLint and Vitest
+npm run check:full       # Fast checks and a production build
 ```
-LightCRM/
-├── public/                     # Static media, logo assets, screenshot
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── dashboard/          # Authenticated CRM workspace
-│   │   │   ├── today/          # Today Command Center view
-│   │   │   ├── pipeline/       # Sales Pipeline Kanban board
-│   │   │   ├── customers/      # Customer & Lead Directory
-│   │   │   ├── invoices/       # Invoices & Sayad Cheques
-│   │   │   ├── tasks/          # Team Tasks Management
-│   │   │   ├── analytics/      # Performance & Funnel Reports
-│   │   │   └── layout.tsx      # Persistent layout & CrmProvider frame
-│   │   ├── login/              # User authentication login
-│   │   ├── register/           # New account registration
-│   │   ├── layout.tsx          # Root layout (Vazirmatn & RTL configuration)
-│   │   ├── page.tsx            # Marketing landing page
-│   │   └── globals.css         # Theme tokens & A4 invoice print CSS
-│   ├── components/
-│   │   ├── dashboard/          # CRM views, modals, drawers, and skeletons
-│   │   ├── landing/            # Landing page hero, pricing, and showcase sections
-│   │   └── ui/                 # JalaliDatePicker, Sheet, Dialog, and UI primitives
-│   ├── data/
-│   │   └── dashboard-mock-data.ts # Seed schemas, types, and fallback data
-│   └── lib/
-│       ├── fa/                 # Jalali calendar, currency, and cheque utilities
-│       └── supabase/           # Client, server, middleware, and CRM service
-├── next.config.ts              # Next.js configuration
-├── package.json                # Dependencies and scripts
-└── tsconfig.json               # TypeScript configuration
+
+Database tests execute the actual fresh schema and versioned upgrades in [PGlite](https://pglite.dev/). A small harness supplies Supabase's Auth-owned table and `auth.uid()`. The tests verify tenant isolation, restricted privileges, signup defaults, data-preserving upgrades and atomic invoice saves.
+
+For an administrative check against a configured Supabase database, run **[supabase/tests/smoke.sql](supabase/tests/smoke.sql)** in the SQL Editor. It creates temporary test accounts and records inside a transaction, asserts the security and invoice rules, then rolls everything back. Run the entire file in one session.
+
+### Browser checks
+
+Vitest Browser Mode uses Playwright to render all six dashboard views at desktop and mobile widths. Checks cover empty states, keyboard interactions, dialogs, horizontal overflow and accessibility rules. Screenshots are saved under `.next/dashboard-review/`.
+
+```bash
+npx playwright install chromium
+npm run test:browser
 ```
 
----
+You can also use an installed Google Chrome when the Chromium download is unavailable:
 
-## Available Scripts
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chrome'
+npm run test:browser
+```
 
-| Script | Command | Description |
-| :--- | :--- | :--- |
-| `npm run dev` | `next dev` | Starts the local development server with Turbopack |
-| `npm run build` | `next build` | Compiles an optimized production build |
-| `npm run start` | `next start` | Starts the compiled production application |
-| `npm run lint` | `eslint` | Runs ESLint to inspect code quality and conventions |
+Browser tests use controlled workspace fixtures and a mocked Next.js router. They complement authenticated end-to-end testing; they do not exercise hosted email delivery or a complete live sign-in session.
 
----
+GitHub Actions runs type checks, lint, coverage, the production build and browser tests without production credentials. Next.js downloads Google Fonts during builds, so the build environment needs access to those endpoints.
+
+## Project structure
+
+```text
+src/app/                    Routes, authentication callback and dashboard pages
+src/components/dashboard/   Workspace views, dialogs and shared state provider
+src/components/ui/          Reusable interface primitives
+src/lib/auth/               Authentication redirect and session helpers
+src/lib/crm/                Domain types, analytics, pipeline and storage helpers
+src/lib/fa/                 Calendar, currency, phone and display formatting
+src/lib/supabase/           Typed clients, session handling and data services
+supabase/schema.sql         Complete schema for a fresh Supabase project
+supabase/migrations/        Versioned upgrades for existing installations
+supabase/tests/             Transactional database smoke test
+tests/                      Vitest suites, database fixtures and browser checks
+```
+
+`CrmProvider` coordinates workspace state. Resources load independently, and pipeline drops update immediately with rollback if saving fails. Other mutations update state after persistence succeeds. Local deal ordering is scoped to the workspace. Supabase types are generated from the database and shared by browser, server and session clients.
+
+## Deploy and contribute
+
+Apply the database setup, configure the public environment variables on your hosting platform, and set the production Auth Site URL and callback URL. Validate the application before deploying:
+
+```bash
+npm run check:full
+npm run start
+```
+
+Responses that refresh authentication cookies must remain private and uncached. The session proxy preserves refreshed cookies and sets the appropriate cache controls.
+
+Contributions should include focused tests for changed behavior and pass the quality checks above. For database changes, add a versioned migration, keep the fresh-project snapshot aligned and verify permissions as well as data integrity.
 
 ## License
 
-This project is open-source and available under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE).
