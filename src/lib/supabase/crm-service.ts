@@ -1,26 +1,7 @@
 import { createClient } from "./client";
-import {
-  Deal,
-  Lead,
-  LeadStatus,
-  Customer,
-  CRMTask,
-  CRMNotification,
-  PipelineStage,
-  Invoice,
-  Cheque,
-  CRMActivity,
-  INITIAL_PIPELINE_STAGES,
-  INITIAL_DEALS,
-  INITIAL_CUSTOMERS,
-  INITIAL_INVOICES,
-  INITIAL_CHEQUES,
-  INITIAL_TASKS,
-  INITIAL_ACTIVITIES,
-  INITIAL_NOTIFICATIONS,
-  INITIAL_LEADS,
-  getStageTheme,
-} from "@/data/dashboard-mock-data";
+import { Lead, LeadStatus, INITIAL_DEALS, INITIAL_CUSTOMERS, INITIAL_INVOICES, INITIAL_CHEQUES, INITIAL_TASKS, INITIAL_ACTIVITIES, INITIAL_NOTIFICATIONS, INITIAL_LEADS } from "@/data/dashboard-mock-data";
+import type { Deal, Customer, CRMTask, CRMNotification, PipelineStage, Invoice, Cheque, CRMActivity } from "@/lib/crm/types";
+import { DEFAULT_PIPELINE_STAGES as INITIAL_PIPELINE_STAGES, getStageTheme } from "@/lib/crm/pipeline";
 import {
   formatToman,
   formatRelativeFa,

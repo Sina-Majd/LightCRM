@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { CRMNotification } from "@/data/dashboard-mock-data";
+import type { CRMNotification } from "@/lib/crm/types";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile, updateUserStatus } from "@/lib/supabase/crm-service";

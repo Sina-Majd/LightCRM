@@ -30,16 +30,8 @@ import {
   UserCheck,
   PlusCircle,
 } from "lucide-react";
-import {
-  Deal,
-  DealPriority,
-  Lead,
-  LeadStatus,
-  Customer,
-  CustomerTier,
-  CustomerHealth,
-  PipelineStage,
-} from "@/data/dashboard-mock-data";
+import { Lead, LeadStatus } from "@/data/dashboard-mock-data";
+import type { Deal, DealPriority, Customer, CustomerTier, CustomerHealth, PipelineStage } from "@/lib/crm/types";
 import { formatToman } from "@/lib/fa";
 
 export type RecordType = "deal" | "lead" | "customer";

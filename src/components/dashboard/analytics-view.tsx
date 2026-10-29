@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { TrendingUp, Award, Clock, Target, Zap, Sparkles, BarChart2 } from "lucide-react";
-import { PIPELINE_ANALYTICS, Deal } from "@/data/dashboard-mock-data";
+import { PIPELINE_ANALYTICS } from "@/data/dashboard-mock-data";
+import type { Deal } from "@/lib/crm/types";
 import { formatToman, faDigits } from "@/lib/fa";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

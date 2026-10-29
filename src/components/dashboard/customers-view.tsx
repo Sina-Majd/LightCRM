@@ -16,7 +16,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import { Customer } from "@/data/dashboard-mock-data";
+import type { Customer } from "@/lib/crm/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

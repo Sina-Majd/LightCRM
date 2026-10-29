@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Receipt } from "lucide-react";
-import { Customer, Invoice } from "@/data/dashboard-mock-data";
+import type { Customer, Invoice } from "@/lib/crm/types";
 import {
   formatToman,
   parseTomanInput,

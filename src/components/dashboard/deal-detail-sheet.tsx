@@ -33,7 +33,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
-import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
+import type { Deal, PipelineStage } from "@/lib/crm/types";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import {
   getDealNextActionState,

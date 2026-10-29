@@ -46,41 +46,15 @@ import {
   CallResult,
   getDealNextActionState,
 } from "@/lib/fa";
-import {
-  INITIAL_PIPELINE_STAGES,
-  INITIAL_DEALS,
-  INITIAL_CUSTOMERS,
-  INITIAL_INVOICES,
-  INITIAL_CHEQUES,
-  INITIAL_TASKS,
-  INITIAL_ACTIVITIES,
-  INITIAL_NOTIFICATIONS,
-  Deal,
-  Customer,
-  CRMTask,
-  Invoice,
-  Cheque,
-  CRMActivity,
-  CRMNotification,
-  PipelineStage,
-} from "@/data/dashboard-mock-data";
+import { INITIAL_DEALS, INITIAL_CUSTOMERS, INITIAL_INVOICES, INITIAL_CHEQUES, INITIAL_TASKS, INITIAL_ACTIVITIES, INITIAL_NOTIFICATIONS } from "@/data/dashboard-mock-data";
+import type { Deal, Customer, CRMTask, Invoice, Cheque, CRMActivity, CRMNotification, PipelineStage } from "@/lib/crm/types";
+import { DEFAULT_PIPELINE_STAGES as INITIAL_PIPELINE_STAGES } from "@/lib/crm/pipeline";
 import { RecordType } from "./create-record-dialog";
+import { dedupeById } from "@/lib/crm/collections";
 
 /* ------------------------------------------------------------------ */
 /* Helpers (moved verbatim from the old page.tsx)                      */
 /* ------------------------------------------------------------------ */
-
-function dedupeById<T extends { id: string }>(items: T[]): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
-  for (const item of items) {
-    if (item && item.id && !seen.has(item.id)) {
-      seen.add(item.id);
-      result.push(item);
-    }
-  }
-  return result;
-}
 
 function saveDealOrder(dealsList: Deal[]) {
   if (typeof window === "undefined" || !dealsList) return;

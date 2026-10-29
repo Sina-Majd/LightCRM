@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Banknote, CheckCircle2, Building2, Hash, User } from "lucide-react";
-import { Customer, Cheque } from "@/data/dashboard-mock-data";
+import type { Customer, Cheque } from "@/lib/crm/types";
 import {
   IRANIAN_BANKS,
   parseTomanInput,

@@ -20,13 +20,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Deal,
-  CRMTask,
-  Invoice,
-  Cheque,
-  CRMActivity,
-} from "@/data/dashboard-mock-data";
+import type { Deal, CRMTask, Invoice, Cheque, CRMActivity } from "@/lib/crm/types";
 import {
   formatToman,
   formatTomanCompact,

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Building2, FileText } from "lucide-react";
-import { Invoice, Customer } from "@/data/dashboard-mock-data";
+import type { Invoice, Customer } from "@/lib/crm/types";
 import {
   formatToman,
   formatTomanCompact,

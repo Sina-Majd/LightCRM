@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { Plus, Trophy, Wallet, Target, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
+import type { Deal, PipelineStage } from "@/lib/crm/types";
 import { formatTomanCompact, faDigits } from "@/lib/fa";
 import { DealCard } from "./deal-card";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";

@@ -15,7 +15,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
-import { CRMTask, DealPriority } from "@/data/dashboard-mock-data";
+import type { CRMTask, DealPriority } from "@/lib/crm/types";
 import { formatJalaliDate, faDigits } from "@/lib/fa";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

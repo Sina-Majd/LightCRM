@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   FileCheck,
 } from "lucide-react";
-import { Invoice, Cheque, Customer } from "@/data/dashboard-mock-data";
+import type { Invoice, Cheque, Customer } from "@/lib/crm/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

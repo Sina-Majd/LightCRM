@@ -14,7 +14,7 @@ import {
   CalendarCheck,
   PhoneCall,
 } from "lucide-react";
-import { Deal, PipelineStage } from "@/data/dashboard-mock-data";
+import type { Deal, PipelineStage } from "@/lib/crm/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
